@@ -4,15 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Grouped Painting Gallery</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Text:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
     }
     body {
       margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(0deg, rgba(14, 38, 102, 1) 0%, rgba(18, 35, 77, 1) 100%);
+      font-family: 'Wix Madefor Text', sans-serif;
+      font-family: 'Lexend', sans-serif;
+      font-optical-sizing: auto;
+      background: rgb(12, 27, 68);
       background-attachment: fixed;
       color: #f0f0f0;
       padding: 2rem;
@@ -20,25 +23,46 @@
       justify-content: center;
     }
     .container {
-      max-width: 1400px;
+      max-width: 1480px;
       width: 100%;
     }
     h1 {
       text-align: center;
       font-size: 3rem;
-      margin-bottom: 2.5rem;
+      margin-bottom: 1rem;
       color: #ffffff;
+    }
+    p {
+      font-size: 1.4rem;
+      text-align: center;
+      font-weight: 300;
+      margin: 0 0 .2rem;
+    }
+    .btn-container {
+      width: 100%;
+      text-align: center;
+      padding: 1rem 0;
     }
     h2 {
       text-align: center;
-      font-size: 4rem;
-      margin: 8rem 0;
+      letter-spacing: 0.4rem;
+      font-weight: 200;
+      font-size: 2.4rem;
+      margin: 8rem 0 3rem;
       color: #ffffff;
+      position: sticky;
+      top: 0;
+      background: rgba(12, 27, 68, .8);
+      backdrop-filter: blur(10px);       /* adds the blur effect */
+      padding: 1rem;
+      z-index: 10;
     }
+
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
       gap: 2rem;
+      padding: 20px;
     }
     .painting {
       position: relative;
@@ -110,54 +134,60 @@
   </style>
 </head>
 <body>
+    <div class="container">
+      <h1 class="logo-title">
+        <img src="img/reframed.svg" alt="Reframed Logo">
+      </h1>
+      <p>A collection of paintings modified to fit the Samsumg Frame TV perfectly.</p>
+      <p>Click on any image to download the full version.</p>
+      <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
+      <script type='text/javascript'>kofiwidget2.init('Give me a tip', '#00488c', 'O5O51FWPUL');kofiwidget2.draw();</script> 
+      <div id="image-gallery"></div>
+    </div>
 
-<div class="container">
-  <div id="image-gallery"></div>
-</div>
+    <script src="images.js"></script>
+    <script>
+      const container = document.getElementById('image-gallery');
 
-<script src="images.js"></script>
-<script>
-  const container = document.getElementById('image-gallery');
+      Object.entries(imageGroups).forEach(([artist, filenames]) => {
+        const section = document.createElement('section');
 
-  Object.entries(imageGroups).forEach(([artist, filenames]) => {
-    const section = document.createElement('section');
+        const h2 = document.createElement('h2');
+        h2.textContent = artist;
+        section.appendChild(h2);
 
-    const h2 = document.createElement('h2');
-    h2.textContent = artist;
-    section.appendChild(h2);
+        const gallery = document.createElement('div');
+        gallery.className = 'gallery';
 
-    const gallery = document.createElement('div');
-    gallery.className = 'gallery';
+        filenames.forEach(filename => {
+          const painting = document.createElement('div');
+          painting.className = 'painting';
 
-    filenames.forEach(filename => {
-      const painting = document.createElement('div');
-      painting.className = 'painting';
+          const link = document.createElement('a');
+          link.href = 'img/large/' + filename;
+          link.target = '_blank';
 
-      const link = document.createElement('a');
-      link.href = 'img/large/' + filename;
-      link.target = '_blank';
+          const img = document.createElement('img');
+          img.src = 'img/small/' + filename;
 
-      const img = document.createElement('img');
-      img.src = 'img/small/' + filename;
+          const overlay = document.createElement('div');
+          overlay.className = 'info-overlay';
 
-      const overlay = document.createElement('div');
-      overlay.className = 'info-overlay';
+          const h3 = document.createElement('h3');
+          const match = filename.match(/- (.+?) - reframed\.jpg$/);
+          h3.textContent = match ? match[1] : 'Untitled';
 
-      const h3 = document.createElement('h3');
-      const match = filename.match(/- (.+?) - reframed\.jpg$/);
-      h3.textContent = match ? match[1] : 'Untitled';
+          overlay.appendChild(h3);
+          link.appendChild(img);
+          link.appendChild(overlay);
+          painting.appendChild(link);
+          gallery.appendChild(painting);
+        });
 
-      overlay.appendChild(h3);
-      link.appendChild(img);
-      link.appendChild(overlay);
-      painting.appendChild(link);
-      gallery.appendChild(painting);
-    });
-
-    section.appendChild(gallery);
-    container.appendChild(section);
-  });
-</script>
+        section.appendChild(gallery);
+        container.appendChild(section);
+      });
+    </script>
 
 </body>
 </html>
