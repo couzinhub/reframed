@@ -165,7 +165,7 @@
 
           const link = document.createElement('a');
           link.href = 'img/large/' + filename;
-          link.target = '_blank';
+          link.download = filename;
 
           const img = document.createElement('img');
           img.src = 'img/small/' + filename;
