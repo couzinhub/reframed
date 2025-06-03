@@ -4,24 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Reframed</title>
+  <meta name="description" content="A collection of paintings reframed to fit the Samsung Frame TV perfectly.">
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+
+  
   <link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Text:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css.css">
-<style>
-  </style>
 </head>
 <body>
-    <div class="container">
-      <h1 class="logo-title">
-        <img src="img/reframed.svg" alt="Reframed Logo">
-      </h1>
-      <p>A collection of paintings modified to fit the Samsumg Frame TV perfectly.</p>
-      <p>Click on any image to download the full version.</p>
-      <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
-      <script type='text/javascript'>kofiwidget2.init('Give me a tip', '#00488c', 'O5O51FWPUL');kofiwidget2.draw();</script> 
-      <div id="image-gallery"></div>
+  <div class="container">
+    <h1 class="logo-title">
+      <img src="img/reframed.svg" alt="Reframed Logo">
+    </h1>
+    <p>A collection of paintings modified to fit the Samsung Frame TV perfectly.</p>
+    <p>Click on any image to download the full version.</p>
+
+    <div class="btn-container">
+      <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"></script>
+      <script>
+        kofiwidget2.init('Give me a tip', '#00488c', 'O5O51FWPUL');
+        kofiwidget2.draw();
+      </script>
     </div>
-    <script src="images.js"></script>
-    <script src="js.js"></script>
+
+    <div id="image-gallery"></div>
+
+  </div>
+
+  <script src="images.js"></script>
+  <script src="js.js"></script>
 </body>
 </html>
