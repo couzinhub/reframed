@@ -26,11 +26,6 @@ Object.entries(imageGroups).forEach(([artist, filenames]) => {
     img.src = 'img/small/' + filename;
     img.loading = 'lazy';
 
-    // Add click event listener to the image
-    img.addEventListener('click', () => {
-      openComparison(filename);
-    });
-
     const overlay = document.createElement('div');
     overlay.className = 'info-overlay';
 
@@ -39,11 +34,12 @@ Object.entries(imageGroups).forEach(([artist, filenames]) => {
 
     const infoBtn = document.createElement('button');
     infoBtn.className = 'info-button';
-    infoBtn.innerText = 'i';
-    infoBtn.title = 'Compare preview and original';
+    infoBtn.textContent = 'i';
+    infoBtn.title = 'Compare with original';
+    infoBtn.setAttribute('data-filename', filename);
     infoBtn.addEventListener('click', e => {
-      e.stopPropagation();
       e.preventDefault();
+      e.stopPropagation();
       openComparison(filename);
     });
 
