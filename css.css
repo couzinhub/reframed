@@ -71,13 +71,6 @@ h2 {
 
 .painting {
   position: relative;
-  overflow: hidden;
-  background: #1e1e1e;
-  border-radius: 2px;
-  box-shadow:
-    rgba(6, 24, 44, 0.4) 0px 0px 0px 2px,
-    rgba(6, 24, 44, 0.65) 0px 4px 6px -1px;
-  transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
 .painting a {
@@ -96,14 +89,14 @@ h2 {
   pointer-events: none;
 }
 
-.painting:hover {
+.painting img:hover {
   box-shadow:
     white 0 0 0 4px,
     rgba(0, 0, 0, 0.5) 0 12px 30px;
   transform: scale(1.03);
 }
 
-.painting:hover::after {
+.painting:hover img::after {
   box-shadow: inset 0px 0 1px 1px rgba(0, 0, 0, .7);
 }
 
@@ -117,50 +110,45 @@ h2 {
   width: 100%;
   height: auto;
   display: block;
+    border-radius: 2px;
+  box-shadow:
+    rgba(6, 24, 44, 0.4) 0px 0px 0px 2px,
+    rgba(6, 24, 44, 0.65) 0px 4px 6px -1px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+
 }
 
 .info-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(10, 10, 10, 0.6);
-  padding: 1rem;
-  text-align: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 150ms ease, visibility 150ms ease;
-  pointer-events: none;
+  padding: 0.8rem 0 0.2rem;
+  text-align: left;
 }
 
 .info-overlay h3 {
-  margin: 0;
+  display: inline;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 400;
   color: #f5f5f5;
 }
 
-/* Disable hover styles on touch devices */
-@media (hover: none) {
-  .painting:hover {
-    transform: none;
-    box-shadow:
-      rgba(6, 24, 44, 0.4) 0px 0px 0px 2px,
-      rgba(6, 24, 44, 0.65) 0px 4px 6px -1px;
-  }
-
-  .painting:hover::after {
-    box-shadow: inset 0px 1px 1px 0px rgba(255, 255, 255, .7);
-  }
-
-  .painting:hover .info-overlay {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
+.info-overlay button {
+    cursor: pointer;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-size: 16px;
+    font-weight: 400;
+    margin-right: 12px;
+    color: #56CCFF;
+    background-color: #344B89;
+    border: none;
+    border-radius: 20px;
+    width: 24px;
+    height: 24px;
 }
 
-/* Mobile adjustments */
+
+
+/* Mobile adjustments 
+-----------------------------*/
+
 @media (max-width: 600px) {
   p {
     font-size: 1.2rem;
@@ -173,19 +161,128 @@ h2 {
   }
 
   .gallery {
-    gap: 1.2rem;
-    padding: 10px;
-  }
-
-  .painting {
-    border-radius: 8px;
+    gap: 1rem;
+    padding: 4px;
   }
 
   .info-overlay {
-    padding: 0.6rem;
+    padding: 20px 0;
   }
+}
 
-  .info-overlay h3 {
-    font-size: 0.9rem;
-  }
+
+/* Comparison overlay
+-----------------------------*/
+
+
+.comparison-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.98);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 2rem;
+}
+
+.comparison-overlay.active {
+  display: flex;
+}
+
+/* Square comparison container */
+.comparison-slider {
+  position: relative;
+  width: 90vw;
+  max-width: 1000px;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.comparison-slider img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+.comparison-slider .preview-image {
+  clip-path: inset(0 50% 0 0); /* initially reveal left half */
+}
+
+.comparison-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 80px; /* Wider hitbox */
+  margin-left: -40px; /* Center it */
+  cursor: ew-resize;
+  z-index: 2;
+}
+
+/* Visual line */
+.comparison-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 8px;
+  transform: translateX(-50%);
+  background-color: white;
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+.comparison-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  width: 50px;
+  height: 50px;
+  background-image: url(img/slider.svg);
+  margin-left: -25px;
+}
+
+
+.comparison-label {
+  position: absolute;
+  top: 52.5%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: center;
+  font-size: 1rem;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.label-left {
+  left: -3.5rem;
+}
+
+.label-right {
+  right: -3rem;
+}
+
+
+#close-comparison {
+  margin-top: 2rem;
+  padding: 1rem 2rem;
+  background: #222;
+  border: 1px solid #ccc;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
 }

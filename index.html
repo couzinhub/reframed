@@ -9,9 +9,6 @@
   <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
-
-  
-  <link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Text:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css.css">
 </head>
@@ -22,7 +19,6 @@
     </h1>
     <p>A collection of paintings modified to fit the Samsung Frame TV perfectly.</p>
     <p>Click on any image to download the full version.</p>
-
     <div class="btn-container">
       <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"></script>
       <script>
@@ -34,7 +30,15 @@
     <div id="image-gallery"></div>
 
   </div>
-
+  <!-- Image Comparison Overlay -->
+  <div class="comparison-overlay" id="comparisonOverlay">
+    <div class="comparison-slider" id="comparisonSlider">
+      <img id="originalImage" class="original-image" src="" alt="Original">
+      <img id="previewImage" class="preview-image" src="" alt="Preview">
+      <div class="comparison-handle" id="comparisonHandle"></div>
+    </div>
+    <button id="close-comparison">Close</button>
+  </div>
   <script src="images.js"></script>
   <script src="js.js"></script>
 </body>
