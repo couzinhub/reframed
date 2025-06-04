@@ -117,6 +117,12 @@ function openComparison(filename) {
   handle.addEventListener('touchstart', startDrag);
 }
 
+// Close button
+document.getElementById('close-comparison').addEventListener('click', () => {
+  document.querySelector('.comparison-overlay').classList.remove('active');
+});
+
+
 // Close overlay when clicking outside of the comparison window
 document.querySelector('.comparison-overlay').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) {  // Only close if the click is on the overlay background (not on the content)
