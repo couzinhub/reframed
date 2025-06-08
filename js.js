@@ -1,9 +1,9 @@
 fetch('images.json')
-  .then(res => res.json())
+  .then(response => response.json())
   .then(imageGroups => {
     const container = document.getElementById('image-gallery');
 
-    Object.entries(imageGroups).forEach(([artist, images]) => {
+    Object.entries(imageGroups).forEach(([artist, items]) => {
       const section = document.createElement('section');
 
       const h2 = document.createElement('h2');
@@ -13,25 +13,29 @@ fetch('images.json')
       const gallery = document.createElement('div');
       gallery.className = 'gallery';
 
-      images.forEach(({ filename, driveUrl }) => {
-        if (!filename || !driveUrl) {
-          console.warn('Missing filename or driveUrl for', { filename, driveUrl });
-          return;
-        }
-
+      items.forEach(({ filename, driveUrl }) => {
         const painting = document.createElement('div');
         painting.className = 'painting';
+
+        const link = document.createElement('a');
+        link.href = driveUrl;
+        link.download = filename;
 
         const img = document.createElement('img');
         img.src = 'img/small/' + filename;
         img.loading = 'lazy';
 
-        const link = document.createElement('a');
-        link.href = convertToDriveDownloadUrl(driveUrl);
-        link.download = ''; // optional
-        link.appendChild(img);
+        const overlay = document.createElement('div');
+        overlay.className = 'info-overlay';
 
+        const h3 = document.createElement('h3');
+        h3.textContent = filename.replace(/ - reframed\.jpg$/, '');
+
+        overlay.appendChild(h3);
+
+        link.appendChild(img);
         painting.appendChild(link);
+        painting.appendChild(overlay);
         gallery.appendChild(painting);
       });
 
@@ -42,13 +46,3 @@ fetch('images.json')
   .catch(error => {
     console.error('Error loading image data:', error);
   });
-
-// === Converts a Google Drive sharing link to a direct download link ===
-function convertToDriveDownloadUrl(driveUrl) {
-  const match = driveUrl?.match(/\/d\/([^/]+)\//);
-  if (!match || !match[1]) {
-    console.warn('Invalid driveUrl format:', driveUrl);
-    return '#';
-  }
-  return `https://drive.google.com/uc?export=download&id=${match[1]}`;
-}

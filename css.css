@@ -79,6 +79,17 @@ h2 {
   text-decoration: none;
 }
 
+.painting img {
+  width: 100%;
+  height: auto;
+  display: block;
+    border-radius: 2px;
+  box-shadow:
+    rgba(6, 24, 44, 0.4) 0px 0px 0px 2px,
+    rgba(6, 24, 44, 0.65) 0px 4px 6px -1px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
 .painting::after {
   content: '';
   display: block;
@@ -89,7 +100,7 @@ h2 {
   pointer-events: none;
 }
 
-.painting img:hover {
+.painting:hover img {
   box-shadow:
     white 0 0 0 4px,
     rgba(0, 0, 0, 0.5) 0 12px 30px;
@@ -100,17 +111,29 @@ h2 {
   box-shadow: inset 0px 0 1px 1px rgba(0, 0, 0, .7);
 }
 
+.info-overlay {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+  padding: 0.4rem;
+  text-align: left;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
 
-.painting img {
-  width: 100%;
-  height: auto;
-  display: block;
-    border-radius: 2px;
-  box-shadow:
-    rgba(6, 24, 44, 0.4) 0px 0px 0px 2px,
-    rgba(6, 24, 44, 0.65) 0px 4px 6px -1px;
-  transition: transform 150ms ease, box-shadow 150ms ease;
+.painting:hover .info-overlay {
+  opacity: 1;
+}
 
+.info-overlay h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 300;
+  color: white;
 }
 
 
