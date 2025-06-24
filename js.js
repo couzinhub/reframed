@@ -21,6 +21,16 @@ fetch('images.json')
         link.href = driveUrl;
         link.download = filename;
 
+        // ✅ Add GA tracking
+        link.addEventListener('click', () => {
+          if (window.gtag) {
+            gtag('event', 'download', {
+              'event_category': 'Painting',
+              'event_label': filename
+            });
+          }
+        });
+
         const img = document.createElement('img');
         img.src = 'img/small/' + filename;
         img.loading = 'lazy';
@@ -32,13 +42,12 @@ fetch('images.json')
         h3.textContent = filename.replace(/ - reframed\.jpg$/, '');
 
         overlay.appendChild(h3);
-
         link.appendChild(img);
         painting.appendChild(link);
         painting.appendChild(overlay);
         gallery.appendChild(painting);
       });
-
+      
       section.appendChild(gallery);
       container.appendChild(section);
     });
