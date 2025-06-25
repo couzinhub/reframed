@@ -53,7 +53,9 @@ function renderGallery(imageGroups) {
       overlay.className = 'info-overlay';
 
       const h3 = document.createElement('h3');
-      h3.textContent = filename.replace(/ - (portrait|reframed)\.jpg$/, '');
+      h3.textContent = filename
+        .replace(/ - portrait/, '')               // remove " - portrait"
+        .replace(/ - reframed\.jpg$/, '');        // remove " - reframed.jpg"
 
       overlay.appendChild(h3);
       link.appendChild(img);
