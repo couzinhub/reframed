@@ -62,6 +62,66 @@ h2 {
   z-index: 10;
 }
 
+.orientation-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.orientation-tabs button {
+  font-family: 'Lexend', sans-serif;
+  background-color: transparent;
+  border: none;
+  height: 50px;
+  padding: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  display: flex;
+  flex-direction: row;
+  gap: .5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.orientation-tabs .label {
+  font-size: 1rem;
+  color: #56CCFF;
+  transition: opacity 0.2s;
+}
+
+.orientation-tabs button.active .label {
+  opacity: 1;
+  font-weight: 500;
+  color: #fff;
+}
+
+.orientation-tabs button.active {
+  background-color: #000322;
+}
+
+/* The small square icon */
+.square-icon {
+  width: 34px;
+  height: 20px;
+  border: 2px solid #56CCFF;
+  border-radius: 2px;
+  display: block;
+  background-color: transparent;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+#portrait-btn .square-icon {
+  width: 18px;
+  height: 30px;
+}
+
+/* When parent button is active, fill the icon */
+button.active .square-icon {
+  background-color: #fff;
+  border-color: #fff;
+}
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
