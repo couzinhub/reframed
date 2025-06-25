@@ -128,6 +128,10 @@ button.active .square-icon {
   gap: 2rem;
   padding: 20px;
 }
+.portrait-mode .gallery {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
 
 .painting {
   position: relative;

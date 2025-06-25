@@ -8,6 +8,12 @@ function renderGallery(imageGroups) {
   const container = document.getElementById('image-gallery');
   container.innerHTML = ''; // clear previous content
 
+  if (currentOrientation === 'portrait') {
+    container.classList.add('portrait-mode');
+  } else {
+    container.classList.remove('portrait-mode');
+  }
+
   Object.entries(imageGroups).forEach(([artist, items]) => {
     const filteredItems = items.filter(({ filename }) => getOrientation(filename) === currentOrientation);
     if (filteredItems.length === 0) return;
@@ -61,7 +67,6 @@ function renderGallery(imageGroups) {
   });
 }
 
-// Initial fetch and render
 fetch('images.json')
   .then(response => response.json())
   .then(imageGroups => {
@@ -83,7 +88,6 @@ fetch('images.json')
     console.error('Error loading image data:', error);
   });
 
-// Helper to visually toggle which tab is active
 function toggleActive(which) {
   document.getElementById('landscape-btn')?.classList.toggle('active', which === 'landscape');
   document.getElementById('portrait-btn')?.classList.toggle('active', which === 'portrait');
