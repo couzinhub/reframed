@@ -46,7 +46,8 @@ function renderGallery(imageGroups) {
       });
 
       const img = document.createElement('img');
-      img.src = 'img/small/' + filename;
+      const thumbFilename = filename.replace('.jpg', ' - small.jpg');
+      img.src = 'thumbs/' + thumbFilename;
       img.loading = 'lazy';
 
       const overlay = document.createElement('div');
