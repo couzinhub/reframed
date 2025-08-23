@@ -20,6 +20,8 @@ body {
   justify-content: center;
 }
 
+.hidden { display: none; }
+
 .container {
   max-width: 1480px;
   width: 100%;
@@ -121,6 +123,32 @@ button.active .square-icon {
   background-color: #fff;
   border-color: #fff;
 }
+
+.loading {
+  text-align: center;
+  font-size: 1.1rem;
+  opacity: 0.8;
+  padding: 1rem 0;
+  color: #56CCFF;
+}
+
+.loading::after {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-left: 0.5rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  vertical-align: -0.1em;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hidden { display: none; }
+
 
 .gallery {
   display: grid;
