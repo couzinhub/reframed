@@ -124,12 +124,16 @@ button.active .square-icon {
   border-color: #fff;
 }
 
-.loading {
+.loading, #last-updated {
   text-align: center;
   font-size: 1.1rem;
   opacity: 0.8;
   padding: 1rem 0;
   color: #56CCFF;
+}
+
+#last-updated {
+  padding: 100px 0 200px;
 }
 
 .loading::after {
