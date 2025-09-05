@@ -137,11 +137,15 @@ document.addEventListener('DOMContentLoaded', () => {
       // Render galleries
       renderGallery(groups);
 
-      // === Count total paintings ===
+      // === Count total paintings (exclude "Recently added") ===
+      const EXCLUDED = new Set(['Recently Added']); // exact group name in your JSON
       let totalPaintings = 0;
-      Object.values(groups).forEach(items => {
+
+      Object.entries(groups).forEach(([groupName, items]) => {
+        if (EXCLUDED.has(groupName)) return;        // skip it
         if (Array.isArray(items)) totalPaintings += items.length;
       });
+
 
       // Footer text
       const footerText = document.getElementById('last-updated');
