@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reframed</title>
+  <meta name="description" content="A collection of paintings reframed to fit the Samsung Frame TV perfectly.">
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-14360H9J7X"></script>
+  <style>
+
+    h2, p {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    h2 {
+      padding: 20px 0;
+    }
+    p {
+      line-height: 1.4;
+    }
+
+  .btn-email {
+    position: relative;
+    font: inherit;
+    font-weight: 400;
+    border: none;
+    cursor: pointer;
+    background: #56CCFF;
+    color: #000;
+    border-radius: 4px;
+    margin: 0 4px;
+  }
+
+  /* Tooltip styling */
+  .btn-email::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    color: #fff;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .btn-email:hover::after {
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="container contact">
+    <h1 class="logo-title">
+      <a href="/"><img src="img/reframed.svg" alt="Reframed Logo"></a>
+    </h1>
+    <h2>Get your own art reframed</h2>
+    <p>I specialize in transforming digital images into beautifully balanced compositions made for modern displays, from Samsung Frame TVs to high-resolution prints. Whether it’s a classic painting, a photo, or your own artwork, send me your image and a note at <button id="copyEmail" class="btn-email" type="button" data-tooltip="Copy email address">
+  hi.reframed@gmail.com</button>, and I’ll get back to you with a preview and pricing.</p>
+
+<script>
+  const copyBtn = document.getElementById('copyEmail');
+  const email = 'you@example.com';
+
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(email);
+      copyBtn.setAttribute('data-tooltip', '✅ Copied!');
+      setTimeout(() => {
+        copyBtn.setAttribute('data-tooltip', 'Copy email address');
+      }, 2000);
+    } catch (err) {
+      copyBtn.setAttribute('data-tooltip', 'Could not copy');
+      setTimeout(() => {
+        copyBtn.setAttribute('data-tooltip', 'Copy email address');
+      }, 2000);
+    }
+  });
+</script>
+
+  </div>
+</body>
+</html>
