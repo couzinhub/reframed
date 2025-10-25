@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gallery</title>
+  <style>
+    :root {
+      --bg: #0b0c0f;
+      --panel: #0f1118;
+      --border: #1f2333;
+      --text-main: #fff;
+      --text-dim: #cfd3e6;
+      --text-soft: #9ca3b7;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --gap: 1rem;
+      --thumb-max-w: 700px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 2rem;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+
+    header {
+      max-width: 1440px;
+      margin: 0 auto 2rem auto;
+      color: var(--text-main);
+    }
+
+    header h1 {
+      margin: 0 0 .5rem 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    header p {
+      margin: 0;
+      font-size: .9rem;
+      color: var(--text-soft);
+      line-height: 1.4;
+    }
+
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .gallery-block {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .block-header {
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+
+    .block-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: .75rem;
+    }
+
+    .block-title-row h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+
+    .block-count {
+      font-size: .8rem;
+      color: var(--text-soft);
+      line-height: 1.2;
+    }
+
+    .block-status {
+      font-size: .8rem;
+      color: var(--text-soft);
+      line-height: 1.2;
+    }
+
+    .grid {
+      display: grid;
+      gap: var(--gap);
+      grid-template-columns: repeat(auto-fit, minmax(min(600px,100%), 1fr));
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 10px;
+      color: var(--text-dim);
+    }
+
+    .card a {
+      display: block;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .card img {
+      display: block;
+      width: 100%;
+      max-width: var(--thumb-max-w);
+      height: auto;
+      border-radius: var(--radius-md);
+      background: #000;
+    }
+
+    .meta {
+      margin-top: .75rem;
+      font-size: .9rem;
+      line-height: 1.4;
+    }
+
+    .meta strong {
+      display: block;
+      font-weight: 600;
+      font-size: 1rem;
+      line-height: 1.4;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .meta .caption {
+      display: block;
+      opacity: .75;
+      color: var(--text-dim);
+      word-break: break-word;
+    }
+
+    .meta .alt {
+      display: block;
+      opacity: .6;
+      color: var(--text-soft);
+      font-size: .8rem;
+      line-height: 1.4;
+      margin-top: .4rem;
+      word-break: break-word;
+    }
+
+    .error-msg {
+      font-size: .8rem;
+      color: #ffd4d4;
+      background: #351a1a;
+      border: 1px solid #5e2a2a;
+      border-radius: var(--radius-md);
+      padding: .5rem .75rem;
+      line-height: 1.4;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Reframed</h1>
+  </header>
+
+  <main id="homeView"></main>
+
+  <script>
+    // === CONFIG ===
+    const CLOUD_NAME = "dqqutqsna"; // <-- your cloud name
+
+    // This is the public CSV URL from "Publish to web" in Google Sheets.
+    // Example format:
+    // https://docs.google.com/spreadsheets/d/XXXXX/pub?output=csv
+    const TAGS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRwK--cdffX8xQhDBsXICgnnEQLJKjInyEzj8IXJYTkD65Cb-rWYqyL53lUV5ca9zm70qF95O_wb9KV/pub?output=csv";
+
+    const THUMB_TRANSFORM = "c_fill,w_700,q_auto,f_auto";
+
+    // === HELPERS ===
+    function buildThumbUrl(publicId) {
+      // encodeURI keeps folder slashes intact
+      return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${THUMB_TRANSFORM}/${encodeURI(publicId)}`;
+    }
+
+    function buildFullUrl(publicId) {
+      return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURI(publicId)}`;
+    }
+
+    // === DATA LOADING ===
+
+    // 1. Get the list of tags in order from the CSV
+    async function loadTagsFromSheet() {
+      // Bust cache so we always get the latest sheet
+      const url = TAGS_CSV_URL + (TAGS_CSV_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) {
+        throw new Error("Could not load tag list (HTTP " + res.status + ")");
+      }
+
+      const csvText = await res.text();
+
+      const rows = csvText.split(/\r?\n/);
+
+      const tags = [];
+      for (let rawRow of rows) {
+        if (!rawRow.trim()) continue; // skip empty lines
+
+        // Take ONLY the first column of the row.
+        // This handles rows like: Classics,Some note,...
+        // and turns it into "Classics"
+        let firstCell = rawRow.split(",")[0];
+
+        // Remove wrapping quotes if Google added them
+        firstCell = firstCell.replace(/^"(.*)"$/, "$1").trim();
+
+        if (!firstCell) continue;
+        if (firstCell.startsWith("#")) continue;
+
+        // Stop processing completely at the first `-- ignore`
+        if (firstCell.toLowerCase().startsWith("-- ignore")) {
+          break;
+        }
+
+        tags.push(firstCell);
+      }
+
+      // Debug helper (you can leave this in for now to verify order in DevTools)
+      console.log("Resolved tags from sheet:", tags);
+
+      return tags;
+    }
+
+    // 2. Fetch Cloudinary resources for a single tag
+    async function fetchImagesForTag(tagName) {
+      const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) {
+        throw new Error(`Tag "${tagName}" request failed (HTTP ${res.status})`);
+      }
+      const data = await res.json();
+
+      // Newest first
+      const items = (data.resources || []).sort(
+        (a,b) => (b.created_at || "").localeCompare(a.created_at || "")
+      );
+      return items;
+    }
+
+    // === DOM BUILDING ===
+function createCard(r) {
+  const publicId = r.public_id;
+
+  // Get the last part after any folders
+  let fileName = publicId.split("/").pop();
+
+  // Convert underscores to spaces
+  // Remove the " - reframed whatever" suffix
+  // Collapse double spaces, trim
+  let cleanTitle = fileName
+    .replace(/_/g, " ") // underscores → spaces
+    // remove things like " - reframed_xyz123" or " - reframed xyz123"
+    .replace(/\s*-\s*reframed[\s_-]*[a-z0-9]+$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const title = cleanTitle;
+
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const link = document.createElement("a");
+  link.href = buildFullUrl(publicId);
+  link.target = "_blank";
+  link.rel = "noopener";
+
+  const img = document.createElement("img");
+  img.loading = "lazy";
+  img.src = buildThumbUrl(publicId);
+  img.alt = title;
+  link.appendChild(img);
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.innerHTML = `<strong>${title}</strong>`;
+
+  card.appendChild(link);
+  card.appendChild(meta);
+
+  return card;
+}
+
+    function renderTagSection(tagName, items, errorMsg = null) {
+      const section = document.createElement("section");
+      section.className = "gallery-block";
+
+      const headerWrap = document.createElement("div");
+      headerWrap.className = "block-header";
+
+      const titleRow = document.createElement("div");
+      titleRow.className = "block-title-row";
+
+      const h2 = document.createElement("h2");
+      h2.textContent = tagName;
+
+      const countSpan = document.createElement("div");
+      countSpan.className = "block-count";
+
+      if (errorMsg) {
+        countSpan.textContent = "";
+      } else {
+        countSpan.textContent = `${items.length} image${items.length === 1 ? "" : "s"}`;
+      }
+
+      titleRow.appendChild(h2);
+      titleRow.appendChild(countSpan);
+
+      const statusP = document.createElement("div");
+      statusP.className = "block-status";
+
+      if (errorMsg) {
+        statusP.innerHTML = `<span class="error-msg">${errorMsg}</span>`;
+      } else if (items.length === 0) {
+        statusP.textContent = "No images for this tag.";
+      } else {
+        statusP.textContent = "";
+      }
+
+      headerWrap.appendChild(titleRow);
+      headerWrap.appendChild(statusP);
+
+      const grid = document.createElement("div");
+      grid.className = "grid";
+
+      if (!errorMsg) {
+        for (const r of items) {
+          grid.appendChild(createCard(r));
+        }
+      }
+
+      section.appendChild(headerWrap);
+      section.appendChild(grid);
+      return section;
+    }
+
+    async function buildHomeView() {
+      const homeView = document.getElementById("homeView");
+      homeView.innerHTML = "";
+
+      let tags;
+      try {
+        tags = await loadTagsFromSheet();
+      } catch (err) {
+        const fail = document.createElement("div");
+        fail.className = "error-msg";
+        fail.textContent = "Couldn't load tag list: " + err.message;
+        homeView.appendChild(fail);
+        return;
+      }
+
+      // IMPORTANT:
+      // We loop tags in order, and we await each fetch in order,
+      // so rendering will follow exactly your sheet's order.
+      for (const tagName of tags) {
+        try {
+          const items = await fetchImagesForTag(tagName);
+          const sectionEl = renderTagSection(tagName, items, null);
+          homeView.appendChild(sectionEl);
+        } catch (err) {
+          const sectionEl = renderTagSection(tagName, [], err.message);
+          homeView.appendChild(sectionEl);
+        }
+      }
+    }
+
+
+    // boot
+    buildHomeView();
+  </script>
+</body>
+</html>
