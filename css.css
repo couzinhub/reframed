@@ -184,17 +184,20 @@ button.active .square-icon {
 }
 
 
-.painting {
+.painting, 
+.card {
   position: relative;
 }
 
-.painting a {
+.painting a, 
+.card a {
   display: block;
   color: inherit;
   text-decoration: none;
 }
 
-.painting img {
+.painting img,
+.card img {
   width: 100%;
   height: auto;
   display: block;
@@ -205,7 +208,7 @@ button.active .square-icon {
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
-.painting::after {
+.painting::after{
   content: '';
   display: block;
   height: 100%;
@@ -215,14 +218,16 @@ button.active .square-icon {
   pointer-events: none;
 }
 
-.painting:hover img {
+.painting:hover img,
+.card:hover img {
   box-shadow:
     white 0 0 0 4px,
     rgba(0, 0, 0, 0.5) 0 12px 30px;
   transform: scale(1.03);
 }
 
-.painting:hover img::after {
+.painting:hover img::after,
+.card:hover img::after {
   box-shadow: inset 0px 0 1px 1px rgba(0, 0, 0, .7);
 }
 
@@ -240,7 +245,8 @@ button.active .square-icon {
   pointer-events: none;
 }
 
-.painting:hover .info-overlay {
+.painting:hover .info-overlay,
+.card:hover .info-overlay {
   opacity: 1;
 }
 

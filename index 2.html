@@ -1,175 +1,53 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gallery</title>
-  <style>
-    :root {
-      --bg: #0b0c0f;
-      --panel: #0f1118;
-      --border: #1f2333;
-      --text-main: #fff;
-      --text-dim: #cfd3e6;
-      --text-soft: #9ca3b7;
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --gap: 1rem;
-      --thumb-max-w: 700px;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
+  <title>Reframed</title>
+  <meta name="description" content="A collection of paintings reframed to fit the Samsung Frame TV perfectly.">
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-14360H9J7X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
 
-    body {
-      margin: 0;
-      padding: 2rem;
-      background: var(--bg);
-      color: var(--text-main);
-    }
-
-    header {
-      max-width: 1440px;
-      margin: 0 auto 2rem auto;
-      color: var(--text-main);
-    }
-
-    header h1 {
-      margin: 0 0 .5rem 0;
-      font-size: 1.4rem;
-      font-weight: 600;
-      line-height: 1.3;
-    }
-
-    header p {
-      margin: 0;
-      font-size: .9rem;
-      color: var(--text-soft);
-      line-height: 1.4;
-    }
-
-    main {
-      max-width: 1440px;
-      margin: 0 auto;
-    }
-
-    .gallery-block {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin-bottom: 3rem;
-    }
-
-    .block-header {
-      display: flex;
-      flex-direction: column;
-      gap: .4rem;
-    }
-
-    .block-title-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: .75rem;
-    }
-
-    .block-title-row h2 {
-      margin: 0;
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: var(--text-main);
-      line-height: 1.3;
-    }
-
-    .block-count {
-      font-size: .8rem;
-      color: var(--text-soft);
-      line-height: 1.2;
-    }
-
-    .block-status {
-      font-size: .8rem;
-      color: var(--text-soft);
-      line-height: 1.2;
-    }
-
-    .grid {
-      display: grid;
-      gap: var(--gap);
-      grid-template-columns: repeat(auto-fit, minmax(min(600px,100%), 1fr));
-    }
-
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 10px;
-      color: var(--text-dim);
-    }
-
-    .card a {
-      display: block;
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .card img {
-      display: block;
-      width: 100%;
-      max-width: var(--thumb-max-w);
-      height: auto;
-      border-radius: var(--radius-md);
-      background: #000;
-    }
-
-    .meta {
-      margin-top: .75rem;
-      font-size: .9rem;
-      line-height: 1.4;
-    }
-
-    .meta strong {
-      display: block;
-      font-weight: 600;
-      font-size: 1rem;
-      line-height: 1.4;
-      color: var(--text-main);
-      word-break: break-word;
-    }
-
-    .meta .caption {
-      display: block;
-      opacity: .75;
-      color: var(--text-dim);
-      word-break: break-word;
-    }
-
-    .meta .alt {
-      display: block;
-      opacity: .6;
-      color: var(--text-soft);
-      font-size: .8rem;
-      line-height: 1.4;
-      margin-top: .4rem;
-      word-break: break-word;
-    }
-
-    .error-msg {
-      font-size: .8rem;
-      color: #ffd4d4;
-      background: #351a1a;
-      border: 1px solid #5e2a2a;
-      border-radius: var(--radius-md);
-      padding: .5rem .75rem;
-      line-height: 1.4;
-      max-width: 400px;
-    }
-  </style>
+    gtag('config', 'G-14360H9J7X');
+  </script>
 </head>
 <body>
-  <header>
-    <h1>Reframed</h1>
-  </header>
 
-  <main id="homeView"></main>
+  <div class="container">
+
+    <h1 class="logo-title">
+      <img src="img/reframed.svg" alt="Reframed Logo">
+    </h1>
+    <p>A collection of paintings modified to fit the Samsung Frame TV perfectly.</p>
+    <p>Click on any image to download the full version.</p>
+    <div class="btn-container">
+      <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"></script>
+      <script>
+        kofiwidget2.init('Thank me with a tip', '#00488c', 'O5O51FWPUL');
+        kofiwidget2.draw();
+      </script>
+      <a class="contact" href="/contact.html">Get your own art reframed</a>  
+    </div>
+      
+
+
+    <main id="homeView"></main>
+
+    <footer id="footer">
+      <p id="last-updated"></p>
+    </footer>
+    
+  </div>
 
   <script>
     // === CONFIG ===
@@ -287,8 +165,8 @@ function createCard(r) {
   link.appendChild(img);
 
   const meta = document.createElement("div");
-  meta.className = "meta";
-  meta.innerHTML = `<strong>${title}</strong>`;
+  meta.className = "info-overlay";
+  meta.innerHTML = `<h3>${title}</h3>`;
 
   card.appendChild(link);
   card.appendChild(meta);
@@ -299,12 +177,6 @@ function createCard(r) {
     function renderTagSection(tagName, items, errorMsg = null) {
       const section = document.createElement("section");
       section.className = "gallery-block";
-
-      const headerWrap = document.createElement("div");
-      headerWrap.className = "block-header";
-
-      const titleRow = document.createElement("div");
-      titleRow.className = "block-title-row";
 
       const h2 = document.createElement("h2");
       h2.textContent = tagName;
@@ -318,9 +190,6 @@ function createCard(r) {
         countSpan.textContent = `${items.length} image${items.length === 1 ? "" : "s"}`;
       }
 
-      titleRow.appendChild(h2);
-      titleRow.appendChild(countSpan);
-
       const statusP = document.createElement("div");
       statusP.className = "block-status";
 
@@ -332,11 +201,8 @@ function createCard(r) {
         statusP.textContent = "";
       }
 
-      headerWrap.appendChild(titleRow);
-      headerWrap.appendChild(statusP);
-
       const grid = document.createElement("div");
-      grid.className = "grid";
+      grid.className = "gallery";
 
       if (!errorMsg) {
         for (const r of items) {
@@ -344,7 +210,8 @@ function createCard(r) {
         }
       }
 
-      section.appendChild(headerWrap);
+      section.appendChild(h2);
+      section.appendChild(countSpan);
       section.appendChild(grid);
       return section;
     }
