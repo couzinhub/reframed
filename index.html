@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -22,41 +22,34 @@
   </script>
 </head>
 <body>
-  <div class="container">
-    <h1 class="logo-title">
-      <img src="img/reframed.svg" alt="Reframed Logo">
-    </h1>
-    <p>A collection of paintings modified to fit the Samsung Frame TV perfectly.</p>
-    <p>Click on any image to download the full version.</p>
-    <div class="btn-container">
+
+  <aside>
+    <a href="/">
+      <img id="logo" src="img/reframed.svg" alt="Reframed Logo">
+    </a>
+    <ul>
+      <li class="current"><a href="/">Home</a></li>
+      <li><a href="/artists.html">Artists</a></li>
+      <li><a href="/vertical-artworks.html">Vertical artworks</a></li>
+      <li><a href="/faq.html">FAQ</a></li>
+    </ul>
+    <div class="button tip">
       <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"></script>
       <script>
         kofiwidget2.init('Thank me with a tip', '#00488c', 'O5O51FWPUL');
         kofiwidget2.draw();
       </script>
-    <a class="contact" href="/contact.html">Get your own art reframed</a>  
     </div>
-      
-
-  <div id="orientation-tabs" class="orientation-tabs">
-      <button id="landscape-btn" class="active" title="Landscape">
-        <span class="square-icon"></span>
-        <span class="label">Landscape</span>
-      </button>
-      <button id="portrait-btn" title="Portrait">
-        <span class="square-icon"></span>
-        <span class="label">Portrait</span>
-      </button>
+    <div class="button own-art">
+      <a class="contact" href="/contact.html">Get your own art reframed</a>
     </div>
+  </aside>
 
-    <div id="loading" class="loading">Loading paintings…</div>
-    <div id="image-gallery"></div>
+  <h1>A FREE collection of paintings and photography modified to fit the Samsung Frame TV perfectly.</h1>
 
-    <footer id="footer">
-      <p id="last-updated"></p>
-    </footer>
+  <main id="homeView"></main>
 
-  </div>
-  <script src="js.js"></script>
+  <script src="home.js"></script>
+
 </body>
 </html>
