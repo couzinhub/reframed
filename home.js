@@ -1,65 +1,67 @@
-// === CONFIG ===
-
-const CLOUD_NAME = "dqqutqsna"; // <-- your Cloudinary cloud name
-
-// Columns in your homepage sheet/tab:
-// A: tag
-// B: style ("hero" or "feature")
-// C: label ("Van Gogh")
-// D: featured_public_id (optional)
-const HOMEPAGE_CSV_URL = "https://docs.google.com/spreadsheets/d/14TPNDckAz1iXVpGYnoiQYccHTj-fcdo-dbAw_R8l0GE/export?format=csv&gid=0";
-const SETTINGS_CSV_URL = "https://docs.google.com/spreadsheets/d/14TPNDckAz1iXVpGYnoiQYccHTj-fcdo-dbAw_R8l0GE/export?format=csv&gid=1909706849";
+// === SETTINGS / TITLE LOADING ===
 
 async function loadSettings() {
   const res = await fetch(SETTINGS_CSV_URL + "&t=" + Date.now());
   if (!res.ok) throw new Error("Cannot load settings sheet");
-  const text = await res.text();
 
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const text = await res.text();
+  const lines = text
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l !== "");
+
+  // assumes first row is headers: key,value
   const settings = {};
-  for (const line of lines.slice(1)) { // skip header
-    const [key, value] = line.split(",");
-    if (key && value) settings[key.trim()] = value.replace(/^"(.*)"$/, "$1").trim();
+  for (const line of lines.slice(1)) {
+    const firstComma = line.indexOf(",");
+    if (firstComma === -1) continue;
+
+    const rawKey = line.slice(0, firstComma);
+    const rawVal = line.slice(firstComma + 1);
+
+    const key = rawKey.replace(/^"(.*)"$/, "$1").trim();
+    const value = rawVal.replace(/^"(.*)"$/, "$1").trim();
+
+    if (!key) continue;
+    settings[key] = value;
   }
+
   return settings;
 }
 
-
-// === UTILS ===
-
-function buildThumbUrlWithWidth(publicId, width) {
-  const transform = `c_fill,w_${width},q_auto,f_auto`;
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${transform}/${encodeURI(publicId)}`;
+async function applyHomepageTitle() {
+  try {
+    const settings = await loadSettings();
+    const titleEl = document.getElementById("mainTitle");
+    if (titleEl && settings.homepage_title) {
+      titleEl.textContent = settings.homepage_title;
+    }
+  } catch (e) {
+    console.warn("Couldn't load homepage title:", e.message);
+  }
 }
 
-function buildFullUrl(publicId) {
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURI(publicId)}`;
-}
 
-function humanizePublicId(publicId) {
-  let base = publicId.split("/").pop();
-  return base
-    .replace(/_/g, " ")
-    .replace(/\s*-\s*reframed[\s_-]*[a-z0-9]+$/i, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
+// === HOMEPAGE SHEET (TILES CONFIG) ===
+// Sheet columns:
+// A=tag, B=style, C=label, D=featured_public_id
+// Row 1 is headers.
 
-// Load rows from the homepage sheet
-// returns [{ tag, style, label, featuredPublicId }, ...] IN ORDER
 async function loadHomepageRows() {
-  const url = HOMEPAGE_CSV_URL + "&t=" + Date.now();
+  const url = HOMEPAGE_CSV_URL + "&t=" + Date.now(); // cache-bust
   const res = await fetch(url, { cache: "no-cache" });
   if (!res.ok) {
     throw new Error("Could not load homepage sheet (HTTP " + res.status + ")");
   }
 
   const csvText = await res.text();
-  const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+  const lines = csvText
+    .split(/\r?\n/)
+    .filter(l => l.trim() !== "");
 
   const rows = [];
 
-  // start at i = 1 to skip the header row
+  // start from i=1 to skip header row
   for (let i = 1; i < lines.length; i++) {
     const raw = lines[i];
     const parts = raw.split(",");
@@ -84,29 +86,30 @@ async function loadHomepageRows() {
 }
 
 
-// Fetch newest landscape-or-square images for a tag
+// === CLOUDINARY FETCH + IMAGE PICKING ===
+
 async function fetchLandscapeImagesForTag(tagName) {
   const listUrl = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
 
   const res = await fetch(listUrl, { mode: "cors" });
   if (!res.ok) {
-    console.warn(`Skipping missing tag: ${tagName} (${res.status})`);
-   return [];
+    console.warn(`Skipping tag "${tagName}" (HTTP ${res.status})`);
+    return [];
   }
-
 
   const data = await res.json();
 
+  // newest first
   let items = (data.resources || []).sort(
     (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
   );
 
-  // landscape or square only
+  // keep only non-portrait
   items = items.filter(img => {
     const w = img.width;
     const h = img.height;
     if (typeof w === "number" && typeof h === "number") {
-      return w >= h;
+      return w >= h; // width >= height
     }
     return true;
   });
@@ -114,39 +117,84 @@ async function fetchLandscapeImagesForTag(tagName) {
   return items;
 }
 
-// pick which resource to use for this row
+// prefer featuredPublicId if it exists in the set, else fallback to newest
 function chooseFeaturedImage(row, images) {
   if (row.featuredPublicId) {
     const match = images.find(img => img.public_id === row.featuredPublicId);
     if (match) return match;
   }
   if (images.length > 0) {
-    return images[0]; // newest landscape
+    return images[0];
   }
   return null;
 }
 
-// build a single <a class="tile ..."> element for a row definition
-function buildTileElement(row, chosen) {
-  const publicId = chosen.public_id;
-  const prettyTitle = humanizePublicId(publicId);
+// Turn Cloudinary public_id into display name
+// "De_la_Tour_-_The_Cheat_with_the_Ace_of_Clubs_-_reframed_qsiedq"
+// -> "De la Tour - The Cheat with the Ace of Clubs"
+function humanizePublicId(publicId) {
+  let base = publicId.split("/").pop();
+  return base
+    .replace(/_/g, " ")
+    .replace(/\s*-\s*reframed[\s_-]*[a-z0-9]+$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
-  const width = row.style === "hero" ? 800 : 500;
-  const thumbUrl = buildThumbUrlWithWidth(publicId, width);
 
+// === CACHE LOGIC FOR HOMEPAGE TILES ===
+
+const HOMEPAGE_CACHE_KEY = "reframed_homepage_cache_v1";
+const HOMEPAGE_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+function loadHomepageCache() {
+  try {
+    const raw = localStorage.getItem(HOMEPAGE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed.savedAt || !Array.isArray(parsed.tiles)) return null;
+
+    const age = Date.now() - parsed.savedAt;
+    if (age > HOMEPAGE_CACHE_TTL_MS) return null;
+
+    return parsed;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveHomepageCache(payload) {
+  try {
+    localStorage.setItem(
+      HOMEPAGE_CACHE_KEY,
+      JSON.stringify({
+        savedAt: Date.now(),
+        ...payload
+      })
+    );
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+
+// === TILE / ROW BUILDING ===
+
+// Build <a class="tile ..."> node from cached tile data
+function buildTileElementFromCache(tileData) {
   const tile = document.createElement("a");
-  tile.className = `tile${row.style ? " " + row.style : ""}`;
-  tile.href = `/?tag=${encodeURIComponent(row.tag)}`;
-  tile.setAttribute("aria-label", row.label);
+  tile.className = `tile${tileData.row.style ? " " + tileData.row.style : ""}`;
+  tile.href = tileData.chosen.linkHref;
+  tile.setAttribute("aria-label", tileData.row.label);
 
   const img = document.createElement("img");
   img.loading = "lazy";
-  img.src = thumbUrl;
-  img.alt = prettyTitle;
+  img.src = tileData.chosen.thumbUrl;
+  img.alt = tileData.chosen.niceTitle;
 
   const titleDiv = document.createElement("div");
   titleDiv.className = "title";
-  titleDiv.textContent = row.label;
+  titleDiv.textContent = tileData.row.label;
 
   tile.appendChild(img);
   tile.appendChild(titleDiv);
@@ -154,21 +202,14 @@ function buildTileElement(row, chosen) {
   return tile;
 }
 
-// NEW:
-// Instead of splitting heroes/features globally, we walk your sheet rows
-// and build logical groups like:
-// heroRow = next hero
-// feat1   = next feature after that hero
-// feat2   = next feature after feat1
-// That forms one "row group".
-//
-// We consume rows in order, so you control layout just by ordering the sheet.
+// Group tiles as hero + 2 features, in sheet order
+// hero consumes next 2 non-hero entries
 function buildRowGroupsFromOrderedTiles(tiles) {
   const groups = [];
   let i = 0;
 
   while (i < tiles.length) {
-    // 1. find the next hero
+    // find next hero
     if (tiles[i].row.style !== "hero") {
       i++;
       continue;
@@ -176,7 +217,7 @@ function buildRowGroupsFromOrderedTiles(tiles) {
     const heroTile = tiles[i];
     i++;
 
-    // 2. find first feature after that
+    // first feature
     let feature1 = null;
     while (i < tiles.length && !feature1) {
       if (tiles[i].row.style !== "hero") {
@@ -185,7 +226,7 @@ function buildRowGroupsFromOrderedTiles(tiles) {
       i++;
     }
 
-    // 3. find second feature after that
+    // second feature
     let feature2 = null;
     while (i < tiles.length && !feature2) {
       if (tiles[i].row.style !== "hero") {
@@ -194,8 +235,6 @@ function buildRowGroupsFromOrderedTiles(tiles) {
       i++;
     }
 
-    // If we don't have two features, we can't form a full row,
-    // so we stop.
     if (!feature1 || !feature2) {
       break;
     }
@@ -210,7 +249,7 @@ function buildRowGroupsFromOrderedTiles(tiles) {
   return groups;
 }
 
-// given the row groups, build DOM rows and alternate hero-left / hero-right
+// Add the groups to the DOM, alternating hero-left / hero-right
 function renderGroupsInto(container, groups) {
   let flip = 0; // 0 = hero-left, 1 = hero-right
 
@@ -237,11 +276,9 @@ function renderGroupsInto(container, groups) {
     featsCol.appendChild(featBottom);
 
     if (flip === 0) {
-      // hero left
       rowDiv.appendChild(heroCol);
       rowDiv.appendChild(featsCol);
     } else {
-      // hero right
       rowDiv.appendChild(featsCol);
       rowDiv.appendChild(heroCol);
     }
@@ -251,20 +288,50 @@ function renderGroupsInto(container, groups) {
   }
 }
 
-// MAIN FLOW
+// Render tiles (from cache or freshly built) into the homepage <main>
+// Keeps <h1 id="mainTitle"> intact.
+function renderFromCachedTiles(container, tilesData) {
+  // 1. Convert cached data to DOM tiles
+  const tiles = tilesData.map(td => ({
+    row: {
+      tag: td.row.tag,
+      style: td.row.style,
+      label: td.row.label
+    },
+    el: buildTileElementFromCache(td)
+  }));
+
+  // 2. Group them into hero+2feature rows
+  const groups = buildRowGroupsFromOrderedTiles(tiles);
+
+  // 3. Clear any old rows but keep the first child (the title)
+  while (container.children.length > 1) {
+    container.removeChild(container.lastChild);
+  }
+
+  // 4. Append all rows
+  renderGroupsInto(container, groups);
+}
+
+
+// === MAIN ENTRY POINT ===
+
 (async function initHomepage() {
   const container = document.getElementById("homeView");
 
-  try {
-    const settings = await loadSettings();
-    if (settings.homepage_title) {
-      const titleEl = document.getElementById("mainTitle");
-      if (titleEl) titleEl.textContent = settings.homepage_title;
-    }
-  } catch (e) {
-    console.warn("No settings loaded:", e.message);
+  // Step 1. Always load/apply homepage title
+  await applyHomepageTitle();
+
+  // Step 2. Try cache first
+  const cached = loadHomepageCache();
+  if (cached && Array.isArray(cached.tiles)) {
+    renderFromCachedTiles(container, cached.tiles);
+    return;
   }
 
+  // Step 3. No cache (or expired) -> build fresh
+
+  // 3a. Get configured rows from the homepage sheet
   let rowsData;
   try {
     rowsData = await loadHomepageRows();
@@ -276,31 +343,49 @@ function renderGroupsInto(container, groups) {
     return;
   }
 
-  // 1. Resolve each row -> tile element
-  const tiles = [];
-  for (const row of rowsData) {
-    try {
-      const images = await fetchLandscapeImagesForTag(row.tag);
-      if (!images.length) continue;
+  // 3b. Fetch all tag image data in parallel for speed
+  const liveTilesResults = await Promise.all(
+    rowsData.map(async (row) => {
+      try {
+        const images = await fetchLandscapeImagesForTag(row.tag);
+        if (!images.length) return null;
 
-      const chosen = chooseFeaturedImage(row, images);
-      if (!chosen) continue;
+        const chosen = chooseFeaturedImage(row, images);
+        if (!chosen) return null;
 
-      const tileEl = buildTileElement(row, chosen);
+        const publicId = chosen.public_id;
+        const niceTitle = humanizePublicId(publicId);
 
-      tiles.push({
-        row, // {tag, style, label...}
-        el: tileEl
-      });
-    } catch (err) {
-      // Skip if this tag fails gracefully
-      continue;
-    }
-  }
+        const isHero = row.style === "hero";
+        const thumbWidth = isHero ? 800 : 500;
+        const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_${thumbWidth},q_auto,f_auto/${encodeURI(publicId)}`;
 
-  // 2. Build groups of [hero + 2 features] respecting sheet order
-  const groups = buildRowGroupsFromOrderedTiles(tiles);
+        return {
+          row: {
+            tag: row.tag,
+            style: row.style,
+            label: row.label
+          },
+          chosen: {
+            public_id: publicId,
+            niceTitle: niceTitle,
+            thumbWidth: thumbWidth,
+            thumbUrl: thumbUrl,
+            linkHref: `/tag/#${encodeURIComponent(row.tag)}`
+          }
+        };
+      } catch (err) {
+        return null;
+      }
+    })
+  );
 
-  // 3. Render them into alternating rows
-  renderGroupsInto(container, groups);
+  // 3c. Filter out nulls (rows with no usable image)
+  const liveTiles = liveTilesResults.filter(Boolean);
+
+  // 3d. Cache it for next time
+  saveHomepageCache({ tiles: liveTiles });
+
+  // 3e. Render it now
+  renderFromCachedTiles(container, liveTiles);
 })();

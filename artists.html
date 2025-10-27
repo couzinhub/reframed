@@ -3,23 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reframed</title>
-  <meta name="description" content="A collection of paintings reframed to fit the Samsung Frame TV perfectly.">
+  <title>Artists — Reframed</title>
+  <meta name="description" content="Browse artists whose works have been reframed for the Samsung Frame TV.">
+
   <link rel="icon" href="img/favicon.ico" type="image/x-icon">
   <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css.css">
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-14360H9J7X"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-14360H9J7X');
-  </script>
 </head>
 <body>
 
@@ -29,8 +22,8 @@
     </a>
     <ul>
       <li><a href="/">Home</a></li>
-      <li><a href="/artists.html">Artists</a></li>
-      <li><a href="/tag/#Vertical%20artworks">Vertical artworks</a></li>
+      <li class="current"><a href="/artists.html">Artists</a></li>
+      <li><a href="/tag/#Vertical artworks">Vertical artworks</a></li>
       <li><a href="/faq.html">FAQ</a></li>
     </ul>
     <div class="button tip">
@@ -45,10 +38,13 @@
     </div>
   </aside>
 
-  <h1>Contact</h1>
-  <main>tada</main>
+  <main id="artistsView">
+    <h1 class="page-title">Artists</h1>
+    <p id="artistsStatus"></p>
+    <div id="artistsGrid"></div>
+  </main>
 
   <script src="config.js"></script>
-
+  <script src="artists.js"></script>
 </body>
 </html>

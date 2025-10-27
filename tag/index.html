@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Reframed — Gallery</title>
+  <meta name="description" content="Browse reframed artworks for this collection.">
+
+  <link rel="icon" href="/img/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+
+  <!-- shared site styles -->
+  <link rel="stylesheet" href="/css.css">
+</head>
+<body>
+
+  <aside>
+    <a href="/">
+      <img id="logo" src="/img/reframed.svg" alt="Reframed Logo">
+    </a>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/artists.html">Artists</a></li>
+      <li><a href="/tag/#Vertical%20artworks">Vertical artworks</a></li>
+      <li><a href="/faq.html">FAQ</a></li>
+    </ul>
+    <div class="button tip">
+      <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"></script>
+      <script>
+        kofiwidget2.init('Thank me with a tip', '#00488c', 'O5O51FWPUL');
+        kofiwidget2.draw();
+      </script>
+    </div>
+    <div class="button own-art">
+      <a class="contact" href="/contact.html">Get your own art reframed</a>
+    </div>
+  </aside>
+
+  <main id="tagView">
+    <h1 id="tagTitle" class="tag-title"></h1>
+    <div id="tagStatus" class="tag-status"></div>
+    <div id="tagGrid" class="tag-grid"></div>
+  </main>
+
+  <script src="../config.js"></script>
+  <script src="tag.js"></script>
+</body>
+</html>
