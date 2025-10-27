@@ -8,6 +8,22 @@ const CLOUD_NAME = "dqqutqsna"; // <-- your Cloudinary cloud name
 // C: label ("Van Gogh")
 // D: featured_public_id (optional)
 const HOMEPAGE_CSV_URL = "https://docs.google.com/spreadsheets/d/14TPNDckAz1iXVpGYnoiQYccHTj-fcdo-dbAw_R8l0GE/export?format=csv&gid=0";
+const SETTINGS_CSV_URL = "https://docs.google.com/spreadsheets/d/14TPNDckAz1iXVpGYnoiQYccHTj-fcdo-dbAw_R8l0GE/export?format=csv&gid=1909706849";
+
+async function loadSettings() {
+  const res = await fetch(SETTINGS_CSV_URL + "&t=" + Date.now());
+  if (!res.ok) throw new Error("Cannot load settings sheet");
+  const text = await res.text();
+
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const settings = {};
+  for (const line of lines.slice(1)) { // skip header
+    const [key, value] = line.split(",");
+    if (key && value) settings[key.trim()] = value.replace(/^"(.*)"$/, "$1").trim();
+  }
+  return settings;
+}
+
 
 // === UTILS ===
 
@@ -32,23 +48,22 @@ function humanizePublicId(publicId) {
 // Load rows from the homepage sheet
 // returns [{ tag, style, label, featuredPublicId }, ...] IN ORDER
 async function loadHomepageRows() {
-  const url = HOMEPAGE_CSV_URL + "&t=" + Date.now(); // cache-bust
+  const url = HOMEPAGE_CSV_URL + "&t=" + Date.now();
   const res = await fetch(url, { cache: "no-cache" });
   if (!res.ok) {
     throw new Error("Could not load homepage sheet (HTTP " + res.status + ")");
   }
 
   const csvText = await res.text();
-  const lines = csvText.split(/\r?\n/);
+  const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
 
   const rows = [];
 
-  for (const raw of lines) {
-    if (!raw.trim()) continue;
-
+  // start at i = 1 to skip the header row
+  for (let i = 1; i < lines.length; i++) {
+    const raw = lines[i];
     const parts = raw.split(",");
 
-    // A=tag, B=style, C=label, D=featured_public_id
     let tag    = (parts[0] || "").replace(/^"(.*)"$/, "$1").trim();
     let style  = (parts[1] || "").replace(/^"(.*)"$/, "$1").trim();
     let label  = (parts[2] || "").replace(/^"(.*)"$/, "$1").trim();
@@ -68,14 +83,17 @@ async function loadHomepageRows() {
   return rows;
 }
 
+
 // Fetch newest landscape-or-square images for a tag
 async function fetchLandscapeImagesForTag(tagName) {
   const listUrl = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
 
   const res = await fetch(listUrl, { mode: "cors" });
   if (!res.ok) {
-    throw new Error(`Tag "${tagName}" request failed (HTTP ${res.status})`);
+    console.warn(`Skipping missing tag: ${tagName} (${res.status})`);
+   return [];
   }
+
 
   const data = await res.json();
 
@@ -236,6 +254,16 @@ function renderGroupsInto(container, groups) {
 // MAIN FLOW
 (async function initHomepage() {
   const container = document.getElementById("homeView");
+
+  try {
+    const settings = await loadSettings();
+    if (settings.homepage_title) {
+      const titleEl = document.getElementById("mainTitle");
+      if (titleEl) titleEl.textContent = settings.homepage_title;
+    }
+  } catch (e) {
+    console.warn("No settings loaded:", e.message);
+  }
 
   let rowsData;
   try {
