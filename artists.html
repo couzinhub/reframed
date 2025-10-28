@@ -38,11 +38,21 @@
     </div>
   </aside>
 
-  <main id="artistsView">
-    <h1 class="page-title">Artists</h1>
-    <p id="artistsStatus"></p>
-    <div id="artistsGrid"></div>
+  <main id="appView">
+    <section id="artistsPage">
+      <p id="artistsStatus"></p>
+      <div id="artistsGrid"></div>
+    </section>
+
+    <section id="tagPage" style="display:none;">
+      <div id="tagHeader">
+        <h1 id="tagTitle"></h1>
+        <p id="tagStatus"></p>
+      </div>
+      <div id="tagGrid"></div>
+    </section>
   </main>
+
 
   <script src="config.js"></script>
   <script src="artists.js"></script>

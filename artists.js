@@ -1,10 +1,15 @@
-// assumes config.js is loaded BEFORE this script
+// assumes config.js is loaded first with:
+// CLOUD_NAME, ARTISTS_CSV_URL
 
-// ---------- Utilities ----------
+// ---------- lightweight in-tab cache ----------
+let ARTISTS_CACHE = null; // [{ row, chosenImage }, ...]
+let ARTISTS_SCROLL_Y = 0;
 
-// safer CSV parser that respects quoted fields with commas
+let CURRENT_VIEW = "artists"; // or "tag"
+let CURRENT_TAG = null;
+
+// ---------- CSV PARSER ----------
 function parseCSV(text) {
-  // returns an array of rows, where each row is an array of cells (strings)
   const rows = [];
   let current = [];
   let value = "";
@@ -16,11 +21,9 @@ function parseCSV(text) {
 
     if (inQuotes) {
       if (ch === '"' && next === '"') {
-        // escaped double quote -> add a " and skip next
         value += '"';
         i++;
       } else if (ch === '"') {
-        // end quote
         inQuotes = false;
       } else {
         value += ch;
@@ -32,7 +35,7 @@ function parseCSV(text) {
         current.push(value.trim());
         value = "";
       } else if (ch === "\r") {
-        // ignore \r, we'll handle newline via \n
+        // ignore
       } else if (ch === "\n") {
         current.push(value.trim());
         rows.push(current);
@@ -44,13 +47,81 @@ function parseCSV(text) {
     }
   }
 
-  // flush last line if it didn't end with \n
   if (value.length > 0 || inQuotes || current.length > 0) {
     current.push(value.trim());
     rows.push(current);
   }
 
   return rows;
+}
+
+// ---------- LOAD ARTIST ROWS ----------
+async function loadArtistRows() {
+  const res = await fetch(ARTISTS_CSV_URL + "&t=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load artist sheet: HTTP " + res.status);
+
+  const csvText = await res.text();
+  const rows = parseCSV(csvText);
+  if (!rows.length) return [];
+
+  const header = rows[0].map(h => h.toLowerCase().trim());
+  const tagCol = header.indexOf("tag");
+  const labelCol = header.indexOf("label");
+  const idCol = header.indexOf("featured public id");
+
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const tag = (r[tagCol] || "").trim();
+    if (!tag || tag.toLowerCase().startsWith("-- ignore")) continue;
+
+    out.push({
+      tag,
+      label: (r[labelCol] || tag).trim(),
+      featuredPublicId: (r[idCol] || "").trim()
+    });
+  }
+
+  return out;
+}
+
+// ---------- CLOUDINARY ----------
+async function fetchImagesForTag(tagName) {
+  const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
+  const res = await fetch(url, { mode: "cors" });
+  if (!res.ok) return { all: [], landscape: [] };
+
+  const data = await res.json();
+  const all = (data.resources || []).sort((a, b) =>
+    (b.created_at || "").localeCompare(a.created_at || "")
+  );
+
+  const landscape = all.filter(img => {
+    const w = img.width;
+    const h = img.height;
+    return typeof w === "number" && typeof h === "number" ? w >= h : true;
+  });
+
+  return { all, landscape };
+}
+
+// pickFeaturedImage respects Featured public ID (fuzzy) and falls back smartly
+function pickFeaturedImage(row, imageSets) {
+  const desired = (row.featuredPublicId || "").trim().toLowerCase();
+  if (!desired) return imageSets.landscape[0] || imageSets.all[0] || null;
+
+  function matches(img) {
+    const id = (img.public_id || "").toLowerCase();
+    return (
+      id === desired ||
+      id.startsWith(desired) ||
+      id.endsWith(desired) ||
+      id.includes(desired)
+    );
+  }
+
+  const chosen = imageSets.all.find(matches);
+  return chosen || imageSets.landscape[0] || imageSets.all[0] || null;
 }
 
 function humanizePublicId(publicId) {
@@ -62,142 +133,30 @@ function humanizePublicId(publicId) {
     .trim();
 }
 
-// ---------- Cache ----------
-
-const ARTISTS_CACHE_KEY = "reframed_artists_cache_v1";
-const ARTISTS_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-function loadArtistsCache() {
-  try {
-    const raw = localStorage.getItem(ARTISTS_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed.savedAt || !Array.isArray(parsed.artists)) return null;
-
-    const age = Date.now() - parsed.savedAt;
-    if (age > ARTISTS_CACHE_TTL_MS) return null;
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function saveArtistsCache(payload) {
-  try {
-    localStorage.setItem(
-      ARTISTS_CACHE_KEY,
-      JSON.stringify({
-        savedAt: Date.now(),
-        ...payload
-      })
-    );
-  } catch {
-    // ignore
-  }
-}
-
-// ---------- Data loading from sheet ----------
-
-async function loadArtistRows() {
-  // Fetch CSV from the Artists sheet tab
-  const url = ARTISTS_CSV_URL + "&t=" + Date.now(); // cache-bust Google
-  const res = await fetch(url, { cache: "no-cache" });
-
-  if (!res.ok) {
-    throw new Error("Could not load artist sheet (HTTP " + res.status + ")");
-  }
-
-  const csvText = await res.text();
-  const rows = parseCSV(csvText); // rows is [ [colA, colB,...], [..], ... ]
-
-  if (!rows.length) return [];
-
-  // first row is headers
-  const headerRow = rows[0];
-
-  // Build a map: header name -> index
-  // We'll look for exact headers from your sheet:
-  // "Tag (Artist name)", "Label (optional)", "Featured public ID"
-  const colIndex = {};
-  headerRow.forEach((colName, i) => {
-    colIndex[colName] = i;
-  });
-
-  function cell(rowArr, headerName) {
-    const idx = colIndex[headerName];
-    if (idx === undefined) return "";
-    return (rowArr[idx] || "").trim();
-  }
-
-  const out = [];
-
-  for (let r = 1; r < rows.length; r++) {
-    const rowArr = rows[r];
-
-    const tagVal = cell(rowArr, "Tag (Artist name)");
-    const labelVal = cell(rowArr, "Label (optional)");
-    const featuredVal = cell(rowArr, "Featured public ID");
-
-    // skip empty rows
-    if (!tagVal) continue;
-    if (tagVal.toLowerCase().starts_with?.("-- ignore") || tagVal.toLowerCase().startsWith("-- ignore")) {
-      break;
-    }
-
-    out.push({
-      tag: tagVal,
-      label: labelVal || tagVal,
-      featuredPublicId: featuredVal || ""
-    });
-  }
-
-  return out;
-}
-
-// ---------- Cloudinary fetch ----------
-
-async function fetchImagesForTag(tagName) {
-  const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
-
-  const res = await fetch(url, { mode: "cors" });
-  if (!res.ok) {
-    console.warn(`Skipping tag "${tagName}" (HTTP ${res.status})`);
-    return [];
-  }
-
-  const data = await res.json();
-  let items = (data.resources || []).sort(
-    (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
-  );
-
-  // only landscape/square for thumbnails
-  items = items.filter(img => {
-    const w = img.width;
-    const h = img.height;
-    return typeof w === "number" && typeof h === "number" ? w >= h : true;
-  });
-
-  return items;
-}
-
-function pickFeaturedImage(row, images) {
-  if (row.featuredPublicId) {
-    const match = images.find(img => img.public_id === row.featuredPublicId);
-    if (match) return match;
-  }
-  return images[0] || null;
-}
-
-// ---------- Rendering ----------
-
+// ---------- RENDER ----------
 function buildArtistCard(row, imgData) {
-  const artistName = row.tag;
-
   const card = document.createElement("a");
   card.className = "artist-card";
-  card.href = `/tag/#${encodeURIComponent(artistName)}`;
-  card.setAttribute("aria-label", artistName);
+  card.href = `/tag/#${encodeURIComponent(row.tag)}`; // pretty URL for the address bar
+  card.setAttribute("aria-label", row.label);
+  card.setAttribute("data-tag", row.tag);
+
+  card.addEventListener("click", async (ev) => {
+    ev.preventDefault();
+
+    // save scroll so we can restore later
+    ARTISTS_SCROLL_Y = window.scrollY;
+
+    // push the new URL to history WITHOUT leaving the page
+    history.pushState(
+      { view: "tag", tag: row.tag },
+      "",
+      `/tag/#${encodeURIComponent(row.tag)}`
+    );
+
+    // render that tag view
+    await showTagView(row.tag);
+  });
 
   if (imgData) {
     const niceName = humanizePublicId(imgData.public_id);
@@ -212,63 +171,196 @@ function buildArtistCard(row, imgData) {
 
   const labelEl = document.createElement("div");
   labelEl.className = "artist-name";
-  labelEl.textContent = artistName;
+  labelEl.textContent = row.label;
   card.appendChild(labelEl);
 
   return card;
 }
 
-function renderArtistsGrid(artists) {
-  const gridEl = document.getElementById("artistsGrid");
-  const statusEl = document.getElementById("artistsStatus");
+function renderArtistsGrid(artistsList) {
+  const grid = document.getElementById("artistsGrid");
+  const status = document.getElementById("artistsStatus");
 
-  gridEl.innerHTML = "";
-
+  grid.innerHTML = "";
   const frag = document.createDocumentFragment();
-  for (const artist of artists) {
+  for (const artist of artistsList) {
     frag.appendChild(buildArtistCard(artist.row, artist.chosenImage));
   }
-  gridEl.appendChild(frag);
+  grid.appendChild(frag);
 
-  statusEl.textContent = `${artists.length} artist${artists.length === 1 ? "" : "s"}`;
+  status.textContent = `${artistsList.length} artist${artistsList.length === 1 ? "" : "s"}`;
 }
 
-// ---------- Main flow ----------
-
-async function initArtistsPage() {
-  const statusEl = document.getElementById("artistsStatus");
-  statusEl.textContent = "Loading…";
-
-  // 1. Try cache
-  const cached = loadArtistsCache();
-  if (cached && Array.isArray(cached.artists)) {
-    renderArtistsGrid(cached.artists);
-    console.info("Loaded artists from cache");
-    return;
+// ---------- HELPER: batch processor (20 at a time) ----------
+async function processInBatches(items, batchSize, fn) {
+  const results = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const chunk = items.slice(i, i + batchSize);
+    const chunkResults = await Promise.all(chunk.map(fn));
+    results.push(...chunkResults);
   }
+  return results;
+}
 
-  // 2. Live load from sheet + Cloudinary
-  let rows;
-  try {
-    rows = await loadArtistRows();
-  } catch (err) {
-    statusEl.textContent = "Couldn't load artist list: " + err.message;
-    return;
+async function fetchImagesForSingleTag_unfiltered(tagName) {
+  const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
+  const res = await fetch(url, { mode: "cors" });
+  if (!res.ok) {
+    return [];
   }
-
-  const artistResults = await Promise.all(
-    rows.map(async (row) => {
-      const imgs = await fetchImagesForTag(row.tag);
-      const chosenImage = pickFeaturedImage(row, imgs);
-      return { row, chosenImage };
-    })
+  const data = await res.json();
+  return (data.resources || []).sort(
+    (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
   );
-
-  // 3. Save cache
-  saveArtistsCache({ artists: artistResults });
-
-  // 4. Render
-  renderArtistsGrid(artistResults);
 }
 
-initArtistsPage();
+function renderTagIntoPage(tagName, images) {
+  const tagPage = document.getElementById("tagPage");
+  const artistsPage = document.getElementById("artistsPage");
+
+  const tagTitleEl = document.getElementById("tagTitle");
+  const tagStatusEl = document.getElementById("tagStatus");
+  const tagGridEl = document.getElementById("tagGrid");
+
+  // Special rules from before:
+  // - if tag === "Vertical artworks": show all and mark vertical class
+  // - else: filter to landscape only
+  const isVertical = tagName === "Vertical artworks";
+
+  const filtered = isVertical
+    ? images
+    : images.filter(img => {
+        const w = img.width;
+        const h = img.height;
+        return (typeof w === "number" && typeof h === "number") ? (w >= h) : true;
+      });
+
+  const prettyTagName = tagName.replace(/[-_]+/g, " ").trim();
+  tagTitleEl.textContent = prettyTagName;
+  tagStatusEl.textContent = `${filtered.length} artwork${filtered.length === 1 ? "" : "s"}`;
+
+  tagGridEl.innerHTML = "";
+
+  const frag = document.createDocumentFragment();
+
+  for (const img of filtered) {
+    const publicId = img.public_id;
+    const niceName = humanizePublicId(publicId);
+
+    // portrait vs landscape sizing logic you already had:
+    const w = img.width;
+    const h = img.height;
+    const portrait = typeof w === "number" && typeof h === "number" && h > w;
+    const thumbWidth = portrait ? 400 : 600;
+
+    const card = document.createElement("a");
+    card.className = "tag-card";
+    card.href = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
+    card.target = "_blank";
+    card.rel = "noopener";
+
+    const imgEl = document.createElement("img");
+    imgEl.loading = "lazy";
+    imgEl.src = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,w_${thumbWidth}/${encodeURIComponent(publicId)}`;
+    imgEl.alt = niceName;
+
+    const caption = document.createElement("div");
+    caption.className = "tag-caption";
+    caption.textContent = niceName;
+
+    card.appendChild(imgEl);
+    card.appendChild(caption);
+    frag.appendChild(card);
+  }
+
+  tagGridEl.appendChild(frag);
+
+  // toggle which section is visible
+  artistsPage.style.display = "none";
+  tagPage.style.display = "";
+
+  // apply / remove vertical class on container like before
+  const appView = document.getElementById("appView");
+  if (isVertical) {
+    appView.classList.add("vertical");
+  } else {
+    appView.classList.remove("vertical");
+  }
+
+  CURRENT_VIEW = "tag";
+  CURRENT_TAG = tagName;
+}
+
+async function showTagView(tagName) {
+  const imgs = await fetchImagesForSingleTag_unfiltered(tagName);
+  renderTagIntoPage(tagName, imgs);
+}
+
+
+// ---------- MAIN (with in-tab cache) ----------
+(async function initArtistsPage() {
+  const status = document.getElementById("artistsStatus");
+
+  // If we already loaded once (same tab), just render and wire up history.
+  if (ARTISTS_CACHE && Array.isArray(ARTISTS_CACHE)) {
+    renderArtistsGrid(ARTISTS_CACHE);
+
+    if (!history.state) {
+      history.replaceState({ view: "artists" }, "", "/artists.html");
+    }
+
+    return;
+  }
+
+  status.textContent = "Loading…";
+
+  try {
+    const rows = await loadArtistRows();
+
+    // batch 20 at a time
+    const artists = await processInBatches(rows, 20, async (row) => {
+      const imageSets = await fetchImagesForTag(row.tag);
+      const chosenImage = pickFeaturedImage(row, imageSets);
+      return { row, chosenImage };
+    });
+
+    ARTISTS_CACHE = artists; // save for this tab
+    renderArtistsGrid(artists);
+    status.textContent = `${artists.length} artist${artists.length === 1 ? "" : "s"}`;
+
+    // register our "artists" state in history so Back works
+    if (!history.state) {
+      history.replaceState({ view: "artists" }, "", "/artists.html");
+    }
+
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Error loading artists: " + err.message;
+  }
+})();
+
+window.addEventListener("popstate", (event) => {
+  // If the state says we're on a tag view, show that tag again.
+  // If there's no state or it's something else, show the artists page.
+
+  const state = event.state;
+
+  if (state && state.view === "tag" && state.tag) {
+    // user navigated "forward" into a tag via browser's back/forward buttons
+    showTagView(state.tag);
+    return;
+  }
+
+  // Otherwise, go back to artists list
+  const tagPage = document.getElementById("tagPage");
+  const artistsPage = document.getElementById("artistsPage");
+
+  tagPage.style.display = "none";
+  artistsPage.style.display = "";
+
+  CURRENT_VIEW = "artists";
+  CURRENT_TAG = null;
+
+  // restore scroll
+  window.scrollTo(0, ARTISTS_SCROLL_Y);
+});

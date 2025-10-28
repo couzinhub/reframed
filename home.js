@@ -1,4 +1,61 @@
-// === SETTINGS / TITLE LOADING ===
+// assumes config.js is loaded before this script so we have:
+// CLOUD_NAME, HOMEPAGE_CSV_URL, SETTINGS_CSV_URL
+
+// ============ CSV PARSER ============
+function parseCSV(text) {
+  const rows = [];
+  let current = [];
+  let value = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"' && next === '"') {
+        value += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        value += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        current.push(value.trim());
+        value = "";
+      } else if (ch === "\r") {
+        // ignore
+      } else if (ch === "\n") {
+        current.push(value.trim());
+        rows.push(current);
+        current = [];
+        value = "";
+      } else {
+        value += ch;
+      }
+    }
+  }
+
+  if (value.length > 0 || inQuotes || current.length > 0) {
+    current.push(value.trim());
+    rows.push(current);
+  }
+
+  return rows;
+}
+
+// ============ SETTINGS / HOMEPAGE TITLE / CACHE VERSION ============
+//
+// settings sheet format is assumed to be:
+// key,value
+// homepage_title,Your title here
+// cache_version,7
+//
+// We'll read both homepage_title and cache_version.
 
 async function loadSettings() {
   const res = await fetch(SETTINGS_CSV_URL + "&t=" + Date.now());
@@ -10,7 +67,6 @@ async function loadSettings() {
     .map(l => l.trim())
     .filter(l => l !== "");
 
-  // assumes first row is headers: key,value
   const settings = {};
   for (const line of lines.slice(1)) {
     const firstComma = line.indexOf(",");
@@ -26,74 +82,86 @@ async function loadSettings() {
     settings[key] = value;
   }
 
-  return settings;
+  return settings; // { homepage_title: "...", cache_version: "7", ... }
 }
 
-async function applyHomepageTitle() {
+async function applyHomepageTitle(settings) {
   try {
-    const settings = await loadSettings();
     const titleEl = document.getElementById("mainTitle");
     if (titleEl && settings.homepage_title) {
       titleEl.textContent = settings.homepage_title;
     }
-  } catch (e) {
-    console.warn("Couldn't load homepage title:", e.message);
+  } catch {
+    // ignore
   }
 }
 
-
-// === HOMEPAGE SHEET (TILES CONFIG) ===
-// Sheet columns:
-// A=tag, B=style, C=label, D=featured_public_id
-// Row 1 is headers.
+// ============ HOMEPAGE ROWS (SHEET PARSE) ============
+//
+// First row of HOMEPAGE_CSV_URL is assumed to be:
+// "Tag","Style","Label","Image"
+//
+// Style can be "hero" or blank.
+// Image is the Cloudinary public_id override.
 
 async function loadHomepageRows() {
-  const url = HOMEPAGE_CSV_URL + "&t=" + Date.now(); // cache-bust
+  const url = HOMEPAGE_CSV_URL + "&t=" + Date.now();
   const res = await fetch(url, { cache: "no-cache" });
   if (!res.ok) {
     throw new Error("Could not load homepage sheet (HTTP " + res.status + ")");
   }
 
   const csvText = await res.text();
-  const lines = csvText
-    .split(/\r?\n/)
-    .filter(l => l.trim() !== "");
+  const rows = parseCSV(csvText);
+  if (!rows.length) return [];
 
-  const rows = [];
+  const headerRow = rows[0];
 
-  // start from i=1 to skip header row
-  for (let i = 1; i < lines.length; i++) {
-    const raw = lines[i];
-    const parts = raw.split(",");
+  const colIndex = {};
+  headerRow.forEach((raw, i) => {
+    const key = (raw || "").toLowerCase().trim();
+    if (key) colIndex[key] = i;
+  });
 
-    let tag    = (parts[0] || "").replace(/^"(.*)"$/, "$1").trim();
-    let style  = (parts[1] || "").replace(/^"(.*)"$/, "$1").trim();
-    let label  = (parts[2] || "").replace(/^"(.*)"$/, "$1").trim();
-    let manual = (parts[3] || "").replace(/^"(.*)"$/, "$1").trim();
+  function pick(rowArr, ...possibleHeaders) {
+    for (const name of possibleHeaders) {
+      const idx = colIndex[name.toLowerCase()];
+      if (idx !== undefined) {
+        return (rowArr[idx] || "").trim();
+      }
+    }
+    return "";
+  }
 
-    if (!tag) continue;
-    if (tag.toLowerCase().startsWith("-- ignore")) break;
+  const out = [];
+  for (let r = 1; r < rows.length; r++) {
+    const rowArr = rows[r];
 
-    rows.push({
-      tag,
-      style: style || "",
-      label: label || tag,
-      featuredPublicId: manual || ""
+    const tagVal   = pick(rowArr, "tag");
+    const styleVal = pick(rowArr, "style", "size");
+    const labelVal = pick(rowArr, "label");
+    const imgVal   = pick(rowArr, "image", "featured_public_id", "featured public id");
+
+    if (!tagVal) continue;
+    if (tagVal.toLowerCase().startsWith("-- ignore")) break;
+
+    out.push({
+      tag: tagVal,
+      style: styleVal || "",
+      label: labelVal || tagVal,
+      featuredPublicId: imgVal || ""
     });
   }
 
-  return rows;
+  return out;
 }
 
-
-// === CLOUDINARY FETCH + IMAGE PICKING ===
-
+// ============ CLOUDINARY FETCH / IMAGE PICK ============
 async function fetchLandscapeImagesForTag(tagName) {
   const listUrl = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
 
   const res = await fetch(listUrl, { mode: "cors" });
   if (!res.ok) {
-    console.warn(`Skipping tag "${tagName}" (HTTP ${res.status})`);
     return [];
   }
 
@@ -104,12 +172,12 @@ async function fetchLandscapeImagesForTag(tagName) {
     (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
   );
 
-  // keep only non-portrait
+  // filter out portrait for homepage
   items = items.filter(img => {
     const w = img.width;
     const h = img.height;
     if (typeof w === "number" && typeof h === "number") {
-      return w >= h; // width >= height
+      return w >= h;
     }
     return true;
   });
@@ -117,21 +185,14 @@ async function fetchLandscapeImagesForTag(tagName) {
   return items;
 }
 
-// prefer featuredPublicId if it exists in the set, else fallback to newest
 function chooseFeaturedImage(row, images) {
   if (row.featuredPublicId) {
     const match = images.find(img => img.public_id === row.featuredPublicId);
     if (match) return match;
   }
-  if (images.length > 0) {
-    return images[0];
-  }
-  return null;
+  return images.length > 0 ? images[0] : null;
 }
 
-// Turn Cloudinary public_id into display name
-// "De_la_Tour_-_The_Cheat_with_the_Ace_of_Clubs_-_reframed_qsiedq"
-// -> "De la Tour - The Cheat with the Ace of Clubs"
 function humanizePublicId(publicId) {
   let base = publicId.split("/").pop();
   return base
@@ -141,46 +202,56 @@ function humanizePublicId(publicId) {
     .trim();
 }
 
+// ============ HOMEPAGE CACHE WITH VERSION CHECK ============
 
-// === CACHE LOGIC FOR HOMEPAGE TILES ===
+const HOMEPAGE_CACHE_KEY = "reframed_homepage_cache_v2"; // bumped so old v1 won't interfere
+const HOMEPAGE_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h
 
-const HOMEPAGE_CACHE_KEY = "reframed_homepage_cache_v1";
-const HOMEPAGE_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-function loadHomepageCache() {
+function loadHomepageCache(expectedVersion) {
   try {
     const raw = localStorage.getItem(HOMEPAGE_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed.savedAt || !Array.isArray(parsed.tiles)) return null;
 
+    // must have version, savedAt, and tiles array
+    if (!parsed.savedAt || !Array.isArray(parsed.tiles) || !parsed.version) {
+      return null;
+    }
+
+    // version mismatch? invalidate
+    if (expectedVersion && parsed.version !== expectedVersion) {
+      return null;
+    }
+
+    // TTL expired? invalidate
     const age = Date.now() - parsed.savedAt;
-    if (age > HOMEPAGE_CACHE_TTL_MS) return null;
+    if (age > HOMEPAGE_CACHE_TTL_MS) {
+      return null;
+    }
 
     return parsed;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
-function saveHomepageCache(payload) {
+function saveHomepageCache(version, tiles) {
   try {
     localStorage.setItem(
       HOMEPAGE_CACHE_KEY,
       JSON.stringify({
         savedAt: Date.now(),
-        ...payload
+        version: version || "", // whatever we got from settings
+        tiles: tiles
       })
     );
-  } catch (e) {
-    // ignore storage errors
+  } catch {
+    // ignore quota errors
   }
 }
 
+// ============ TILE DOM / LAYOUT ============
 
-// === TILE / ROW BUILDING ===
-
-// Build <a class="tile ..."> node from cached tile data
 function buildTileElementFromCache(tileData) {
   const tile = document.createElement("a");
   tile.className = `tile${tileData.row.style ? " " + tileData.row.style : ""}`;
@@ -202,22 +273,20 @@ function buildTileElementFromCache(tileData) {
   return tile;
 }
 
-// Group tiles as hero + 2 features, in sheet order
-// hero consumes next 2 non-hero entries
+// same hero + 2 features per hero logic
 function buildRowGroupsFromOrderedTiles(tiles) {
   const groups = [];
   let i = 0;
 
   while (i < tiles.length) {
-    // find next hero
     if (tiles[i].row.style !== "hero") {
       i++;
       continue;
     }
+
     const heroTile = tiles[i];
     i++;
 
-    // first feature
     let feature1 = null;
     while (i < tiles.length && !feature1) {
       if (tiles[i].row.style !== "hero") {
@@ -226,7 +295,6 @@ function buildRowGroupsFromOrderedTiles(tiles) {
       i++;
     }
 
-    // second feature
     let feature2 = null;
     while (i < tiles.length && !feature2) {
       if (tiles[i].row.style !== "hero") {
@@ -249,9 +317,8 @@ function buildRowGroupsFromOrderedTiles(tiles) {
   return groups;
 }
 
-// Add the groups to the DOM, alternating hero-left / hero-right
 function renderGroupsInto(container, groups) {
-  let flip = 0; // 0 = hero-left, 1 = hero-right
+  let flip = 0;
 
   for (const g of groups) {
     const rowDiv = document.createElement("div");
@@ -288,10 +355,7 @@ function renderGroupsInto(container, groups) {
   }
 }
 
-// Render tiles (from cache or freshly built) into the homepage <main>
-// Keeps <h1 id="mainTitle"> intact.
-function renderFromCachedTiles(container, tilesData) {
-  // 1. Convert cached data to DOM tiles
+function renderFromTiles(container, tilesData) {
   const tiles = tilesData.map(td => ({
     row: {
       tag: td.row.tag,
@@ -301,37 +365,44 @@ function renderFromCachedTiles(container, tilesData) {
     el: buildTileElementFromCache(td)
   }));
 
-  // 2. Group them into hero+2feature rows
   const groups = buildRowGroupsFromOrderedTiles(tiles);
 
-  // 3. Clear any old rows but keep the first child (the title)
   while (container.children.length > 1) {
     container.removeChild(container.lastChild);
   }
 
-  // 4. Append all rows
   renderGroupsInto(container, groups);
 }
 
-
-// === MAIN ENTRY POINT ===
+// ============ MAIN BOOTSTRAP ============
 
 (async function initHomepage() {
   const container = document.getElementById("homeView");
 
-  // Step 1. Always load/apply homepage title
-  await applyHomepageTitle();
+  // 1. Load settings first (for title + cache version)
+  let settings;
+  try {
+    settings = await loadSettings();
+  } catch (err) {
+    settings = {};
+  }
 
-  // Step 2. Try cache first
-  const cached = loadHomepageCache();
+  await applyHomepageTitle(settings);
+
+  // We'll use this as a logical cache version.
+  // In your sheet, add a row:
+  // cache_version,8
+  const cacheVersion = settings.cache_version || "";
+
+  // 2. Try to use cache if version matches
+  const cached = loadHomepageCache(cacheVersion);
   if (cached && Array.isArray(cached.tiles)) {
-    renderFromCachedTiles(container, cached.tiles);
+    renderFromTiles(container, cached.tiles);
     return;
   }
 
-  // Step 3. No cache (or expired) -> build fresh
+  // 3. No valid cache → rebuild fresh
 
-  // 3a. Get configured rows from the homepage sheet
   let rowsData;
   try {
     rowsData = await loadHomepageRows();
@@ -343,7 +414,6 @@ function renderFromCachedTiles(container, tilesData) {
     return;
   }
 
-  // 3b. Fetch all tag image data in parallel for speed
   const liveTilesResults = await Promise.all(
     rowsData.map(async (row) => {
       try {
@@ -374,18 +444,17 @@ function renderFromCachedTiles(container, tilesData) {
             linkHref: `/tag/#${encodeURIComponent(row.tag)}`
           }
         };
-      } catch (err) {
+      } catch {
         return null;
       }
     })
   );
 
-  // 3c. Filter out nulls (rows with no usable image)
   const liveTiles = liveTilesResults.filter(Boolean);
 
-  // 3d. Cache it for next time
-  saveHomepageCache({ tiles: liveTiles });
+  // 4. Save to cache along with version
+  saveHomepageCache(cacheVersion, liveTiles);
 
-  // 3e. Render it now
-  renderFromCachedTiles(container, liveTiles);
+  // 5. Render
+  renderFromTiles(container, liveTiles);
 })();
