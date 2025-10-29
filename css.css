@@ -224,8 +224,7 @@ aside .own-art a {
   height: 570px;
 }
 
-.tile.feature,
-.card.artist {
+.tile.feature {
   width: 480px;
   height: 270px;
 }
@@ -269,22 +268,25 @@ aside .own-art a {
 }
 
 
-
 /* Content 
 -----------------------------*/
 
-.gallery {
+#artistsGrid, .tag-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-  gap: 2rem;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  gap: 10px;
+}
+.tag-grid {
+  grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+  gap: 40px;
+}
+.vertical .tag-grid {
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 40px;
 }
 
 .card {
   position: relative;
-  display: inline-block;
-  width: 48%;
-  margin: 0 2% 2% 0;
 }
 
 .card a {
