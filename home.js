@@ -367,6 +367,7 @@ function renderFromTiles(container, tilesData) {
 
   const groups = buildRowGroupsFromOrderedTiles(tiles);
 
+  // keep the first child of container (your header stuff), wipe the rest
   while (container.children.length > 1) {
     container.removeChild(container.lastChild);
   }
@@ -430,6 +431,10 @@ function renderFromTiles(container, tilesData) {
         const thumbWidth = isHero ? 800 : 500;
         const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_${thumbWidth},q_auto,f_auto/${encodeURI(publicId)}`;
 
+        // PRETTY URL HERE:
+        // "Vincent Van Gogh" -> "Vincent-Van-Gogh"
+        const dashedTag = row.tag.trim().replace(/\s+/g, "-");
+
         return {
           row: {
             tag: row.tag,
@@ -441,7 +446,7 @@ function renderFromTiles(container, tilesData) {
             niceTitle: niceTitle,
             thumbWidth: thumbWidth,
             thumbUrl: thumbUrl,
-            linkHref: `/tag/#${encodeURIComponent(row.tag)}`
+            linkHref: `/tag/#${dashedTag}`
           }
         };
       } catch {

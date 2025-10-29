@@ -1,8 +1,15 @@
+// assumes config.js is loaded first with:
+// CLOUD_NAME
 
 function getTagFromHash() {
-  const raw = window.location.hash.replace(/^#/, "").trim();
-  return decodeURIComponent(raw);
+  let raw = window.location.hash.replace(/^#/, "").trim();
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {}
+  const withSpaces = raw.replace(/-/g, " ");
+  return withSpaces;
 }
+
 
 function humanizePublicId(publicId) {
   let base = publicId.split("/").pop();
@@ -14,12 +21,18 @@ function humanizePublicId(publicId) {
 }
 
 async function fetchImagesForTag(tagName) {
+  // tagName here is already like "Vincent Van Gogh"
+  // Cloudinary expects that exact string (with spaces), URL-encoded.
   const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
+
   const res = await fetch(url, { mode: "cors" });
   if (!res.ok) {
     throw new Error(`Tag "${tagName}" not found (HTTP ${res.status})`);
   }
+
   const data = await res.json();
+
+  // sort newest first
   return (data.resources || []).sort(
     (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
   );
@@ -30,14 +43,14 @@ function renderTagGallery(tagName, images) {
   const tagStatusEl = document.getElementById("tagStatus");
   const tagGridEl = document.getElementById("tagGrid");
 
-  const prettyTagName = tagName.replace(/[-_]+/g, " ").trim();
+  // tagName is already "Vincent Van Gogh" (spaces), or "Vertical artworks"
+  const prettyTagName = tagName.trim();
   tagTitleEl.textContent = prettyTagName;
+  document.title = prettyTagName + " – Reframed";
 
-  // show artwork count under the title
   tagStatusEl.textContent = `${images.length} artwork${images.length === 1 ? "" : "s"}`;
 
   tagGridEl.innerHTML = "";
-
   const frag = document.createDocumentFragment();
 
   for (const img of images) {
@@ -46,11 +59,15 @@ function renderTagGallery(tagName, images) {
 
     const w = img.width;
     const h = img.height;
-    const isPortrait = typeof w === "number" && typeof h === "number" && h > w;
+    const isPortrait =
+      typeof w === "number" &&
+      typeof h === "number" &&
+      h > w;
+
     const thumbWidth = isPortrait ? 400 : 600;
 
     const card = document.createElement("a");
-    card.className = "tag-card";
+    card.className = "card artwork";
     card.href = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
     card.target = "_blank";
     card.rel = "noopener";
@@ -61,7 +78,7 @@ function renderTagGallery(tagName, images) {
     imgEl.alt = niceName;
 
     const caption = document.createElement("div");
-    caption.className = "tag-caption";
+    caption.className = "artwork-title";
     caption.textContent = niceName;
 
     card.appendChild(imgEl);
@@ -73,51 +90,67 @@ function renderTagGallery(tagName, images) {
 }
 
 async function loadAndRenderTagPage() {
-  const tagName = getTagFromHash();
   const tagViewEl = document.getElementById("tagView");
   const tagTitleEl = document.getElementById("tagTitle");
   const tagStatusEl = document.getElementById("tagStatus");
+  const tagGridEl = document.getElementById("tagGrid");
+
+  tagGridEl.innerHTML = "";
+
+  // This will now return "Vincent Van Gogh" for "#Vincent-Van-Gogh"
+  const tagName = getTagFromHash();
 
   if (!tagName) {
     tagTitleEl.textContent = "No tag selected";
     tagStatusEl.textContent = "";
+    tagViewEl.classList.remove("vertical");
+    document.title = "Reframed — Gallery";
     return;
   }
 
+  const prettyTagName = tagName.trim();
+  tagTitleEl.textContent = prettyTagName;
   tagStatusEl.textContent = "Loading…";
+  document.title = prettyTagName + " – Reframed";
 
   try {
     const images = await fetchImagesForTag(tagName);
 
-    // toggle vertical layout class
+    // Special layout rule
     if (tagName === "Vertical artworks") {
       tagViewEl.classList.add("vertical");
     } else {
       tagViewEl.classList.remove("vertical");
     }
 
-    // orientation filter (only landscape for normal tags)
+    // Only landscapes unless it's "Vertical artworks"
     const filtered =
       tagName === "Vertical artworks"
         ? images
         : images.filter(img => {
             const w = img.width;
             const h = img.height;
-            return typeof w === "number" && typeof h === "number" ? w >= h : true;
+            return (typeof w === "number" && typeof h === "number")
+              ? (w >= h)
+              : true;
           });
 
     if (!filtered.length) {
       tagStatusEl.textContent = "No artworks found.";
-      document.getElementById("tagGrid").innerHTML = "";
-      return;
+      tagGridEl.innerHTML = "";
+    } else {
+      renderTagGallery(tagName, filtered);
     }
-
-    renderTagGallery(tagName, filtered);
   } catch (err) {
     console.error(err);
     tagStatusEl.textContent = `Error: ${err.message}`;
+    tagGridEl.innerHTML = "";
+    tagViewEl.classList.remove("vertical");
   }
 }
 
+// run once
 loadAndRenderTagPage();
+
+// run again when hash changes (#Vincent-Van-Gogh -> #Edgar-Degas etc.)
 window.addEventListener("hashchange", loadAndRenderTagPage);

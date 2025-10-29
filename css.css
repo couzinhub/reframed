@@ -23,7 +23,7 @@ body {
 
 .hidden { display: none; }
 
-h1 {
+.home h1, h1 {
   text-align: center;
   font-size: 40px;
   margin-bottom: 1rem;
@@ -31,7 +31,10 @@ h1 {
   font-weight: 200;
   letter-spacing: 2px;
   line-height: 140%;
-  margin: 0 auto 40px;
+  margin: 0 auto 20px;
+}
+.home h1{
+    margin: 0 auto 40px;
 }
 
 h2 {
@@ -53,6 +56,14 @@ p {
   text-align: center;
   font-weight: 300;
   margin: 0 0 .2rem;
+}
+.tag-status {
+  text-align: center;
+  margin: 0 0 50px;
+  color: var(--color-spot);
+  font-weight: 300;
+  letter-spacing: 2p;
+  font-size: 20px;
 }
 
 .hidden { display: none; }
@@ -183,7 +194,8 @@ aside .own-art a {
 .row.hero-right .hero-col    { order: 1; }
 
 /* tile styles */
-.tile {
+.tile, 
+.card.artist  {
   position: relative;
   display: block;
   text-decoration: none;
@@ -193,9 +205,13 @@ aside .own-art a {
   border-radius: 16px;
   overflow: hidden;
   transition: transform 150ms ease, box-shadow 150ms ease;
-
 }
-.tile:hover {
+.card.artist {
+  display: inline-block;
+  margin: 0 20px 20px 0;
+}
+.tile:hover, 
+.card.artist:hover {
   box-shadow:
     white 0 0 0 4px,
     rgba(0, 0, 0, 0.5) 0 12px 30px;
@@ -208,7 +224,8 @@ aside .own-art a {
   height: 570px;
 }
 
-.tile.feature {
+.tile.feature,
+.card.artist {
   width: 480px;
   height: 270px;
 }
@@ -216,7 +233,7 @@ aside .own-art a {
 /* make <img> behave like a background cover */
 .tile img {
   position: absolute;
-  inset: 0;               /* shorthand for top/right/bottom/left:0 */
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -224,7 +241,8 @@ aside .own-art a {
 }
 
 /* label overlay */
-.tile .title {
+.tile .title, 
+.artist-name {
   position: absolute;
   left: 0;
   bottom: 0;
@@ -239,6 +257,15 @@ aside .own-art a {
   width: 100%;
   text-align: center;
   text-shadow: 0px 2px 3px rgba(0,0,0,0.5);
+}
+.artist-name {
+  font-size: 22px;
+  padding: 100px 0 20px;
+  transition: font-size 150ms ease, padding 150ms ease;
+}
+.card.artist:hover .artist-name{
+  font-size: 24px;
+  padding: 100px 0 24px;
 }
 
 
@@ -255,6 +282,9 @@ aside .own-art a {
 
 .card {
   position: relative;
+  display: inline-block;
+  width: 48%;
+  margin: 0 2% 2% 0;
 }
 
 .card a {
@@ -278,14 +308,36 @@ aside .own-art a {
   box-shadow:
     white 0 0 0 4px,
     rgba(0, 0, 0, 0.5) 0 12px 30px;
-  transform: scale(1.03);
+  transform: scale(1.01);
 }
 
 .card:hover img::after {
   box-shadow: inset 0px 0 1px 1px rgba(0, 0, 0, .7);
 }
 
-.info-overlay {
+.artwork::after {
+  content: "Download";
+  display: block;
+  background: rgba(0, 0, 0, .7) url(img/dld.svg) no-repeat center 10px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 76px;
+  height: 20px;
+  margin: -32px 0 0 -50px;
+  border-radius: 8px;
+  color: var(--color-txt);
+  text-align: center;
+  padding: 36px 12px 8px;
+  opacity: 0;
+    transition: opacity 150ms ease;
+
+}
+.artwork:hover::after {
+  opacity: 1;
+}
+
+.artwork-title {
   position: absolute;
   bottom: 2px;
   left: 0;
@@ -297,13 +349,14 @@ aside .own-art a {
   opacity: 0;
   transition: opacity 0.15s ease;
   pointer-events: none;
+  color: var(--color-txt);
 }
 
-.card:hover .info-overlay {
+.card:hover .artwork-title {
   opacity: 1;
 }
 
-.info-overlay h3 {
+.artwork-title h3 {
   margin: 0;
   font-size: 1rem;
   font-weight: 300;
