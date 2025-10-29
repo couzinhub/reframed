@@ -358,13 +358,11 @@ aside .own-art a {
   opacity: 1;
 }
 
-.artwork-title h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 300;
-  color: white;
+.card.artist,
+.card.artwork {
+  aspect-ratio: 16 / 9;
+  background-color: rgba(0, 0, 0, .4);
 }
-
 
 /* Mobile adjustments 
 -----------------------------*/
