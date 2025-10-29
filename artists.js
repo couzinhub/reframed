@@ -7,7 +7,7 @@ let ARTISTS_SCROLL_Y = 0;
 
 // cache for each tag's Cloudinary listing (thumb fetch)
 const TAG_IMAGES_CACHE = {};
-const TAG_TTL_MS = 5 * 60 * 1000; // 5 min
+const TAG_TTL_MS = (window.DEBUG ? 2 : 10) * 60 * 1000;
 
 // cache for artist rows from the CSV
 let ARTIST_ROWS_CACHE = null;
@@ -110,14 +110,18 @@ async function fetchImagesForTag(tagName) {
   // Check memory cache first
   const cached = TAG_IMAGES_CACHE[tagName];
   if (cached && (Date.now() - cached.lastFetched < TAG_TTL_MS)) {
-    return { all: cached.all, landscape: cached.landscape };
+    return {
+      all: cached.all,
+      landscape: cached.landscape,
+      count: cached.count
+    };
   }
 
   // Fetch from Cloudinary
   const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
   const res = await fetch(url, { mode: "cors" });
   if (!res.ok) {
-    return { all: [], landscape: [] };
+    return { all: [], landscape: [], count: 0 };
   }
 
   const data = await res.json();
@@ -133,13 +137,16 @@ async function fetchImagesForTag(tagName) {
     return (typeof w === "number" && typeof h === "number") ? w >= h : true;
   });
 
+  const count = all.length;
+
   TAG_IMAGES_CACHE[tagName] = {
     all,
     landscape,
+    count,
     lastFetched: Date.now()
   };
 
-  return { all, landscape };
+  return { all, landscape, count };
 }
 
 function pickFeaturedImage(row, imageSets) {
@@ -174,22 +181,14 @@ function humanizePublicId(publicId) {
 // ---------- RENDER ARTIST GRID ----------
 function buildArtistCard(row, imgData) {
   // row: { tag, label, featuredPublicId }
-  // imgData: chosenImage object OR null
 
   // Convert spaces to dashes for nicer URLs:
-  // "Vincent Van Gogh" -> "Vincent-Van-Gogh"
   const dashedTag = row.tag.trim().replace(/\s+/g, "-");
 
   const card = document.createElement("a");
   card.className = "card artist";
-
-  // use dashed tag in the URL instead of %20 encoding
   card.href = "/tag/#" + dashedTag;
-
   card.setAttribute("aria-label", row.label);
-
-  // keep original tag (with spaces) in data-tag
-  // we still need the real tag string elsewhere for Cloudinary lookups
   card.setAttribute("data-tag", row.tag);
 
   const thumbWrapper = document.createElement("div");
@@ -209,16 +208,34 @@ function buildArtistCard(row, imgData) {
 
   card.appendChild(thumbWrapper);
 
+  // label with optional count
   const labelEl = document.createElement("div");
   labelEl.className = "artist-name";
-  labelEl.textContent = row.label;
+
+  // try to find matching cache entry so we can pre-fill "(N)" on rerender
+  const cacheItem = ARTISTS_CACHE
+    ? ARTISTS_CACHE.find(a => a.row.tag === row.tag)
+    : null;
+
+  const countSpan = document.createElement("span");
+  countSpan.className = "art-count";
+
+  if (cacheItem && typeof cacheItem.imageCount === "number") {
+    countSpan.textContent = `(${cacheItem.imageCount})`;
+  } else {
+    countSpan.textContent = "";
+  }
+
+  labelEl.textContent = row.label + " ";
+  labelEl.appendChild(countSpan);
+
+  card.__labelEl = labelEl;
+  card.__countSpan = countSpan;
   card.appendChild(labelEl);
 
-  // Navigate for real (full page load to /tag/)
-  // and remember scroll position in memory like you had
+  // remember scroll position before navigating
   card.addEventListener("click", (ev) => {
     ev.preventDefault();
-
     ARTISTS_SCROLL_Y = window.scrollY;
 
     const dashedTagNow = row.tag.trim().replace(/\s+/g, "-");
@@ -259,28 +276,47 @@ function setupLazyThumbObserver() {
         continue;
       }
 
-      // already has a chosen thumb?
-      if (cacheItem.chosenImage) {
+      // If we already have both thumb + count, nothing to do
+      const alreadyHasThumb = !!cacheItem.chosenImage;
+      const alreadyHasCount = typeof cacheItem.imageCount === "number";
+
+      if (alreadyHasThumb && alreadyHasCount) {
         observer.unobserve(cardEl);
         continue;
       }
 
+      // Fetch images (this gives us image list + count)
       const imageSets = await fetchImagesForTag(tagName);
-      const chosenImage = pickFeaturedImage(cacheItem.row, imageSets);
-      cacheItem.chosenImage = chosenImage;
 
-      const thumbWrapper = cardEl.querySelector(".thumb");
-      if (thumbWrapper && chosenImage) {
-        thumbWrapper.innerHTML = "";
-        const niceName = humanizePublicId(chosenImage.public_id);
-        const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_600,q_auto,f_auto/${encodeURIComponent(chosenImage.public_id)}`;
-        const imgEl = document.createElement("img");
-        imgEl.loading = "lazy";
-        imgEl.src = thumbUrl;
-        imgEl.alt = niceName;
-        thumbWrapper.appendChild(imgEl);
-        thumbWrapper.classList.remove("placeholder");
+      // pick thumb if missing
+      if (!alreadyHasThumb) {
+        const chosenImage = pickFeaturedImage(cacheItem.row, imageSets);
+        cacheItem.chosenImage = chosenImage;
+
+        const thumbWrapper = cardEl.querySelector(".thumb");
+        if (thumbWrapper && chosenImage) {
+          thumbWrapper.innerHTML = "";
+          const niceName = humanizePublicId(chosenImage.public_id);
+          const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_600,q_auto,f_auto/${encodeURIComponent(chosenImage.public_id)}`;
+          const imgEl = document.createElement("img");
+          imgEl.loading = "lazy";
+          imgEl.src = thumbUrl;
+          imgEl.alt = niceName;
+          thumbWrapper.appendChild(imgEl);
+          thumbWrapper.classList.remove("placeholder");
+        }
       }
+
+      // record count if missing
+      if (!alreadyHasCount) {
+        cacheItem.imageCount = imageSets.count;
+      }
+
+      // update label: "Name (N)"
+      if (cardEl.__countSpan && typeof cacheItem.imageCount === "number") {
+        cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
+      }
+
 
       observer.unobserve(cardEl);
     }
@@ -313,8 +349,10 @@ function setupLazyThumbObserver() {
 
     ARTISTS_CACHE = rows.map(row => ({
       row,
-      chosenImage: null
+      chosenImage: null,
+      imageCount: null // will become a number after we load that tag
     }));
+
 
     renderArtistsGrid(ARTISTS_CACHE);
     setupLazyThumbObserver();
