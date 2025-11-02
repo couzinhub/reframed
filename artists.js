@@ -7,12 +7,16 @@ let ARTISTS_SCROLL_Y = 0;
 
 // cache for each tag's Cloudinary listing (thumb fetch)
 const TAG_IMAGES_CACHE = {};
-const TAG_TTL_MS = (window.DEBUG ? 2 : 10) * 60 * 1000;
+const TAG_TTL_MS = (window.DEBUG ? 2 : 20) * 60 * 1000;
 
 // cache for artist rows from the CSV
 let ARTIST_ROWS_CACHE = null;
 let ARTIST_ROWS_FETCHED_AT = 0;
 const ROWS_TTL_MS = 5 * 60 * 1000; // 5 min
+
+// localStorage cache for artists page
+const ARTISTS_LOCALSTORAGE_KEY = "reframed_artists_cache_v1";
+const ARTISTS_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours (match homepage)
 
 // ---------- CSV PARSER ----------
 function parseCSV(text) {
@@ -59,6 +63,42 @@ function parseCSV(text) {
   }
 
   return rows;
+}
+
+// ---------- LOCALSTORAGE CACHE HELPERS ----------
+function loadArtistsFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(ARTISTS_LOCALSTORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+
+    if (!parsed.savedAt || !Array.isArray(parsed.artists)) {
+      return null;
+    }
+
+    const age = Date.now() - parsed.savedAt;
+    if (age > ARTISTS_CACHE_TTL_MS) {
+      return null;
+    }
+
+    return parsed.artists;
+  } catch {
+    return null;
+  }
+}
+
+function saveArtistsToLocalStorage(artists) {
+  try {
+    localStorage.setItem(
+      ARTISTS_LOCALSTORAGE_KEY,
+      JSON.stringify({
+        savedAt: Date.now(),
+        artists: artists
+      })
+    );
+  } catch {
+    // ignore quota errors
+  }
 }
 
 // ---------- LOAD ARTIST ROWS ----------
@@ -196,7 +236,7 @@ function buildArtistCard(row, imgData) {
 
   if (imgData) {
     const niceName = humanizePublicId(imgData.public_id);
-    const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_600,q_auto,f_auto/${encodeURIComponent(imgData.public_id)}`;
+    const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_400,q_auto,f_auto/${encodeURIComponent(imgData.public_id)}`;
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";
     imgEl.src = thumbUrl;
@@ -297,7 +337,7 @@ function setupLazyThumbObserver() {
         if (thumbWrapper && chosenImage) {
           thumbWrapper.innerHTML = "";
           const niceName = humanizePublicId(chosenImage.public_id);
-          const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_600,q_auto,f_auto/${encodeURIComponent(chosenImage.public_id)}`;
+          const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_400,q_auto,f_auto/${encodeURIComponent(chosenImage.public_id)}`;
           const imgEl = document.createElement("img");
           imgEl.loading = "lazy";
           imgEl.src = thumbUrl;
@@ -342,6 +382,16 @@ function setupLazyThumbObserver() {
     return;
   }
 
+  // Try localStorage cache
+  const cachedArtists = loadArtistsFromLocalStorage();
+  if (cachedArtists && Array.isArray(cachedArtists)) {
+    ARTISTS_CACHE = cachedArtists;
+    renderArtistsGrid(ARTISTS_CACHE);
+    setupLazyThumbObserver();
+    status.textContent = "";
+    return;
+  }
+
   status.textContent = "Loading…";
 
   try {
@@ -353,6 +403,8 @@ function setupLazyThumbObserver() {
       imageCount: null // will become a number after we load that tag
     }));
 
+    // Save to localStorage
+    saveArtistsToLocalStorage(ARTISTS_CACHE);
 
     renderArtistsGrid(ARTISTS_CACHE);
     setupLazyThumbObserver();

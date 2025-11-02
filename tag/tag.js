@@ -1,6 +1,62 @@
 // assumes config.js is loaded first with:
 // CLOUD_NAME
 
+// ---------- TAG GALLERY CACHE ----------
+const TAG_GALLERY_CACHE_KEY = "reframed_tag_gallery_cache_v1";
+const TAG_GALLERY_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+function loadTagGalleryCache(tagName) {
+  try {
+    const raw = localStorage.getItem(TAG_GALLERY_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+
+    if (!parsed.tags || typeof parsed.tags !== "object") {
+      return null;
+    }
+
+    const tagCache = parsed.tags[tagName];
+    if (!tagCache || !tagCache.savedAt || !Array.isArray(tagCache.images)) {
+      return null;
+    }
+
+    const age = Date.now() - tagCache.savedAt;
+    if (age > TAG_GALLERY_CACHE_TTL_MS) {
+      return null;
+    }
+
+    return tagCache.images;
+  } catch {
+    return null;
+  }
+}
+
+function saveTagGalleryCache(tagName, images) {
+  try {
+    let parsed = { tags: {} };
+    const raw = localStorage.getItem(TAG_GALLERY_CACHE_KEY);
+    if (raw) {
+      try {
+        parsed = JSON.parse(raw);
+        if (!parsed.tags || typeof parsed.tags !== "object") {
+          parsed = { tags: {} };
+        }
+      } catch {
+        parsed = { tags: {} };
+      }
+    }
+
+    parsed.tags[tagName] = {
+      savedAt: Date.now(),
+      images: images
+    };
+
+    localStorage.setItem(TAG_GALLERY_CACHE_KEY, JSON.stringify(parsed));
+  } catch {
+    // ignore quota errors
+  }
+}
+
 function getTagFromHash() {
   let raw = window.location.hash.replace(/^#/, "").trim();
   try {
@@ -110,8 +166,23 @@ async function loadAndRenderTagPage() {
 
   const prettyTagName = tagName.trim();
   tagTitleEl.textContent = prettyTagName;
-  tagStatusEl.textContent = "Loading…";
   document.title = prettyTagName + " – Reframed";
+
+  // Try cache first
+  const cachedImages = loadTagGalleryCache(tagName);
+  if (cachedImages && Array.isArray(cachedImages)) {
+    // Special layout rule
+    if (tagName === "Vertical artworks") {
+      tagViewEl.classList.add("vertical");
+    } else {
+      tagViewEl.classList.remove("vertical");
+    }
+
+    renderTagGallery(tagName, cachedImages);
+    return;
+  }
+
+  tagStatusEl.textContent = "Loading…";
 
   try {
     const images = await fetchImagesForTag(tagName);
@@ -139,6 +210,8 @@ async function loadAndRenderTagPage() {
       tagStatusEl.textContent = "No artworks found.";
       tagGridEl.innerHTML = "";
     } else {
+      // Save to cache
+      saveTagGalleryCache(tagName, filtered);
       renderTagGallery(tagName, filtered);
     }
   } catch (err) {

@@ -48,53 +48,9 @@ function parseCSV(text) {
   return rows;
 }
 
-// ============ SETTINGS / HOMEPAGE TITLE / CACHE VERSION ============
-//
-// settings sheet format is assumed to be:
-// key,value
-// homepage_title,Your title here
-// cache_version,7
-//
-// We'll read both homepage_title and cache_version.
-
-async function loadSettings() {
-  const res = await fetch(SETTINGS_CSV_URL + "&t=" + Date.now());
-  if (!res.ok) throw new Error("Cannot load settings sheet");
-
-  const text = await res.text();
-  const lines = text
-    .split(/\r?\n/)
-    .map(l => l.trim())
-    .filter(l => l !== "");
-
-  const settings = {};
-  for (const line of lines.slice(1)) {
-    const firstComma = line.indexOf(",");
-    if (firstComma === -1) continue;
-
-    const rawKey = line.slice(0, firstComma);
-    const rawVal = line.slice(firstComma + 1);
-
-    const key = rawKey.replace(/^"(.*)"$/, "$1").trim();
-    const value = rawVal.replace(/^"(.*)"$/, "$1").trim();
-
-    if (!key) continue;
-    settings[key] = value;
-  }
-
-  return settings; // { homepage_title: "...", cache_version: "7", ... }
-}
-
-async function applyHomepageTitle(settings) {
-  try {
-    const titleEl = document.getElementById("mainTitle");
-    if (titleEl && settings.homepage_title) {
-      titleEl.textContent = settings.homepage_title;
-    }
-  } catch {
-    // ignore
-  }
-}
+// ============ CACHE VERSION ============
+// Cache version is now hardcoded - bump this when you want to invalidate cache
+const CACHE_VERSION = "1";
 
 // ============ HOMEPAGE ROWS (SHEET PARSE) ============
 //
@@ -105,8 +61,7 @@ async function applyHomepageTitle(settings) {
 // Image is the Cloudinary public_id override.
 
 async function loadHomepageRows() {
-  const url = HOMEPAGE_CSV_URL + "&t=" + Date.now();
-  const res = await fetch(url, { cache: "no-cache" });
+  const res = await fetch(HOMEPAGE_CSV_URL, { cache: "default" });
   if (!res.ok) {
     throw new Error("Could not load homepage sheet (HTTP " + res.status + ")");
   }
@@ -380,29 +335,14 @@ function renderFromTiles(container, tilesData) {
 (async function initHomepage() {
   const container = document.getElementById("homeView");
 
-  // 1. Load settings first (for title + cache version)
-  let settings;
-  try {
-    settings = await loadSettings();
-  } catch (err) {
-    settings = {};
-  }
-
-  await applyHomepageTitle(settings);
-
-  // We'll use this as a logical cache version.
-  // In your sheet, add a row:
-  // cache_version,8
-  const cacheVersion = settings.cache_version || "";
-
-  // 2. Try to use cache if version matches
-  const cached = loadHomepageCache(cacheVersion);
+  // 1. Try to use cache if version matches
+  const cached = loadHomepageCache(CACHE_VERSION);
   if (cached && Array.isArray(cached.tiles)) {
     renderFromTiles(container, cached.tiles);
     return;
   }
 
-  // 3. No valid cache → rebuild fresh
+  // 2. No valid cache → rebuild fresh
 
   let rowsData;
   try {
@@ -428,7 +368,7 @@ function renderFromTiles(container, tilesData) {
         const niceTitle = humanizePublicId(publicId);
 
         const isHero = row.style === "hero";
-        const thumbWidth = isHero ? 800 : 500;
+        const thumbWidth = isHero ? 700 : 400;
         const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_${thumbWidth},q_auto,f_auto/${encodeURI(publicId)}`;
 
         // PRETTY URL HERE:
@@ -457,9 +397,9 @@ function renderFromTiles(container, tilesData) {
 
   const liveTiles = liveTilesResults.filter(Boolean);
 
-  // 4. Save to cache along with version
-  saveHomepageCache(cacheVersion, liveTiles);
+  // 3. Save to cache along with version
+  saveHomepageCache(CACHE_VERSION, liveTiles);
 
-  // 5. Render
+  // 4. Render
   renderFromTiles(container, liveTiles);
 })();
