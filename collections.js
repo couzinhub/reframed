@@ -1,22 +1,22 @@
 // assumes config.js and shared.js are loaded first
-// config.js provides: CLOUD_NAME, ARTISTS_CSV_URL
+// config.js provides: CLOUD_NAME, COLLECTIONS_CSV_URL
 // shared.js provides: mobile menu functionality
 
 // ---------- lightweight in-tab cache ----------
-let ARTISTS_CACHE = null; // [{ row, chosenImage }, ...]
-let ARTISTS_SCROLL_Y = 0;
+let COLLECTIONS_CACHE = null;
+let COLLECTIONS_SCROLL_Y = 0;
 
 // cache for each tag's Cloudinary listing (thumb fetch)
 const TAG_IMAGES_CACHE = {};
 const TAG_TTL_MS = (window.DEBUG ? 2 : 20) * 60 * 1000;
 
-// cache for artist rows from the CSV
-let ARTIST_ROWS_CACHE = null;
-let ARTIST_ROWS_FETCHED_AT = 0;
+// cache for collection rows from the CSV
+let COLLECTION_ROWS_CACHE = null;
+let COLLECTION_ROWS_FETCHED_AT = 0;
 const ROWS_TTL_MS = 5 * 60 * 1000; // 5 min
 
-// localStorage cache for artists page
-const ARTISTS_LOCALSTORAGE_KEY = "reframed_artists_cache_v1";
+// localStorage cache for collections page
+const COLLECTIONS_LOCALSTORAGE_KEY = "reframed_collections_cache_v1";
 
 // ---------- CSV PARSER ----------
 function parseCSV(text) {
@@ -66,13 +66,13 @@ function parseCSV(text) {
 }
 
 // ---------- LOCALSTORAGE CACHE HELPERS ----------
-function loadArtistsFromLocalStorage() {
+function loadCollectionsFromLocalStorage() {
   try {
-    const raw = localStorage.getItem(ARTISTS_LOCALSTORAGE_KEY);
+    const raw = localStorage.getItem(COLLECTIONS_LOCALSTORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
 
-    if (!parsed.savedAt || !Array.isArray(parsed.artists)) {
+    if (!parsed.savedAt || !Array.isArray(parsed.collections)) {
       return null;
     }
 
@@ -81,19 +81,19 @@ function loadArtistsFromLocalStorage() {
       return null;
     }
 
-    return parsed.artists;
+    return parsed.collections;
   } catch {
     return null;
   }
 }
 
-function saveArtistsToLocalStorage(artists) {
+function saveCollectionsToLocalStorage(collections) {
   try {
     localStorage.setItem(
-      ARTISTS_LOCALSTORAGE_KEY,
+      COLLECTIONS_LOCALSTORAGE_KEY,
       JSON.stringify({
         savedAt: Date.now(),
-        artists: artists
+        collections: collections
       })
     );
   } catch {
@@ -101,31 +101,31 @@ function saveArtistsToLocalStorage(artists) {
   }
 }
 
-// ---------- LOAD ARTIST ROWS ----------
-async function loadArtistRows() {
+// ---------- LOAD COLLECTION ROWS ----------
+async function loadCollectionRows() {
   // serve cached rows if still "fresh"
   if (
-    ARTIST_ROWS_CACHE &&
-    (Date.now() - ARTIST_ROWS_FETCHED_AT < ROWS_TTL_MS)
+    COLLECTION_ROWS_CACHE &&
+    (Date.now() - COLLECTION_ROWS_FETCHED_AT < ROWS_TTL_MS)
   ) {
-    return ARTIST_ROWS_CACHE;
+    return COLLECTION_ROWS_CACHE;
   }
 
-  const res = await fetch(ARTISTS_CSV_URL + "&t=" + Date.now(), { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to load artist sheet: HTTP " + res.status);
+  const res = await fetch(COLLECTIONS_CSV_URL + "&t=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load collections sheet: HTTP " + res.status);
 
   const csvText = await res.text();
   const rows = parseCSV(csvText);
   if (!rows.length) {
-    ARTIST_ROWS_CACHE = [];
-    ARTIST_ROWS_FETCHED_AT = Date.now();
+    COLLECTION_ROWS_CACHE = [];
+    COLLECTION_ROWS_FETCHED_AT = Date.now();
     return [];
   }
 
   const header = rows[0].map(h => h.toLowerCase().trim());
   const tagCol = header.indexOf("tag");
   const labelCol = header.indexOf("label");
-  const idCol = header.indexOf("featured public id");
+  const idCol = header.indexOf("image");
 
   const out = [];
   for (let i = 1; i < rows.length; i++) {
@@ -140,8 +140,8 @@ async function loadArtistRows() {
     });
   }
 
-  ARTIST_ROWS_CACHE = out;
-  ARTIST_ROWS_FETCHED_AT = Date.now();
+  COLLECTION_ROWS_CACHE = out;
+  COLLECTION_ROWS_FETCHED_AT = Date.now();
   return out;
 }
 
@@ -218,8 +218,8 @@ function humanizePublicId(publicId) {
     .trim();
 }
 
-// ---------- RENDER ARTIST GRID ----------
-function buildArtistCard(row, imgData) {
+// ---------- RENDER COLLECTIONS GRID ----------
+function buildCollectionCard(row, imgData) {
   // row: { tag, label, featuredPublicId }
 
   // Convert spaces to dashes for nicer URLs:
@@ -253,8 +253,8 @@ function buildArtistCard(row, imgData) {
   labelEl.className = "artist-name";
 
   // try to find matching cache entry so we can pre-fill "(N)" on rerender
-  const cacheItem = ARTISTS_CACHE
-    ? ARTISTS_CACHE.find(a => a.row.tag === row.tag)
+  const cacheItem = COLLECTIONS_CACHE
+    ? COLLECTIONS_CACHE.find(c => c.row.tag === row.tag)
     : null;
 
   const countSpan = document.createElement("span");
@@ -276,7 +276,7 @@ function buildArtistCard(row, imgData) {
   // remember scroll position before navigating
   card.addEventListener("click", (ev) => {
     ev.preventDefault();
-    ARTISTS_SCROLL_Y = window.scrollY;
+    COLLECTIONS_SCROLL_Y = window.scrollY;
 
     const dashedTagNow = row.tag.trim().replace(/\s+/g, "-");
     const dest = "/tag/#" + dashedTagNow;
@@ -286,12 +286,12 @@ function buildArtistCard(row, imgData) {
   return card;
 }
 
-function renderArtistsGrid(artistsList) {
-  const grid = document.getElementById("artistsGrid");
+function renderCollectionsGrid(collectionsList) {
+  const grid = document.getElementById("collectionsGrid");
   grid.innerHTML = "";
   const frag = document.createDocumentFragment();
-  for (const artist of artistsList) {
-    frag.appendChild(buildArtistCard(artist.row, artist.chosenImage));
+  for (const collection of collectionsList) {
+    frag.appendChild(buildCollectionCard(collection.row, collection.chosenImage));
   }
   grid.appendChild(frag);
 }
@@ -310,7 +310,7 @@ function setupLazyThumbObserver() {
         continue;
       }
 
-      const cacheItem = ARTISTS_CACHE.find(a => a.row.tag === tagName);
+      const cacheItem = COLLECTIONS_CACHE.find(c => c.row.tag === tagName);
       if (!cacheItem) {
         observer.unobserve(cardEl);
         continue;
@@ -357,7 +357,6 @@ function setupLazyThumbObserver() {
         cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
       }
 
-
       observer.unobserve(cardEl);
     }
   }, {
@@ -370,48 +369,48 @@ function setupLazyThumbObserver() {
 }
 
 // ---------- MAIN INIT ----------
-(async function initArtistsPage() {
-  const status = document.getElementById("artistsStatus");
+(async function initCollectionsPage() {
+  const status = document.getElementById("collectionsStatus");
 
   // If we've already got data in this tab, reuse it and restore scroll
-  if (ARTISTS_CACHE && Array.isArray(ARTISTS_CACHE)) {
-    renderArtistsGrid(ARTISTS_CACHE);
+  if (COLLECTIONS_CACHE && Array.isArray(COLLECTIONS_CACHE)) {
+    renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
-    window.scrollTo(0, ARTISTS_SCROLL_Y);
-    status.textContent = `${ARTISTS_CACHE.length} artists`;
+    window.scrollTo(0, COLLECTIONS_SCROLL_Y);
+    status.textContent = `${COLLECTIONS_CACHE.length} collections`;
     return;
   }
 
   // Try localStorage cache
-  const cachedArtists = loadArtistsFromLocalStorage();
-  if (cachedArtists && Array.isArray(cachedArtists)) {
-    ARTISTS_CACHE = cachedArtists;
-    renderArtistsGrid(ARTISTS_CACHE);
+  const cachedCollections = loadCollectionsFromLocalStorage();
+  if (cachedCollections && Array.isArray(cachedCollections)) {
+    COLLECTIONS_CACHE = cachedCollections;
+    renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
-    status.textContent = `${ARTISTS_CACHE.length} artists`;
+    status.textContent = `${COLLECTIONS_CACHE.length} collections`;
     return;
   }
 
   status.innerHTML = 'Loading<span class="spinner"></span>';
 
   try {
-    const rows = await loadArtistRows();
+    const rows = await loadCollectionRows();
 
-    ARTISTS_CACHE = rows.map(row => ({
+    COLLECTIONS_CACHE = rows.map(row => ({
       row,
       chosenImage: null,
       imageCount: null // will become a number after we load that tag
     }));
 
     // Save to localStorage
-    saveArtistsToLocalStorage(ARTISTS_CACHE);
+    saveCollectionsToLocalStorage(COLLECTIONS_CACHE);
 
-    renderArtistsGrid(ARTISTS_CACHE);
+    renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
 
-    status.textContent = `${ARTISTS_CACHE.length} artists`;
+    status.textContent = `${COLLECTIONS_CACHE.length} collections`;
   } catch (err) {
     console.error(err);
-    status.textContent = "Error loading artists: " + err.message;
+    status.textContent = "Error loading collections: " + err.message;
   }
 })();

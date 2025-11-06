@@ -1,5 +1,6 @@
-// assumes config.js is loaded before this script so we have:
-// CLOUD_NAME, HOMEPAGE_CSV_URL, SETTINGS_CSV_URL
+// assumes config.js and shared.js are loaded before this script
+// config.js provides: CLOUD_NAME, HOMEPAGE_CSV_URL
+// shared.js provides: mobile menu functionality
 
 // ============ CSV PARSER ============
 function parseCSV(text) {
@@ -47,10 +48,6 @@ function parseCSV(text) {
 
   return rows;
 }
-
-// ============ CACHE VERSION ============
-// Cache version is now hardcoded - bump this when you want to invalidate cache
-const CACHE_VERSION = "1";
 
 // ============ HOMEPAGE ROWS (SHEET PARSE) ============
 //
@@ -160,7 +157,6 @@ function humanizePublicId(publicId) {
 // ============ HOMEPAGE CACHE WITH VERSION CHECK ============
 
 const HOMEPAGE_CACHE_KEY = "reframed_homepage_cache_v2"; // bumped so old v1 won't interfere
-const HOMEPAGE_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h
 
 function loadHomepageCache(expectedVersion) {
   try {
@@ -180,7 +176,7 @@ function loadHomepageCache(expectedVersion) {
 
     // TTL expired? invalidate
     const age = Date.now() - parsed.savedAt;
-    if (age > HOMEPAGE_CACHE_TTL_MS) {
+    if (age > CACHE_TTL_MS) {
       return null;
     }
 

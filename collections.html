@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Artists — Reframed</title>
-  <meta name="description" content="Browse artists whose works have been reframed for the Samsung Frame TV.">
+  <title>Collections — Reframed</title>
+  <meta name="description" content="Browse curated collections of reframed artworks for the Samsung Frame TV.">
 
   <link rel="icon" href="img/favicon.ico" type="image/x-icon">
   <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
@@ -14,29 +14,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css.css">
 </head>
-<body class="artists">
+<body class="collections">
 
   <script src="shared.js"></script>
-  <script>initializeNavigation('artists');</script>
+  <script>initializeNavigation('collections');</script>
 
   <main id="appView">
-    <section id="artistsPage">
-      <h1>Artists</h1>
-      <p id="artistsStatus" class="tag-status"></p>
-      <div id="artistsGrid"></div>
-    </section>
-
-    <section id="tagPage" style="display:none;">
-      <div id="tagHeader">
-        <h1 id="tagTitle"></h1>
-        <p id="tagStatus"></p>
-      </div>
-      <div id="tagGrid"></div>
+    <section id="collectionsPage">
+      <h1>Collections</h1>
+      <p id="collectionsStatus" class="tag-status"></p>
+      <div id="collectionsGrid"></div>
     </section>
   </main>
 
-
   <script src="config.js"></script>
-  <script src="artists.js"></script>
+  <script src="collections.js"></script>
 </body>
 </html>

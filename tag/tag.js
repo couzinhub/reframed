@@ -1,9 +1,40 @@
 // assumes config.js is loaded first with:
 // CLOUD_NAME
 
+// ---------- MOBILE MENU TOGGLE ----------
+const hamburgerMenu = document.querySelector('.hamburger-menu');
+const aside = document.querySelector('aside');
+
+if (hamburgerMenu) {
+  hamburgerMenu.addEventListener('click', () => {
+    hamburgerMenu.classList.toggle('active');
+    aside.classList.toggle('active');
+    document.body.classList.toggle('menu-open');
+  });
+
+  // Close menu when clicking overlay
+  document.body.addEventListener('click', (e) => {
+    if (document.body.classList.contains('menu-open') &&
+        !aside.contains(e.target) &&
+        !hamburgerMenu.contains(e.target)) {
+      hamburgerMenu.classList.remove('active');
+      aside.classList.remove('active');
+      document.body.classList.remove('menu-open');
+    }
+  });
+
+  // Close menu when clicking a link in the sidebar
+  aside.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      hamburgerMenu.classList.remove('active');
+      aside.classList.remove('active');
+      document.body.classList.remove('menu-open');
+    });
+  });
+}
+
 // ---------- TAG GALLERY CACHE ----------
 const TAG_GALLERY_CACHE_KEY = "reframed_tag_gallery_cache_v1";
-const TAG_GALLERY_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 function loadTagGalleryCache(tagName) {
   try {
@@ -21,7 +52,7 @@ function loadTagGalleryCache(tagName) {
     }
 
     const age = Date.now() - tagCache.savedAt;
-    if (age > TAG_GALLERY_CACHE_TTL_MS) {
+    if (age > CACHE_TTL_MS) {
       return null;
     }
 
@@ -182,7 +213,7 @@ async function loadAndRenderTagPage() {
     return;
   }
 
-  tagStatusEl.textContent = "Loading…";
+  tagStatusEl.innerHTML = 'Loading<span class="spinner"></span>';
 
   try {
     const images = await fetchImagesForTag(tagName);
