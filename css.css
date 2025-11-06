@@ -207,8 +207,8 @@ aside .own-art a {
 .row {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
-  width: auto;        /* fixed row width */
+  justify-content: center;
+  width: 100%;
   max-width: var(--page-maxwidth);
   gap: 30px;
 }
@@ -217,16 +217,19 @@ aside .own-art a {
 .hero-col {
   display: flex;
   flex-direction: column;
-  width: 790px;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: 790px;
+  flex-shrink: 1;
+  aspect-ratio: 79 / 57;
 }
 
 /* column that holds the 2 stacked feature tiles */
 .features-col {
   display: flex;
   flex-direction: column;
-  width: 480px;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: 480px;
+  flex-shrink: 1;
   gap: 30px;
 }
 
@@ -264,13 +267,16 @@ aside .own-art a {
 
 /* fixed tile sizes */
 .tile.hero {
-  width: 790px;
-  height: 570px;
+  width: 100%;
+  max-width: 790px;
+  height: 100%;
 }
 
 .tile.feature {
-  width: 480px;
-  height: 270px;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  aspect-ratio: 16 / 9;
 }
 
 /* make <img> behave like a background cover */
@@ -706,6 +712,68 @@ aside .own-art a {
   transform: translateY(-7px) rotate(-45deg);
 }
 
+/* Tablet and narrow desktop adjustments
+-----------------------------*/
+
+@media (max-width: 1100px) {
+  body {
+    padding: 30px 20px;
+  }
+
+  .home h1 {
+    font-size: 32px;
+    letter-spacing: 1px;
+  }
+
+  #homeView {
+    gap: 20px;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+  }
+
+  /* Hero always first, full width */
+  .row.hero-left .hero-col,
+  .row.hero-right .hero-col {
+    order: 0;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: unset;
+  }
+
+  /* Features column becomes a row */
+  .row.hero-left .features-col,
+  .row.hero-right .features-col {
+    order: 1;
+    width: 100%;
+    max-width: 100%;
+    flex-direction: row;
+    gap: 20px;
+  }
+
+  /* Feature tiles side by side */
+  .features-col .feature-top,
+  .features-col .feature-bottom {
+    flex: 1;
+  }
+
+  .tile.hero {
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 79 / 57;
+  }
+
+  .tile.feature {
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    flex: 1;
+  }
+}
+
 /* Mobile adjustments
 -----------------------------*/
 
@@ -771,6 +839,12 @@ aside .own-art a {
   .hero-col,
   .features-col {
     width: 100%;
+  }
+
+  /* Stack features vertically on mobile */
+  .row.hero-left .features-col,
+  .row.hero-right .features-col {
+    flex-direction: column;
   }
 
   .tile.hero,
