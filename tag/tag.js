@@ -181,15 +181,22 @@ function renderTagGallery(tagName, images) {
         const downloadLink = document.createElement('a');
         downloadLink.href = blobUrl;
         downloadLink.download = niceName || "artwork";
+        downloadLink.style.display = 'none';
         document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
 
-        // Track download for tip reminder
-        trackDownload();
+        // Use setTimeout to ensure the click happens after the element is fully added to DOM
+        setTimeout(() => {
+          downloadLink.click();
 
-        // Clean up the blob URL after a short delay
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+          // Track download for tip reminder
+          trackDownload();
+
+          // Clean up after a longer delay to ensure mobile browsers have time to process
+          setTimeout(() => {
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(blobUrl);
+          }, 1000);
+        }, 0);
       } catch (error) {
         console.error('Download failed:', error);
         showToast('Download failed, opening in new tab');
