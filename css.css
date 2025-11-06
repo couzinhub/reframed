@@ -290,7 +290,7 @@ aside .own-art a {
 }
 
 /* label overlay */
-.tile .title, 
+.tile .title,
 .artist-name {
   position: absolute;
   left: 0;
@@ -334,7 +334,7 @@ aside .own-art a {
   gap: 10px;
 }
 .tag-grid {
-  grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
   gap: 40px;
 }
 .vertical .tag-grid {

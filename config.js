@@ -4,7 +4,7 @@
 const CACHE_VERSION = "2";
 
 // Cache duration in milliseconds (30 minutes)
-const CACHE_TTL_MS = 30 * 60 * 1000;
+const CACHE_TTL_MS = 0;
 
 // === Cloudinary ===
 const CLOUD_NAME = "dqqutqsna";

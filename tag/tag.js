@@ -66,6 +66,59 @@ function getTagFromHash() {
   return withSpaces;
 }
 
+async function loadCollectionRowsIfNeeded() {
+  // If already loaded, return
+  if (window.COLLECTION_ROWS && Array.isArray(window.COLLECTION_ROWS)) {
+    return;
+  }
+
+  // Load from CSV
+  try {
+    const res = await fetch(COLLECTIONS_CSV_URL + "&t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+
+    const csvText = await res.text();
+    const rows = parseCSV(csvText);
+    if (!rows.length) return;
+
+    const header = rows[0].map(h => h.toLowerCase().trim());
+    const tagCol = header.indexOf("tag");
+    const labelCol = header.indexOf("label");
+    const idCol = header.indexOf("image");
+
+    const out = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      const tag = (r[tagCol] || "").trim();
+      if (!tag || tag.toLowerCase().startsWith("-- ignore")) continue;
+
+      out.push({
+        tag,
+        label: (r[labelCol] || tag).trim(),
+        featuredPublicId: (r[idCol] || "").trim()
+      });
+    }
+
+    window.COLLECTION_ROWS = out;
+  } catch {
+    // Silently fail - will fallback to tag name
+  }
+}
+
+function getLabelForTag(tagName) {
+  // Try to find the label from the collections data
+  if (window.COLLECTION_ROWS && Array.isArray(window.COLLECTION_ROWS)) {
+    const collection = window.COLLECTION_ROWS.find(
+      row => row.tag.toLowerCase() === tagName.toLowerCase()
+    );
+    if (collection && collection.label) {
+      return collection.label;
+    }
+  }
+  // Fallback to tag name if no label found
+  return tagName;
+}
+
 async function fetchImagesForTag(tagName) {
   // tagName here is already like "Vincent Van Gogh"
   // Cloudinary expects that exact string (with spaces), URL-encoded.
@@ -89,10 +142,10 @@ function renderTagGallery(tagName, images) {
   const tagStatusEl = document.getElementById("tagStatus");
   const tagGridEl = document.getElementById("tagGrid");
 
-  // tagName is already "Vincent Van Gogh" (spaces), or "Vertical artworks"
-  const prettyTagName = tagName.trim();
-  tagTitleEl.textContent = prettyTagName;
-  document.title = prettyTagName + " – Reframed";
+  // Get the display label from collections data, or fallback to tag name
+  const displayName = getLabelForTag(tagName);
+  tagTitleEl.textContent = displayName;
+  document.title = displayName + " – Reframed";
 
   tagStatusEl.textContent = `${images.length} artwork${images.length === 1 ? "" : "s"}`;
 
@@ -181,9 +234,12 @@ async function loadAndRenderTagPage() {
     return;
   }
 
-  const prettyTagName = tagName.trim();
-  tagTitleEl.textContent = prettyTagName;
-  document.title = prettyTagName + " – Reframed";
+  // Load collection rows to get labels if not already loaded
+  await loadCollectionRowsIfNeeded();
+
+  const displayName = getLabelForTag(tagName);
+  tagTitleEl.textContent = displayName;
+  document.title = displayName + " – Reframed";
 
   // Try cache first
   const cachedImages = loadTagGalleryCache(tagName);

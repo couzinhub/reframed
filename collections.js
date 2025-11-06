@@ -95,6 +95,10 @@ async function loadCollectionRows() {
 
   COLLECTION_ROWS_CACHE = out;
   COLLECTION_ROWS_FETCHED_AT = Date.now();
+
+  // Make globally available for tag page
+  window.COLLECTION_ROWS = out;
+
   return out;
 }
 
@@ -318,6 +322,8 @@ function setupLazyThumbObserver() {
 
   // If we've already got data in this tab, reuse it and restore scroll
   if (COLLECTIONS_CACHE && Array.isArray(COLLECTIONS_CACHE)) {
+    // Make globally available for tag page
+    window.COLLECTION_ROWS = COLLECTIONS_CACHE.map(c => c.row);
     renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
     window.scrollTo(0, COLLECTIONS_SCROLL_Y);
@@ -329,6 +335,8 @@ function setupLazyThumbObserver() {
   const cachedCollections = loadCollectionsFromLocalStorage();
   if (cachedCollections && Array.isArray(cachedCollections)) {
     COLLECTIONS_CACHE = cachedCollections;
+    // Make globally available for tag page
+    window.COLLECTION_ROWS = COLLECTIONS_CACHE.map(c => c.row);
     renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
     status.textContent = `${COLLECTIONS_CACHE.length} collections`;
