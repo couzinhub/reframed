@@ -30,7 +30,7 @@ function initializeNavigation(currentPage) {
         <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
         <li class="${currentPage === 'artists' ? 'current' : ''}"><a href="/artists.html">Artists</a></li>
         <li class="${currentPage === 'collections' ? 'current' : ''}"><a href="/collections.html">Collections</a></li>
-        <li class="${currentPage === 'vertical' ? 'current' : ''}"><a href="/tag/#Vertical-artworks">Vertical artworks</a></li>
+        <li class="${currentPage === 'tag' && window.location.hash === '#Vertical-artworks' ? 'current' : ''}"><a href="/tag/#Vertical-artworks">Vertical artworks</a></li>
         <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
         <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
       </ul>
@@ -77,9 +77,26 @@ function initializeNavigation(currentPage) {
     `;
   }
 
+  // Update Vertical artworks menu item if on tag page with hash
+  if (currentPage === 'tag') {
+    const updateVerticalMenuItem = () => {
+      const verticalItem = asideElement.querySelector('a[href="/tag/#Vertical-artworks"]')?.parentElement;
+      if (verticalItem) {
+        if (window.location.hash === '#Vertical-artworks') {
+          verticalItem.classList.add('current');
+        } else {
+          verticalItem.classList.remove('current');
+        }
+      }
+    };
+
+    // Update immediately and on hash change
+    setTimeout(updateVerticalMenuItem, 0);
+    window.addEventListener('hashchange', updateVerticalMenuItem);
+  }
+
   // Initialize mobile menu functionality
   const hamburgerMenu = document.querySelector('.hamburger-menu');
-  const asideElement = document.querySelector('aside');
 
   if (hamburgerMenu) {
     hamburgerMenu.addEventListener('click', () => {
