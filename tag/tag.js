@@ -167,42 +167,14 @@ function renderTagGallery(tagName, images) {
 
     const card = document.createElement("a");
     card.className = "card artwork";
-    card.href = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
+    card.href = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/fl_attachment:${encodeURIComponent(niceName)}/f_auto,q_auto/${encodeURIComponent(publicId)}`;
+    card.download = niceName || "artwork";
     card.rel = "noopener";
 
-    // Handle download via blob to work around CORS restrictions
-    card.addEventListener('click', async (e) => {
-      e.preventDefault();
-      try {
-        const response = await fetch(card.href);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-
-        const downloadLink = document.createElement('a');
-        downloadLink.href = blobUrl;
-        downloadLink.download = niceName || "artwork";
-        downloadLink.style.display = 'none';
-        document.body.appendChild(downloadLink);
-
-        // Use setTimeout to ensure the click happens after the element is fully added to DOM
-        setTimeout(() => {
-          downloadLink.click();
-
-          // Track download for tip reminder
-          trackDownload();
-
-          // Clean up after a longer delay to ensure mobile browsers have time to process
-          setTimeout(() => {
-            document.body.removeChild(downloadLink);
-            URL.revokeObjectURL(blobUrl);
-          }, 1000);
-        }, 0);
-      } catch (error) {
-        console.error('Download failed:', error);
-        showToast('Download failed, opening in new tab');
-        // Fallback to opening in new tab if download fails
-        window.open(card.href, '_blank');
-      }
+    // Track downloads for tip reminder
+    card.addEventListener('click', (e) => {
+      // Track download for tip reminder
+      trackDownload();
     });
 
     const imgEl = document.createElement("img");
