@@ -2,9 +2,9 @@
 // This code is shared across all pages
 
 function initializeNavigation(currentPage) {
-  // Determine if we're in a subdirectory
+  // Determine if we're in a subdirectory - use absolute paths for tag pages
   const isSubdirectory = window.location.pathname.includes('/tag/');
-  const imgPrefix = isSubdirectory ? '/' : '';
+  const imgPath = isSubdirectory ? '/img/reframed.svg' : 'img/reframed.svg';
 
   // Insert mobile top bar
   const mobileTopBar = `
@@ -15,7 +15,7 @@ function initializeNavigation(currentPage) {
         <span></span>
       </button>
       <a href="/">
-        <img src="${imgPrefix}/img/reframed.svg" alt="Reframed Logo" class="mobile-logo">
+        <img src="${imgPath}" alt="Reframed Logo" class="mobile-logo">
       </a>
     </div>
   `;
@@ -24,7 +24,7 @@ function initializeNavigation(currentPage) {
   const aside = `
     <aside>
       <a href="/">
-        <img id="logo" src="${imgPrefix}/img/reframed.svg" alt="Reframed Logo">
+        <img id="logo" src="${imgPath}" alt="Reframed Logo">
       </a>
       <ul>
         <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
@@ -34,13 +34,7 @@ function initializeNavigation(currentPage) {
         <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
         <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
       </ul>
-      <div class="button tip">
-        <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"><\/script>
-        <script>
-          kofiwidget2.init('Thank me with a tip', '#00488c', 'O5O51FWPUL');
-          kofiwidget2.draw();
-        <\/script>
-      </div>
+      <div class="button tip"></div>
       <div class="button own-art">
         <a class="contact" href="/contact.html">Get your own art reframed</a>
       </div>
@@ -49,6 +43,39 @@ function initializeNavigation(currentPage) {
 
   // Insert into page
   document.body.insertAdjacentHTML('afterbegin', mobileTopBar + aside);
+
+  // Add Ko-fi button styled like the original widget
+  const tipContainer = document.querySelector('.button.tip');
+  if (tipContainer) {
+    tipContainer.innerHTML = `
+      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button" style="
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: #00488c;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 7px;
+        font-family: 'Quicksand', Helvetica, sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 36px;
+        box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        min-width: 150px;
+        transition: opacity 0.2s;
+      " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+        <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi" style="
+          height: 15px;
+          width: 22px;
+          vertical-align: middle;
+          margin-right: 5px;
+          margin-bottom: 3px;
+          border: none;
+        ">
+        <span style="vertical-align: middle;">Thank me with a tip</span>
+      </a>
+    `;
+  }
 
   // Initialize mobile menu functionality
   const hamburgerMenu = document.querySelector('.hamburger-menu');
