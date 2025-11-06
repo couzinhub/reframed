@@ -119,6 +119,8 @@ aside ul .current a {
 aside .button {
   text-align: center;
   padding: 20px 0;
+  margin: 10px 30px;
+  width: 190px;
 }
 aside .tip .btn-container a {
   width: 166px;
@@ -129,8 +131,6 @@ aside .own-art {
   background-size: 100%;
   background-repeat: no-repeat;
   background-position: 0 0;
-  width: 190px;
-  margin: 10px 30px;
   padding: 0;
   border-radius: 10px;
   transition: transform 150ms ease, box-shadow 150ms ease;
@@ -146,6 +146,50 @@ aside .own-art a {
   display: block;
   padding: 120px 40px 10px;
   font-size: 14px;
+}
+
+/* Ko-fi Button */
+.kofi-button {
+  display: inline-block;
+  padding: 4px 12px;
+  background-color: #00488c;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 7px;
+  font-size: 14px;
+  line-height: 36px;
+  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.kofi-button:hover {
+  box-shadow: white 0 0 0 2px;
+  transform: scale(1.03);
+}
+
+.kofi-button.shake {
+  animation: shake 0.5s ease-in-out;
+  box-shadow: white 0 0 0 2px, 0 0 20px rgba(86, 204, 255, 0.5);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.kofi-button img {
+  height: 15px;
+  width: 22px;
+  vertical-align: middle;
+  margin-right: 5px;
+  margin-bottom: 3px;
+  border: none;
+}
+
+.kofi-button span {
+  vertical-align: middle;
 }
 
 /* Home 
@@ -563,6 +607,44 @@ aside .own-art a {
   to { transform: rotate(360deg); }
 }
 
+/* Toast Notification
+-----------------------------*/
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  background-color: rgba(15, 17, 24, 0.95);
+  color: var(--color-txt);
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid #1f2333;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  max-width: 90%;
+  text-align: center;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+.toast a {
+  color: var(--color-spot);
+  text-decoration: underline;
+  pointer-events: auto;
+}
+
+.toast a:hover {
+  color: #fff;
+}
+
 /* Mobile Top Bar & Hamburger Menu
 -----------------------------*/
 
@@ -779,6 +861,14 @@ aside .own-art a {
 
   .contact-page {
     padding: 10px;
+  }
+
+  /* Toast on mobile */
+  .toast {
+    bottom: 20px;
+    max-width: calc(100% - 40px);
+    font-size: 13px;
+    padding: 10px 20px;
   }
 }
 

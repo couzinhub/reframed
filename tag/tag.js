@@ -1,37 +1,6 @@
-// assumes config.js is loaded first with:
+// assumes config.js and shared.js are loaded first with:
 // CLOUD_NAME
-
-// ---------- MOBILE MENU TOGGLE ----------
-const hamburgerMenu = document.querySelector('.hamburger-menu');
-const aside = document.querySelector('aside');
-
-if (hamburgerMenu) {
-  hamburgerMenu.addEventListener('click', () => {
-    hamburgerMenu.classList.toggle('active');
-    aside.classList.toggle('active');
-    document.body.classList.toggle('menu-open');
-  });
-
-  // Close menu when clicking overlay
-  document.body.addEventListener('click', (e) => {
-    if (document.body.classList.contains('menu-open') &&
-        !aside.contains(e.target) &&
-        !hamburgerMenu.contains(e.target)) {
-      hamburgerMenu.classList.remove('active');
-      aside.classList.remove('active');
-      document.body.classList.remove('menu-open');
-    }
-  });
-
-  // Close menu when clicking a link in the sidebar
-  aside.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      hamburgerMenu.classList.remove('active');
-      aside.classList.remove('active');
-      document.body.classList.remove('menu-open');
-    });
-  });
-}
+// shared.js provides: parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
 
 // ---------- TAG GALLERY CACHE ----------
 const TAG_GALLERY_CACHE_KEY = "reframed_tag_gallery_cache_v1";
@@ -97,16 +66,6 @@ function getTagFromHash() {
   return withSpaces;
 }
 
-
-function humanizePublicId(publicId) {
-  let base = publicId.split("/").pop();
-  return base
-    .replace(/_/g, " ")
-    .replace(/\s*-\s*reframed[\s_-]*[a-z0-9]+$/i, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
 async function fetchImagesForTag(tagName) {
   // tagName here is already like "Vincent Van Gogh"
   // Cloudinary expects that exact string (with spaces), URL-encoded.
@@ -156,8 +115,35 @@ function renderTagGallery(tagName, images) {
     const card = document.createElement("a");
     card.className = "card artwork";
     card.href = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
-    card.target = "_blank";
     card.rel = "noopener";
+
+    // Handle download via blob to work around CORS restrictions
+    card.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const response = await fetch(card.href);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = niceName || "artwork";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        // Track download for tip reminder
+        trackDownload();
+
+        // Clean up the blob URL after a short delay
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      } catch (error) {
+        console.error('Download failed:', error);
+        showToast('Download failed, opening in new tab');
+        // Fallback to opening in new tab if download fails
+        window.open(card.href, '_blank');
+      }
+    });
 
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";

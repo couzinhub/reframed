@@ -1,6 +1,6 @@
 // assumes config.js and shared.js are loaded first
 // config.js provides: CLOUD_NAME, ARTISTS_CSV_URL
-// shared.js provides: mobile menu functionality
+// shared.js provides: parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
 
 // ---------- lightweight in-tab cache ----------
 let ARTISTS_CACHE = null; // [{ row, chosenImage }, ...]
@@ -17,53 +17,6 @@ const ROWS_TTL_MS = 5 * 60 * 1000; // 5 min
 
 // localStorage cache for artists page
 const ARTISTS_LOCALSTORAGE_KEY = "reframed_artists_cache_v1";
-
-// ---------- CSV PARSER ----------
-function parseCSV(text) {
-  const rows = [];
-  let current = [];
-  let value = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const next = text[i + 1];
-
-    if (inQuotes) {
-      if (ch === '"' && next === '"') {
-        value += '"';
-        i++;
-      } else if (ch === '"') {
-        inQuotes = false;
-      } else {
-        value += ch;
-      }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        current.push(value.trim());
-        value = "";
-      } else if (ch === "\r") {
-        // ignore
-      } else if (ch === "\n") {
-        current.push(value.trim());
-        rows.push(current);
-        current = [];
-        value = "";
-      } else {
-        value += ch;
-      }
-    }
-  }
-
-  if (value.length > 0 || inQuotes || current.length > 0) {
-    current.push(value.trim());
-    rows.push(current);
-  }
-
-  return rows;
-}
 
 // ---------- LOCALSTORAGE CACHE HELPERS ----------
 function loadArtistsFromLocalStorage() {
@@ -207,15 +160,6 @@ function pickFeaturedImage(row, imageSets) {
 
   const chosen = imageSets.all.find(matches);
   return chosen || imageSets.landscape[0] || imageSets.all[0] || null;
-}
-
-function humanizePublicId(publicId) {
-  let base = publicId.split("/").pop();
-  return base
-    .replace(/_/g, " ")
-    .replace(/\s*-\s*reframed[\s_-]*[a-z0-9]+$/i, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
 }
 
 // ---------- RENDER ARTIST GRID ----------

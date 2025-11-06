@@ -1,35 +1,3 @@
-// Mobile menu toggle
-const hamburgerMenu = document.querySelector('.hamburger-menu');
-const aside = document.querySelector('aside');
-
-if (hamburgerMenu) {
-  hamburgerMenu.addEventListener('click', () => {
-    hamburgerMenu.classList.toggle('active');
-    aside.classList.toggle('active');
-    document.body.classList.toggle('menu-open');
-  });
-
-  // Close menu when clicking overlay
-  document.body.addEventListener('click', (e) => {
-    if (document.body.classList.contains('menu-open') &&
-        !aside.contains(e.target) &&
-        !hamburgerMenu.contains(e.target)) {
-      hamburgerMenu.classList.remove('active');
-      aside.classList.remove('active');
-      document.body.classList.remove('menu-open');
-    }
-  });
-
-  // Close menu when clicking a link in the sidebar
-  aside.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      hamburgerMenu.classList.remove('active');
-      aside.classList.remove('active');
-      document.body.classList.remove('menu-open');
-    });
-  });
-}
-
 // Handle form submission
 const form = document.getElementById('contactForm');
 form.addEventListener('submit', async (e) => {

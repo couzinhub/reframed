@@ -1,53 +1,6 @@
 // assumes config.js and shared.js are loaded before this script
 // config.js provides: CLOUD_NAME, HOMEPAGE_CSV_URL
-// shared.js provides: mobile menu functionality
-
-// ============ CSV PARSER ============
-function parseCSV(text) {
-  const rows = [];
-  let current = [];
-  let value = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const next = text[i + 1];
-
-    if (inQuotes) {
-      if (ch === '"' && next === '"') {
-        value += '"';
-        i++;
-      } else if (ch === '"') {
-        inQuotes = false;
-      } else {
-        value += ch;
-      }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        current.push(value.trim());
-        value = "";
-      } else if (ch === "\r") {
-        // ignore
-      } else if (ch === "\n") {
-        current.push(value.trim());
-        rows.push(current);
-        current = [];
-        value = "";
-      } else {
-        value += ch;
-      }
-    }
-  }
-
-  if (value.length > 0 || inQuotes || current.length > 0) {
-    current.push(value.trim());
-    rows.push(current);
-  }
-
-  return rows;
-}
+// shared.js provides: parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
 
 // ============ HOMEPAGE ROWS (SHEET PARSE) ============
 //
@@ -143,15 +96,6 @@ function chooseFeaturedImage(row, images) {
     if (match) return match;
   }
   return images.length > 0 ? images[0] : null;
-}
-
-function humanizePublicId(publicId) {
-  let base = publicId.split("/").pop();
-  return base
-    .replace(/_/g, " ")
-    .replace(/\s*-\s*reframed[\s_-]*[a-z0-9]+$/i, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
 }
 
 // ============ HOMEPAGE CACHE WITH VERSION CHECK ============

@@ -1,3 +1,165 @@
+// ============ SHARED UTILITY FUNCTIONS ============
+
+// CSV Parser - parses CSV text into rows
+function parseCSV(text) {
+  const rows = [];
+  let current = [];
+  let value = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"' && next === '"') {
+        value += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        value += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        current.push(value.trim());
+        value = "";
+      } else if (ch === "\r") {
+        // ignore
+      } else if (ch === "\n") {
+        current.push(value.trim());
+        rows.push(current);
+        current = [];
+        value = "";
+      } else {
+        value += ch;
+      }
+    }
+  }
+
+  if (value.length > 0 || inQuotes || current.length > 0) {
+    current.push(value.trim());
+    rows.push(current);
+  }
+
+  return rows;
+}
+
+// Humanize Public ID - converts Cloudinary public IDs to readable names
+function humanizePublicId(publicId) {
+  let base = publicId.split("/").pop();
+  return base
+    .replace(/_/g, " ")
+    .replace(/\s*-\s*reframed[\s_-]*[a-z0-9]+$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// Generic Cache Helpers
+function loadFromCache(cacheKey, ttlMs) {
+  try {
+    const raw = localStorage.getItem(cacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+
+    if (!parsed.savedAt) return null;
+
+    const age = Date.now() - parsed.savedAt;
+    if (ttlMs && age > ttlMs) return null;
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveToCache(cacheKey, data) {
+  try {
+    const toSave = {
+      ...data,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(cacheKey, JSON.stringify(toSave));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+// Toast Notification - can be used across pages
+function showToast(message, duration = 3000, isHtml = false) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+
+  if (isHtml) {
+    toast.innerHTML = message;
+    // Enable pointer events for HTML toasts (contains links)
+    toast.style.pointerEvents = 'auto';
+  } else {
+    toast.textContent = message;
+  }
+
+  document.body.appendChild(toast);
+
+  // Trigger animation
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+
+  // Remove toast after duration
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 300);
+  }, duration);
+}
+
+// Download tracking - shows tip reminder every 3 downloads
+const DOWNLOAD_COUNT_KEY = 'reframed_download_count';
+const DOWNLOAD_THRESHOLD = 3;
+
+function trackDownload() {
+  try {
+    let count = parseInt(localStorage.getItem(DOWNLOAD_COUNT_KEY) || '0', 10);
+    count++;
+    localStorage.setItem(DOWNLOAD_COUNT_KEY, count.toString());
+
+    console.log('Download count:', count); // Debug
+
+    // Show reminder every 3 downloads (3, 6, 9, 12, etc.)
+    if (count % DOWNLOAD_THRESHOLD === 0) {
+      console.log('Showing tip reminder'); // Debug
+
+      // Check if we're on mobile viewport (narrow window) or if mobile menu is visible
+      const isMobile = window.innerWidth <= 768;
+      const mobileTopBar = document.querySelector('.mobile-top-bar');
+      const isMobileLayout = mobileTopBar && window.getComputedStyle(mobileTopBar).display !== 'none';
+
+      console.log('Width:', window.innerWidth, 'isMobile:', isMobile, 'isMobileLayout:', isMobileLayout); // Debug
+
+      if (isMobile || isMobileLayout) {
+        // Show toast with link on mobile/narrow viewport
+        const tipMessage = 'Enjoying the downloads? <a href="https://ko-fi.com/O5O51FWPUL" target="_blank">Buy me a coffee!</a>';
+        showToast(tipMessage, 5000, true);
+      } else {
+        // Shake the tip button on desktop
+        const tipButton = document.querySelector('.kofi-button');
+        if (tipButton) {
+          tipButton.classList.add('shake');
+          setTimeout(() => tipButton.classList.remove('shake'), 1000);
+        }
+      }
+    }
+  } catch (error) {
+    // Ignore errors in tracking
+    console.error('Download tracking error:', error);
+  }
+}
+
 // ============ NAVIGATION MENU COMPONENT ============
 // This code is shared across all pages
 
@@ -48,31 +210,9 @@ function initializeNavigation(currentPage) {
   const tipContainer = document.querySelector('.button.tip');
   if (tipContainer) {
     tipContainer.innerHTML = `
-      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button" style="
-        display: inline-block;
-        padding: 8px 16px;
-        background-color: #00488c;
-        color: #fff;
-        text-decoration: none;
-        border-radius: 7px;
-        font-family: 'Quicksand', Helvetica, sans-serif;
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 36px;
-        box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
-        text-align: center;
-        min-width: 150px;
-        transition: opacity 0.2s;
-      " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-        <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi" style="
-          height: 15px;
-          width: 22px;
-          vertical-align: middle;
-          margin-right: 5px;
-          margin-bottom: 3px;
-          border: none;
-        ">
-        <span style="vertical-align: middle;">Thank me with a tip</span>
+      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button">
+        <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
+        <span>Thank me with a tip</span>
       </a>
     `;
   }
@@ -97,8 +237,9 @@ function initializeNavigation(currentPage) {
 
   // Initialize mobile menu functionality
   const hamburgerMenu = document.querySelector('.hamburger-menu');
+  const asideElement = document.querySelector('aside');
 
-  if (hamburgerMenu) {
+  if (hamburgerMenu && asideElement) {
     hamburgerMenu.addEventListener('click', () => {
       hamburgerMenu.classList.toggle('active');
       asideElement.classList.toggle('active');
