@@ -167,15 +167,79 @@ function renderTagGallery(tagName, images) {
 
     const card = document.createElement("a");
     card.className = "card artwork";
-    card.href = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/fl_attachment:${encodeURIComponent(niceName)}/f_auto,q_auto/${encodeURIComponent(publicId)}`;
+    card.href = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
     card.download = niceName || "artwork";
     card.rel = "noopener";
 
-    // Track downloads for tip reminder
-    card.addEventListener('click', (e) => {
-      // Track download for tip reminder
-      trackDownload();
-    });
+    // Detect if mobile/touch device
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (isMobile) {
+      // Mobile: Two-tap behavior (first tap shows title/hover, second tap downloads)
+      let tapped = false;
+      card.addEventListener('click', (e) => {
+        if (!tapped) {
+          // First tap: show hover state
+          e.preventDefault();
+          card.classList.add('mobile-active');
+          tapped = true;
+
+          // Reset after 2 seconds if they don't tap again
+          setTimeout(() => {
+            card.classList.remove('mobile-active');
+            tapped = false;
+          }, 2000);
+        } else {
+          // Second tap: show downloading state and track it
+          card.classList.remove('mobile-active');
+          card.classList.add('downloading');
+          trackDownload();
+
+          // Remove downloading state after download starts
+          setTimeout(() => {
+            card.classList.remove('downloading');
+          }, 1500);
+        }
+      });
+    } else {
+      // Desktop: Use blob download to work around CORS
+      card.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        // Show downloading state
+        card.classList.add('downloading');
+
+        try {
+          const response = await fetch(card.href);
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          const downloadLink = document.createElement('a');
+          downloadLink.href = blobUrl;
+          downloadLink.download = niceName || "artwork";
+          downloadLink.style.display = 'none';
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+
+          // Track download for tip reminder
+          trackDownload();
+
+          // Remove downloading state and clean up after a delay
+          setTimeout(() => {
+            card.classList.remove('downloading');
+            if (downloadLink.parentNode) {
+              document.body.removeChild(downloadLink);
+            }
+            URL.revokeObjectURL(blobUrl);
+          }, 1000);
+        } catch (error) {
+          console.error('Download failed:', error);
+          card.classList.remove('downloading');
+          showToast('Download failed, opening in new tab');
+          window.open(card.href, '_blank');
+        }
+      });
+    }
 
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";
