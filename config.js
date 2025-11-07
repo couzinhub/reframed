@@ -1,7 +1,7 @@
 // === CONFIG ===
 
 // Cache version - bump this to invalidate all cached data
-const CACHE_VERSION = "4";
+const CACHE_VERSION = "5";
 
 // Cache duration in milliseconds (30 minutes)
 const CACHE_TTL_MS = 30 * 60 * 1000;
