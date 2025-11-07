@@ -192,7 +192,7 @@ function initializeNavigation(currentPage) {
         <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
         <li class="${currentPage === 'artists' ? 'current' : ''}"><a href="/artists.html">Artists</a></li>
         <li class="${currentPage === 'collections' ? 'current' : ''}"><a href="/collections.html">Collections</a></li>
-        <li class="${currentPage === 'tag' && window.location.hash === '#Vertical-artworks' ? 'current' : ''}"><a href="/tag/#Vertical-artworks">Vertical artworks</a></li>
+        <li class="${currentPage === 'tag' && window.location.hash === '#Vertical%20artworks' ? 'current' : ''}"><a href="/tag/#Vertical%20artworks">Vertical artworks</a></li>
         <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
         <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
       </ul>

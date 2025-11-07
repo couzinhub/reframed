@@ -170,12 +170,16 @@ function pickFeaturedImage(row, imageSets) {
 function buildCollectionCard(row, imgData) {
   // row: { tag, label, featuredPublicId }
 
-  // Convert spaces to dashes for nicer URLs:
-  const dashedTag = row.tag.trim().replace(/\s+/g, "-");
+  // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
+  // "John Lennon" -> "John-Lennon"
+  // "Charles-François Daubigny" -> "Charles%2DFrançois-Daubigny"
+  const prettyTag = row.tag.trim()
+    .replace(/-/g, "%2D")  // Encode existing hyphens
+    .replace(/\s+/g, "-");  // Convert spaces to dashes
 
   const card = document.createElement("a");
   card.className = "card artist";
-  card.href = "/tag/#" + dashedTag;
+  card.href = "/tag/#" + prettyTag;
   card.setAttribute("aria-label", row.label);
   card.setAttribute("data-tag", row.tag);
 
@@ -226,8 +230,10 @@ function buildCollectionCard(row, imgData) {
     ev.preventDefault();
     COLLECTIONS_SCROLL_Y = window.scrollY;
 
-    const dashedTagNow = row.tag.trim().replace(/\s+/g, "-");
-    const dest = "/tag/#" + dashedTagNow;
+    const prettyTag = row.tag.trim()
+      .replace(/-/g, "%2D")
+      .replace(/\s+/g, "-");
+    const dest = "/tag/#" + prettyTag;
     window.location.href = dest;
   });
 

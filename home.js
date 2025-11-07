@@ -311,9 +311,10 @@ function renderFromTiles(container, tilesData) {
         const thumbWidth = isHero ? 700 : 400;
         const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_${thumbWidth},q_auto,f_auto/${encodeURI(publicId)}`;
 
-        // PRETTY URL HERE:
-        // "Vincent Van Gogh" -> "Vincent-Van-Gogh"
-        const dashedTag = row.tag.trim().replace(/\s+/g, "-");
+        // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
+        const prettyTag = row.tag.trim()
+          .replace(/-/g, "%2D")
+          .replace(/\s+/g, "-");
 
         return {
           row: {
@@ -326,7 +327,7 @@ function renderFromTiles(container, tilesData) {
             niceTitle: niceTitle,
             thumbWidth: thumbWidth,
             thumbUrl: thumbUrl,
-            linkHref: `/tag/#${dashedTag}`
+            linkHref: `/tag/#${prettyTag}`
           }
         };
       } catch {

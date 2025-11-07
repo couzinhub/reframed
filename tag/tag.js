@@ -58,12 +58,32 @@ function saveTagGalleryCache(tagName, images) {
 }
 
 function getTagFromHash() {
+  // Get the raw hash without #
   let raw = window.location.hash.replace(/^#/, "").trim();
+
+  // Decode it - this handles both regular dashes AND %2D (encoded hyphens)
   try {
     raw = decodeURIComponent(raw);
   } catch {}
-  const withSpaces = raw.replace(/-/g, " ");
-  return withSpaces;
+
+  // Now replace all remaining dashes with spaces
+  // If there was a %2D in the URL, it's now a dash and will become a space
+  // But we need the opposite - we want %2D to stay as a dash!
+
+  // Better approach: work with the undecoded URL
+  const urlHash = window.location.hash.replace(/^#/, "").trim();
+
+  // Replace unencoded dashes with spaces, but keep %2D as dashes
+  const tagName = urlHash
+    .replace(/-/g, " ")  // Convert dashes to spaces
+    .replace(/%2D/gi, "-");  // Convert %2D back to dashes
+
+  // Now decode the result to handle other encoded chars
+  try {
+    return decodeURIComponent(tagName);
+  } catch {
+    return tagName;
+  }
 }
 
 async function loadCollectionRowsIfNeeded() {
