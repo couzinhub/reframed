@@ -130,7 +130,8 @@ async function fetchImagesForTag(tagName) {
     return (typeof w === "number" && typeof h === "number") ? w >= h : true;
   });
 
-  const count = all.length;
+  // Count only landscape artworks (exclude vertical)
+  const count = landscape.length;
 
   TAG_IMAGES_CACHE[tagName] = {
     all,
