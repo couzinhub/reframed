@@ -88,7 +88,7 @@ function saveToCache(cacheKey, data) {
 }
 
 // Toast Notification - can be used across pages
-function showToast(message, duration = 3000, isHtml = false) {
+function showToast(message, duration = 5000, isHtml = false) {
   const toast = document.createElement('div');
   toast.className = 'toast';
 
@@ -118,47 +118,38 @@ function showToast(message, duration = 3000, isHtml = false) {
   }, duration);
 }
 
-// Download tracking - shows tip reminder every 3 downloads
-const DOWNLOAD_COUNT_KEY = 'reframed_download_count';
-const DOWNLOAD_THRESHOLD = 3;
+// Tip reminder - shakes button every 20 seconds
+function startTipReminder() {
+  setInterval(() => {
+    // Check if we're on mobile viewport (narrow window) or if mobile menu is visible
+    const isMobile = window.innerWidth <= 768;
+    const mobileTopBar = document.querySelector('.mobile-top-bar');
+    const isMobileLayout = mobileTopBar && window.getComputedStyle(mobileTopBar).display !== 'none';
 
-function trackDownload() {
-  try {
-    let count = parseInt(localStorage.getItem(DOWNLOAD_COUNT_KEY) || '0', 10);
-    count++;
-    localStorage.setItem(DOWNLOAD_COUNT_KEY, count.toString());
-
-    console.log('Download count:', count); // Debug
-
-    // Show reminder every 3 downloads (3, 6, 9, 12, etc.)
-    if (count % DOWNLOAD_THRESHOLD === 0) {
-      console.log('Showing tip reminder'); // Debug
-
-      // Check if we're on mobile viewport (narrow window) or if mobile menu is visible
-      const isMobile = window.innerWidth <= 768;
-      const mobileTopBar = document.querySelector('.mobile-top-bar');
-      const isMobileLayout = mobileTopBar && window.getComputedStyle(mobileTopBar).display !== 'none';
-
-      console.log('Width:', window.innerWidth, 'isMobile:', isMobile, 'isMobileLayout:', isMobileLayout); // Debug
-
-      if (isMobile || isMobileLayout) {
-        // Show toast with link on mobile/narrow viewport
-        const tipMessage = 'Enjoying the downloads? <a href="https://ko-fi.com/O5O51FWPUL" target="_blank">Buy me a coffee!</a>';
-        showToast(tipMessage, 5000, true);
-      } else {
-        // Shake the tip button on desktop
-        const tipButton = document.querySelector('.kofi-button');
-        if (tipButton) {
-          tipButton.classList.add('shake');
-          setTimeout(() => tipButton.classList.remove('shake'), 1000);
-        }
+    if (!isMobile && !isMobileLayout) {
+      // Shake the tip button on desktop only
+      const tipButton = document.querySelector('.kofi-button');
+      if (tipButton) {
+        tipButton.classList.add('shake');
+        setTimeout(() => tipButton.classList.remove('shake'), 1000);
       }
     }
-  } catch (error) {
-    // Ignore errors in tracking
-    console.error('Download tracking error:', error);
-  }
+  }, 20000); // Every 20 seconds
 }
+
+// Start the tip reminder when page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startTipReminder);
+} else {
+  startTipReminder();
+}
+
+// ============ DOWNLOADS ICON SVG ============
+const DOWNLOAD_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+  <polyline points="7 10 12 15 17 10"></polyline>
+  <line x1="12" y1="15" x2="12" y2="3"></line>
+</svg>`;
 
 // ============ NAVIGATION MENU COMPONENT ============
 // This code is shared across all pages

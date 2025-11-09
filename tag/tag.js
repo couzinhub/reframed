@@ -139,6 +139,24 @@ function getLabelForTag(tagName) {
   return tagName;
 }
 
+// ============ ADD ALL TO DOWNLOADS FUNCTIONALITY ============
+
+// Store current images for "Add All" functionality
+let currentTagImages = [];
+
+function updateAddAllButton(images) {
+  const addAllBtn = document.getElementById('addAllToDownloads');
+  if (!addAllBtn) return;
+
+  currentTagImages = images;
+
+  if (images.length > 0) {
+    addAllBtn.style.display = 'block';
+  } else {
+    addAllBtn.style.display = 'none';
+  }
+}
+
 async function fetchImagesForTag(tagName) {
   // tagName here is already like "Vincent Van Gogh"
   // Cloudinary expects that exact string (with spaces), URL-encoded.
@@ -185,80 +203,28 @@ function renderTagGallery(tagName, images) {
 
     const thumbWidth = isPortrait ? 400 : 600;
 
-    const card = document.createElement("a");
+    const card = document.createElement("div");
     card.className = "card artwork";
-    card.href = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
-    card.download = niceName || "artwork";
-    card.rel = "noopener";
+    card.dataset.publicId = publicId;
 
-    // Detect if mobile/touch device
-    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const cloudinaryUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
 
-    if (isMobile) {
-      // Mobile: Two-tap behavior (first tap shows title/hover, second tap downloads)
-      let tapped = false;
-      card.addEventListener('click', (e) => {
-        if (!tapped) {
-          // First tap: show hover state
-          e.preventDefault();
-          card.classList.add('mobile-active');
-          tapped = true;
+    // Add click handler to toggle downloads queue
+    card.addEventListener('click', (e) => {
+      e.preventDefault();
 
-          // Reset after 2 seconds if they don't tap again
-          setTimeout(() => {
-            card.classList.remove('mobile-active');
-            tapped = false;
-          }, 2000);
+      if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
+        if (window.isInDownloads(publicId)) {
+          window.removeFromDownloads(publicId);
         } else {
-          // Second tap: show downloading state and track it
-          card.classList.remove('mobile-active');
-          card.classList.add('downloading');
-          trackDownload();
-
-          // Remove downloading state after download starts
-          setTimeout(() => {
-            card.classList.remove('downloading');
-          }, 1500);
+          window.addToDownloads(publicId, niceName, cloudinaryUrl, isPortrait ? 'portrait' : 'landscape');
         }
-      });
-    } else {
-      // Desktop: Use blob download to work around CORS
-      card.addEventListener('click', async (e) => {
-        e.preventDefault();
+      }
+    });
 
-        // Show downloading state
-        card.classList.add('downloading');
-
-        try {
-          const response = await fetch(card.href);
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-
-          const downloadLink = document.createElement('a');
-          downloadLink.href = blobUrl;
-          downloadLink.download = niceName || "artwork";
-          downloadLink.style.display = 'none';
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-
-          // Track download for tip reminder
-          trackDownload();
-
-          // Remove downloading state and clean up after a delay
-          setTimeout(() => {
-            card.classList.remove('downloading');
-            if (downloadLink.parentNode) {
-              document.body.removeChild(downloadLink);
-            }
-            URL.revokeObjectURL(blobUrl);
-          }, 1000);
-        } catch (error) {
-          console.error('Download failed:', error);
-          card.classList.remove('downloading');
-          showToast('Download failed, opening in new tab');
-          window.open(card.href, '_blank');
-        }
-      });
+    // Set initial state if in downloads
+    if (typeof window.isInDownloads === 'function' && window.isInDownloads(publicId)) {
+      card.classList.add('in-downloads');
     }
 
     const imgEl = document.createElement("img");
@@ -276,6 +242,9 @@ function renderTagGallery(tagName, images) {
   }
 
   tagGridEl.appendChild(frag);
+
+  // Update add all button
+  updateAddAllButton(images);
 }
 
 async function loadAndRenderTagPage() {
@@ -285,6 +254,9 @@ async function loadAndRenderTagPage() {
   const tagGridEl = document.getElementById("tagGrid");
 
   tagGridEl.innerHTML = "";
+
+  // Hide add all button while loading
+  updateAddAllButton([]);
 
   // This will now return "Vincent Van Gogh" for "#Vincent-Van-Gogh"
   const tagName = getTagFromHash();
@@ -345,6 +317,7 @@ async function loadAndRenderTagPage() {
     if (!filtered.length) {
       tagStatusEl.textContent = "No artworks found.";
       tagGridEl.innerHTML = "";
+      updateAddAllButton([]);
     } else {
       // Save to cache
       saveTagGalleryCache(tagName, filtered);
@@ -355,8 +328,40 @@ async function loadAndRenderTagPage() {
     tagStatusEl.textContent = `Error: ${err.message}`;
     tagGridEl.innerHTML = "";
     tagViewEl.classList.remove("vertical");
+    updateAddAllButton([]);
   }
 }
+
+function setupAddAllButton() {
+  const addAllBtn = document.getElementById('addAllToDownloads');
+  if (!addAllBtn) return;
+
+  addAllBtn.addEventListener('click', () => {
+    if (currentTagImages.length === 0) return;
+
+    let addedCount = 0;
+    currentTagImages.forEach(img => {
+      const publicId = img.public_id;
+      const niceName = humanizePublicId(publicId);
+      const w = img.width;
+      const h = img.height;
+      const isPortrait = typeof w === "number" && typeof h === "number" && h > w;
+      const cloudinaryUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
+
+      if (typeof window.addToDownloads === 'function') {
+        const added = window.addToDownloads(publicId, niceName, cloudinaryUrl, isPortrait ? 'portrait' : 'landscape');
+        if (added) addedCount++;
+      }
+    });
+
+    if (addedCount > 0) {
+      showToast(`Added ${addedCount} artwork${addedCount === 1 ? '' : 's'} to downloads`);
+    }
+  });
+}
+
+// Initialize add all button
+setupAddAllButton();
 
 // run once
 loadAndRenderTagPage();
