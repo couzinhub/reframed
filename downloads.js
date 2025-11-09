@@ -430,6 +430,12 @@ async function startSequentialDownload() {
     const itemCard = document.querySelector(`.downloads-item[data-public-id="${nextItem.publicId}"]`);
     if (itemCard) {
       itemCard.classList.add('downloading');
+
+      // Scroll the item into view
+      const modalBody = document.querySelector('.downloads-modal-body');
+      if (modalBody) {
+        itemCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
 
     try {

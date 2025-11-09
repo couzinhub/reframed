@@ -1240,9 +1240,9 @@ aside .own-art a {
 }
 
 #downloadsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .downloads-item {
@@ -1251,6 +1251,10 @@ aside .own-art a {
   border-radius: 8px;
   overflow: hidden;
   transition: box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
 }
 
 .downloads-item:hover {
@@ -1258,13 +1262,15 @@ aside .own-art a {
 }
 
 .downloads-item-image {
-  width: 100%;
-  height: 150px;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
 }
 
 .downloads-item-image img {
@@ -1276,21 +1282,18 @@ aside .own-art a {
 }
 
 .downloads-item-name {
-  padding: 12px;
-  font-size: 13px;
+  flex: 1;
+  font-size: 14px;
   color: var(--color-txt);
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
 }
 
 .downloads-item-remove {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
@@ -1317,24 +1320,25 @@ aside .own-art a {
   bottom: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  padding-right: 12px;
   background: rgba(0, 0, 0, 0);
   pointer-events: none;
   transition: background 0.3s ease;
 }
 
 .downloads-item.downloading .downloads-item-status {
-  background: rgba(86, 204, 255, 0.2);
+  background: rgba(86, 204, 255, 0.1);
 }
 
 .downloads-item.downloading {
-  box-shadow: 0 0 0 3px var(--color-spot);
+  box-shadow: 0 0 0 2px var(--color-spot);
 }
 
 .downloads-item.downloading .downloads-item-status::before {
   content: '';
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: 3px solid var(--color-spot);
   border-top-color: transparent;
   border-radius: 50%;
@@ -1344,8 +1348,9 @@ aside .own-art a {
 .downloads-item.completed .downloads-item-status::after {
   content: '';
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
   width: 32px;
   height: 32px;
   background: rgba(50, 205, 50, 0.9);
