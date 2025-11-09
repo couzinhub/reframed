@@ -499,6 +499,8 @@ async function startSequentialDownload() {
     completedIds.clear();
     // Set flag to clear queue when user closes modal
     shouldClearOnClose = true;
+    // Update buttons to hide them
+    updateFooterButtons();
   } else {
     if (progressEl) {
       progressEl.textContent = `Downloaded ${successCount} artworks, ${failCount} failed`;
