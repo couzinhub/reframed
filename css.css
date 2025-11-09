@@ -412,14 +412,14 @@ aside .own-art a {
 .artwork::after {
   content: "Download";
   display: block;
-  background: rgba(0, 0, 0, .7) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M480-480ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h320v80H200v560h560v-320h80v320q0 33-23.5 56.5T760-120H200Zm40-160h480L570-480 450-320l-90-120-120 160Zm440-320v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>') no-repeat center 10px;
+  background: rgba(0, 0, 0, .7) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>') no-repeat center 10px;
   background-size: 24px 24px;
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 76px;
-  height: 20px;
-  margin: -32px 0 0 -50px;
+  transform: translate(-50%, -50%);
+  min-width: fit-content;
+  white-space: nowrap;
   border-radius: 8px;
   color: var(--color-txt);
   text-align: center;
@@ -839,6 +839,22 @@ aside .own-art a {
   }
 }
 
+/* Tablet adjustments (iPad Pro landscape, etc.)
+-----------------------------*/
+
+@media (min-width: 769px) and (max-width: 1450px) {
+  /* Tag grid for tablets - 2 columns */
+  .tag-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 30px;
+  }
+
+  .vertical .tag-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 30px;
+  }
+}
+
 /* Mobile adjustments
 -----------------------------*/
 
@@ -1031,91 +1047,66 @@ aside .own-art a {
 #downloadsButton {
   position: fixed;
   top: 30px;
-  right: -200px; /* Hidden by default */
+  right: -300px; /* Hidden by default */
   z-index: 100;
   background: var(--color-sidebar);
   border: 2px solid var(--color-spot);
-  border-radius: 8px;
-  padding: 12px 20px;
+  border-radius: 12px;
+  padding: 16px 28px;
   color: var(--color-txt);
   font-family: 'Lexend', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   transition: right 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-/* Show button when it has items */
-#downloadsButton.has-items {
-  right: 30px;
-}
+/* Show button when it has items - desktop (above mobile) */
+@media (min-width: 769px) {
+  #downloadsButton.has-items {
+    right: 30px;
+  }
 
-#downloadsButton:hover {
-  background: rgba(86, 204, 255, 0.15);
-  border-color: var(--color-txt);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  #downloadsButton:hover {
+    border-color: var(--color-txt);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  }
 }
 
 #downloadsButton svg {
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
 }
 
 #downloadsBadge {
   display: none;
   background: var(--color-spot);
   color: var(--color-bg);
-  font-weight: 600;
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  min-width: 20px;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 4px 10px;
+  border-radius: 16px;
   text-align: center;
+  line-height: 1;
   transition: transform 0.2s ease;
-}
-
-/* Badge pulse animation (subtle) */
-@keyframes badgePulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.15);
-  }
-}
-
-#downloadsBadge.pulse {
-  animation: badgePulse 0.3s ease-in-out;
 }
 
 /* Slide-in animation for button */
 @keyframes slideIn {
   from {
-    right: -200px;
+    right: -300px;
     opacity: 0;
   }
   to {
     right: 30px;
     opacity: 1;
   }
-}
-
-/* Pulse animation */
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.08);
-  }
-}
-
-#downloadsButton.pulse {
-  animation: pulse 0.6s ease-in-out 2;
 }
 
 /* Artwork selected state */
@@ -1142,6 +1133,7 @@ aside .own-art a {
 
 .artwork.in-downloads::after {
   content: "Remove from Downloads";
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="m500-120-56-56 142-142-142-142 56-56 142 142 142-142 56 56-142 142 142 142-56 56-142-142-142 142Zm-220 0v-80h80v80h-80Zm-80-640h-80q0-33 23.5-56.5T200-840v80Zm80 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80q33 0 56.5 23.5T840-760h-80ZM200-200v80q-33 0-56.5-23.5T120-200h80Zm-80-80v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm640 0v-80h80v80h-80Z"/></svg>');
 }
 
 /* Change hover text for items in downloads */
@@ -1448,20 +1440,35 @@ body.modal-open {
 /* Mobile adjustments for downloads */
 @media (max-width: 768px) {
   #downloadsButton {
-    top: 20px;
-    right: -200px; /* Hidden by default on mobile too */
-    padding: 10px 16px;
-    font-size: 13px;
-    gap: 8px;
+    bottom: 20px !important;
+    top: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(120px) !important;
+    padding: 12px 20px;
+    font-size: 14px;
+    gap: 10px;
+    justify-content: center;
+    max-width: 200px;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
   }
 
   #downloadsButton.has-items {
-    right: 20px;
+    transform: translateX(-50%) translateY(0) !important;
+  }
+
+  #downloadsButton:hover {
+    transform: translateX(-50%) translateY(-2px) !important;
   }
 
   #downloadsButton svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
+  }
+
+  #downloadsBadge {
+    font-size: 13px;
+    padding: 3px 8px;
   }
 
   .downloads-modal-content {

@@ -51,15 +51,6 @@ function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landsc
   updateDownloadsButton();
   updateAllArtworkStates();
 
-  // Trigger animations
-  if (queue.length === 1) {
-    // First item: pulse the whole button
-    triggerDownloadsButtonPulse();
-  } else {
-    // Subsequent items: pulse just the badge
-    triggerBadgePulse();
-  }
-
   return true;
 }
 

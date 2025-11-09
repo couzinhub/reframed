@@ -139,23 +139,6 @@ function getLabelForTag(tagName) {
   return tagName;
 }
 
-// ============ ADD ALL TO DOWNLOADS FUNCTIONALITY ============
-
-// Store current images for "Add All" functionality
-let currentTagImages = [];
-
-function updateAddAllButton(images) {
-  const addAllBtn = document.getElementById('addAllToDownloads');
-  if (!addAllBtn) return;
-
-  currentTagImages = images;
-
-  if (images.length > 0) {
-    addAllBtn.style.display = 'block';
-  } else {
-    addAllBtn.style.display = 'none';
-  }
-}
 
 async function fetchImagesForTag(tagName) {
   // tagName here is already like "Vincent Van Gogh"
@@ -242,9 +225,6 @@ function renderTagGallery(tagName, images) {
   }
 
   tagGridEl.appendChild(frag);
-
-  // Update add all button
-  updateAddAllButton(images);
 }
 
 async function loadAndRenderTagPage() {
@@ -254,9 +234,6 @@ async function loadAndRenderTagPage() {
   const tagGridEl = document.getElementById("tagGrid");
 
   tagGridEl.innerHTML = "";
-
-  // Hide add all button while loading
-  updateAddAllButton([]);
 
   // This will now return "Vincent Van Gogh" for "#Vincent-Van-Gogh"
   const tagName = getTagFromHash();
@@ -317,7 +294,6 @@ async function loadAndRenderTagPage() {
     if (!filtered.length) {
       tagStatusEl.textContent = "No artworks found.";
       tagGridEl.innerHTML = "";
-      updateAddAllButton([]);
     } else {
       // Save to cache
       saveTagGalleryCache(tagName, filtered);
@@ -328,40 +304,8 @@ async function loadAndRenderTagPage() {
     tagStatusEl.textContent = `Error: ${err.message}`;
     tagGridEl.innerHTML = "";
     tagViewEl.classList.remove("vertical");
-    updateAddAllButton([]);
   }
 }
-
-function setupAddAllButton() {
-  const addAllBtn = document.getElementById('addAllToDownloads');
-  if (!addAllBtn) return;
-
-  addAllBtn.addEventListener('click', () => {
-    if (currentTagImages.length === 0) return;
-
-    let addedCount = 0;
-    currentTagImages.forEach(img => {
-      const publicId = img.public_id;
-      const niceName = humanizePublicId(publicId);
-      const w = img.width;
-      const h = img.height;
-      const isPortrait = typeof w === "number" && typeof h === "number" && h > w;
-      const cloudinaryUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
-
-      if (typeof window.addToDownloads === 'function') {
-        const added = window.addToDownloads(publicId, niceName, cloudinaryUrl, isPortrait ? 'portrait' : 'landscape');
-        if (added) addedCount++;
-      }
-    });
-
-    if (addedCount > 0) {
-      showToast(`Added ${addedCount} artwork${addedCount === 1 ? '' : 's'} to downloads`);
-    }
-  });
-}
-
-// Initialize add all button
-setupAddAllButton();
 
 // run once
 loadAndRenderTagPage();

@@ -151,6 +151,59 @@ const DOWNLOAD_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill=
   <line x1="12" y1="15" x2="12" y2="3"></line>
 </svg>`;
 
+// ============ DOWNLOADS UI COMPONENT ============
+// This code injects the downloads button and modal into the page
+
+function initializeDownloadsUI() {
+  // Insert downloads button
+  const downloadsButton = `
+    <button id="downloadsButton" aria-label="View downloads queue">
+      <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
+        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+      </svg>
+      <span>Downloads</span>
+      <span id="downloadsBadge"></span>
+    </button>
+  `;
+
+  // Insert downloads modal
+  const downloadsModal = `
+    <div id="downloadsModal">
+      <div class="downloads-modal-content">
+        <div class="downloads-modal-header">
+          <h2>Downloads (<span id="downloadsCount">0</span>)</h2>
+          <button id="closeDownloadsModal" aria-label="Close">&times;</button>
+        </div>
+        <div class="downloads-modal-body">
+          <div id="downloadsEmpty">
+            <svg xmlns="http://www.w3.org/2000/svg" height="64px" viewBox="0 -960 960 960" width="64px" fill="currentColor">
+              <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+            </svg>
+            <p>No artworks selected</p>
+          </div>
+          <div id="downloadsGrid"></div>
+        </div>
+        <div class="downloads-modal-footer">
+          <button id="clearAllDownloads">Clear All</button>
+          <span id="downloadProgress"></span>
+          <button id="downloadAllBtn">Download All</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Append to body
+  document.body.insertAdjacentHTML('beforeend', downloadsButton);
+  document.body.insertAdjacentHTML('beforeend', downloadsModal);
+}
+
+// Initialize downloads UI when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeDownloadsUI);
+} else {
+  initializeDownloadsUI();
+}
+
 // ============ NAVIGATION MENU COMPONENT ============
 // This code is shared across all pages
 
