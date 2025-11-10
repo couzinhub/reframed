@@ -1132,11 +1132,11 @@ aside .own-art a {
 }
 
 .artwork.in-downloads::after {
-  content: "Remove from Downloads";
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="m500-120-56-56 142-142-142-142 56-56 142 142 142-142 56 56-142 142 142 142-56 56-142-142-142 142Zm-220 0v-80h80v80h-80Zm-80-640h-80q0-33 23.5-56.5T200-840v80Zm80 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80q33 0 56.5 23.5T840-760h-80ZM200-200v80q-33 0-56.5-23.5T120-200h80Zm-80-80v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm640 0v-80h80v80h-80Z"/></svg>');
+  content: "Added to Downloads";
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
 }
 
-/* Change hover text for items in downloads */
+/* Change hover text for items not in downloads */
 .artwork:not(.in-downloads)::after {
   content: "Add to Downloads";
 }
@@ -1494,17 +1494,21 @@ body.modal-open {
   }
 
   #downloadsGrid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 15px;
+    gap: 10px;
+  }
+
+  .downloads-item {
+    padding: 10px;
+    gap: 12px;
   }
 
   .downloads-item-image {
-    height: 110px;
+    width: 60px;
+    height: 60px;
   }
 
   .downloads-item-name {
-    font-size: 12px;
-    padding: 10px;
+    font-size: 13px;
   }
 
   .downloads-modal-footer {
