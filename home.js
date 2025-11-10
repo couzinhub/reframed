@@ -270,6 +270,111 @@ function renderFromTiles(container, tilesData) {
   renderGroupsInto(container, groups);
 }
 
+// ============ RECENTLY ADDED SECTION ============
+
+async function fetchRecentlyAdded() {
+  try {
+    // Use "Recently added" with a space to match the actual Cloudinary tag
+    const listUrl = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent('Recently added')}.json`;
+    const res = await fetch(listUrl, { mode: "cors" });
+    if (!res.ok) {
+      console.log('Recently added tag not found or empty');
+      return [];
+    }
+
+    const data = await res.json();
+
+    // Sort newest first and return all
+    const sorted = (data.resources || []).sort(
+      (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
+    );
+    console.log(`Fetched ${sorted.length} recently added images`);
+    return sorted;
+  } catch (err) {
+    console.error('Error fetching recently added:', err);
+    return [];
+  }
+}
+
+function renderRecentlyAdded(container, images) {
+  if (!images || images.length === 0) return;
+
+  const section = document.createElement("div");
+  section.className = "recently-added-section";
+
+  const title = document.createElement("h3");
+  title.className = "recently-added-title";
+  title.textContent = "Recently added";
+  section.appendChild(title);
+
+  const headerRow = document.createElement("div");
+  headerRow.className = "tag-header-row";
+
+  const status = document.createElement("div");
+  status.className = "tag-status";
+  status.textContent = `${images.length} artwork${images.length === 1 ? "" : "s"}`;
+  headerRow.appendChild(status);
+
+  section.appendChild(headerRow);
+
+  const grid = document.createElement("div");
+  grid.className = "recently-added-grid";
+
+  images.forEach(img => {
+    const publicId = img.public_id;
+    const niceName = humanizePublicId(publicId);
+
+    const w = img.width;
+    const h = img.height;
+    const isPortrait =
+      typeof w === "number" &&
+      typeof h === "number" &&
+      h > w;
+
+    const thumbWidth = isPortrait ? 400 : 600;
+
+    const card = document.createElement("div");
+    card.className = "card artwork";
+    card.dataset.publicId = publicId;
+
+    const cloudinaryUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
+
+    // Add click handler to toggle downloads queue
+    card.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
+        if (window.isInDownloads(publicId)) {
+          window.removeFromDownloads(publicId);
+        } else {
+          window.addToDownloads(publicId, niceName, cloudinaryUrl, isPortrait ? 'portrait' : 'landscape');
+        }
+      }
+    });
+
+    // Set initial state if in downloads
+    if (typeof window.isInDownloads === 'function' && window.isInDownloads(publicId)) {
+      card.classList.add('in-downloads');
+    }
+
+    const imgEl = document.createElement("img");
+    imgEl.loading = "lazy";
+    imgEl.src = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,w_${thumbWidth}/${encodeURIComponent(publicId)}`;
+    imgEl.alt = niceName;
+
+    const caption = document.createElement("div");
+    caption.className = "artwork-title";
+    caption.textContent = niceName;
+
+    card.appendChild(imgEl);
+    card.appendChild(caption);
+    grid.appendChild(card);
+  });
+
+  section.appendChild(grid);
+  container.appendChild(section);
+}
+
 // ============ MAIN BOOTSTRAP ============
 
 (async function initHomepage() {
@@ -279,6 +384,10 @@ function renderFromTiles(container, tilesData) {
   const cached = loadHomepageCache(CACHE_VERSION);
   if (cached && Array.isArray(cached.tiles)) {
     renderFromTiles(container, cached.tiles);
+
+    // Load recently added artworks (not cached)
+    const recentImages = await fetchRecentlyAdded();
+    renderRecentlyAdded(container, recentImages);
     return;
   }
 
@@ -343,4 +452,8 @@ function renderFromTiles(container, tilesData) {
 
   // 4. Render
   renderFromTiles(container, liveTiles);
+
+  // 5. Load recently added artworks
+  const recentImages = await fetchRecentlyAdded();
+  renderRecentlyAdded(container, recentImages);
 })();

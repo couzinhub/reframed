@@ -225,7 +225,7 @@ aside .own-art a {
   vertical-align: middle;
 }
 
-/* Home 
+/* Home
 -----------------------------*/
 
 #homeView {
@@ -235,6 +235,29 @@ aside .own-art a {
   gap: 30px;
   padding: 30px 0;
   font-family: "Lexend", system-ui, sans-serif;
+}
+
+/* Recently Added Section */
+.recently-added-section {
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto 30px;
+}
+
+.recently-added-title {
+  font-size: 40px;
+  font-weight: 200;
+  letter-spacing: 2px;
+  text-align: center;
+  margin: 40px 0 20px;
+  color: var(--color-txt);
+}
+
+.recently-added-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 40px;
+  padding: 0 0px;
 }
 
 .row {
@@ -785,7 +808,8 @@ aside .own-art a {
     padding: 30px 20px;
   }
 
-  .home h1 {
+  .home h1,
+  .recently-added-title {
     font-size: 32px;
     letter-spacing: 1px;
   }
@@ -829,6 +853,10 @@ aside .own-art a {
     max-width: 100%;
     height: auto;
     aspect-ratio: 79 / 57;
+  }
+
+  .tile .title {
+    font-size: 28px;
   }
 
   .tile.feature {
@@ -963,10 +991,10 @@ aside .own-art a {
   }
 
   /* Homepage title */
-  .home h1 {
+  .home h1,
+  .recently-added-title {
     font-size: 22px;
     letter-spacing: 0.5px;
-    text-align: left;
   }
 
   /* Tag header row on mobile */
@@ -1451,11 +1479,11 @@ body.modal-open {
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%) translateY(120px) !important;
-    padding: 12px 20px;
-    font-size: 14px;
-    gap: 10px;
+    padding: 16px 26px;
+    font-size: 18px;
+    gap: 13px;
     justify-content: center;
-    max-width: 200px;
+    max-width: 260px;
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
   }
 
@@ -1468,13 +1496,13 @@ body.modal-open {
   }
 
   #downloadsButton svg {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    height: 26px;
   }
 
   #downloadsBadge {
-    font-size: 13px;
-    padding: 3px 8px;
+    font-size: 17px;
+    padding: 4px 11px;
   }
 
   .downloads-modal-content {

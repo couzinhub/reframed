@@ -234,7 +234,6 @@ function initializeNavigation(currentPage) {
       </a>
       <ul>
         <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
-        <li class="${currentPage === 'tag' && window.location.hash === '#Recently-added' ? 'current' : ''}"><a href="/tag/#Recently-added">Recently added</a></li>
         <li class="${currentPage === 'artists' ? 'current' : ''}"><a href="/artists.html">Artists</a></li>
         <li class="${currentPage === 'collections' ? 'current' : ''}"><a href="/collections.html">Collections</a></li>
         <li class="${currentPage === 'tag' && window.location.hash === '#Vertical-artworks' ? 'current' : ''}"><a href="/tag/#Vertical-artworks">Vertical artworks</a></li>
@@ -267,16 +266,6 @@ function initializeNavigation(currentPage) {
     const updateTagMenuItems = () => {
       const asideElement = document.querySelector('aside');
       if (!asideElement) return;
-
-      // Update Recently added menu item
-      const recentlyAddedItem = asideElement.querySelector('a[href="/tag/#Recently-added"]')?.parentElement;
-      if (recentlyAddedItem) {
-        if (window.location.hash === '#Recently-added') {
-          recentlyAddedItem.classList.add('current');
-        } else {
-          recentlyAddedItem.classList.remove('current');
-        }
-      }
 
       // Update Vertical artworks menu item
       const verticalItem = asideElement.querySelector('a[href="/tag/#Vertical-artworks"]')?.parentElement;
