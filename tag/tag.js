@@ -135,8 +135,8 @@ function getLabelForTag(tagName) {
       return collection.label;
     }
   }
-  // Fallback to tag name if no label found
-  return tagName;
+  // Fallback to tag name if no label found - capitalize first letter only
+  return tagName.charAt(0).toUpperCase() + tagName.slice(1);
 }
 
 

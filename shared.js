@@ -234,9 +234,10 @@ function initializeNavigation(currentPage) {
       </a>
       <ul>
         <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
+        <li class="${currentPage === 'tag' && window.location.hash === '#Recently-added' ? 'current' : ''}"><a href="/tag/#Recently-added">Recently added</a></li>
         <li class="${currentPage === 'artists' ? 'current' : ''}"><a href="/artists.html">Artists</a></li>
         <li class="${currentPage === 'collections' ? 'current' : ''}"><a href="/collections.html">Collections</a></li>
-        <li class="${currentPage === 'tag' && window.location.hash === '#Vertical%20artworks' ? 'current' : ''}"><a href="/tag/#Vertical%20artworks">Vertical artworks</a></li>
+        <li class="${currentPage === 'tag' && window.location.hash === '#Vertical-artworks' ? 'current' : ''}"><a href="/tag/#Vertical-artworks">Vertical artworks</a></li>
         <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
         <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
       </ul>
@@ -261,9 +262,23 @@ function initializeNavigation(currentPage) {
     `;
   }
 
-  // Update Vertical artworks menu item if on tag page with hash
+  // Update tag menu items if on tag page with hash
   if (currentPage === 'tag') {
-    const updateVerticalMenuItem = () => {
+    const updateTagMenuItems = () => {
+      const asideElement = document.querySelector('aside');
+      if (!asideElement) return;
+
+      // Update Recently added menu item
+      const recentlyAddedItem = asideElement.querySelector('a[href="/tag/#Recently-added"]')?.parentElement;
+      if (recentlyAddedItem) {
+        if (window.location.hash === '#Recently-added') {
+          recentlyAddedItem.classList.add('current');
+        } else {
+          recentlyAddedItem.classList.remove('current');
+        }
+      }
+
+      // Update Vertical artworks menu item
       const verticalItem = asideElement.querySelector('a[href="/tag/#Vertical-artworks"]')?.parentElement;
       if (verticalItem) {
         if (window.location.hash === '#Vertical-artworks') {
@@ -275,8 +290,8 @@ function initializeNavigation(currentPage) {
     };
 
     // Update immediately and on hash change
-    setTimeout(updateVerticalMenuItem, 0);
-    window.addEventListener('hashchange', updateVerticalMenuItem);
+    setTimeout(updateTagMenuItems, 0);
+    window.addEventListener('hashchange', updateTagMenuItems);
   }
 
   // Initialize mobile menu functionality
