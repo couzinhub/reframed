@@ -237,13 +237,72 @@ function buildArtistCard(row, imgData) {
   return card;
 }
 
+function getLastName(name) {
+  const words = name.trim().split(/\s+/);
+  return words[words.length - 1];
+}
+
+function getAlphabetSection(name) {
+  const lastName = getLastName(name);
+  const firstChar = lastName[0].toUpperCase();
+  if (firstChar >= 'A' && firstChar <= 'B') return 'A-B';
+  if (firstChar >= 'C' && firstChar <= 'D') return 'C-D';
+  if (firstChar >= 'E' && firstChar <= 'F') return 'E-F';
+  if (firstChar >= 'G' && firstChar <= 'I') return 'G-I';
+  if (firstChar >= 'J' && firstChar <= 'L') return 'J-L';
+  if (firstChar >= 'M' && firstChar <= 'P') return 'M-P';
+  if (firstChar >= 'Q' && firstChar <= 'T') return 'Q-T';
+  if (firstChar >= 'U' && firstChar <= 'Z') return 'U-Z';
+  return 'A-B'; // default for non-alphabetic
+}
+
 function renderArtistsGrid(artistsList) {
   const grid = document.getElementById("artistsGrid");
   grid.innerHTML = "";
-  const frag = document.createDocumentFragment();
-  for (const artist of artistsList) {
-    frag.appendChild(buildArtistCard(artist.row, artist.chosenImage));
+
+  // Sort artists alphabetically by last name
+  const sortedArtists = [...artistsList].sort((a, b) => {
+    const lastNameA = getLastName(a.row.label);
+    const lastNameB = getLastName(b.row.label);
+    return lastNameA.localeCompare(lastNameB);
+  });
+
+  // Group by alphabet sections
+  const sections = {
+    'A-B': [],
+    'C-D': [],
+    'E-F': [],
+    'G-I': [],
+    'J-L': [],
+    'M-P': [],
+    'Q-T': [],
+    'U-Z': []
+  };
+
+  for (const artist of sortedArtists) {
+    const section = getAlphabetSection(artist.row.label);
+    sections[section].push(artist);
   }
+
+  const frag = document.createDocumentFragment();
+
+  // Render each section
+  for (const [sectionName, artists] of Object.entries(sections)) {
+    if (artists.length === 0) continue;
+
+    // Add artist cards, assigning section ID to the first one
+    artists.forEach((artist, index) => {
+      const card = buildArtistCard(artist.row, artist.chosenImage);
+
+      // Assign section ID to first card in each section for navigation
+      if (index === 0) {
+        card.id = `section-${sectionName}`;
+      }
+
+      frag.appendChild(card);
+    });
+  }
+
   grid.appendChild(frag);
 }
 
@@ -320,6 +379,70 @@ function setupLazyThumbObserver() {
   cards.forEach(card => obs.observe(card));
 }
 
+// ---------- ALPHABET NAVIGATION ----------
+function setupAlphabetNavigation() {
+  const links = document.querySelectorAll('.alphabet-link');
+  const sectionElements = Array.from(links).map(link => {
+    const targetId = link.getAttribute('href').substring(1);
+    return document.getElementById(targetId);
+  }).filter(el => el !== null);
+
+  // Handle click navigation
+  links.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = link.getAttribute('href').substring(1); // Remove #
+      const targetElement = document.getElementById(targetId);
+
+      if (targetElement) {
+        // Scroll to the first card in the section with offset
+        const yOffset = -120; // Offset for fixed headers/navigation
+        const y = targetElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
+      }
+    });
+  });
+
+  // Track which section is currently in view
+  const observer = new IntersectionObserver((entries) => {
+    // Find the section that's most visible
+    let maxRatio = 0;
+    let mostVisibleSection = null;
+
+    entries.forEach(entry => {
+      if (entry.intersectionRatio > maxRatio) {
+        maxRatio = entry.intersectionRatio;
+        mostVisibleSection = entry.target;
+      }
+    });
+
+    // Update active state if we have a clearly visible section
+    if (mostVisibleSection && maxRatio > 0) {
+      const sectionId = mostVisibleSection.id;
+
+      // Remove active class from all links
+      links.forEach(link => link.classList.remove('active'));
+
+      // Add active class to the corresponding link
+      const activeLink = document.querySelector(`.alphabet-link[href="#${sectionId}"]`);
+      if (activeLink) {
+        activeLink.classList.add('active');
+      }
+    }
+  }, {
+    root: null,
+    rootMargin: '-150px 0px -50% 0px', // Trigger when section is near the top
+    threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  });
+
+  // Observe all section elements
+  sectionElements.forEach(section => observer.observe(section));
+}
+
 // ---------- MAIN INIT ----------
 (async function initArtistsPage() {
   const status = document.getElementById("artistsStatus");
@@ -328,6 +451,7 @@ function setupLazyThumbObserver() {
   if (ARTISTS_CACHE && Array.isArray(ARTISTS_CACHE)) {
     renderArtistsGrid(ARTISTS_CACHE);
     setupLazyThumbObserver();
+    setupAlphabetNavigation();
     window.scrollTo(0, ARTISTS_SCROLL_Y);
     status.textContent = `${ARTISTS_CACHE.length} artists`;
     return;
@@ -339,6 +463,7 @@ function setupLazyThumbObserver() {
     ARTISTS_CACHE = cachedArtists;
     renderArtistsGrid(ARTISTS_CACHE);
     setupLazyThumbObserver();
+    setupAlphabetNavigation();
     status.textContent = `${ARTISTS_CACHE.length} artists`;
     return;
   }
@@ -359,6 +484,7 @@ function setupLazyThumbObserver() {
 
     renderArtistsGrid(ARTISTS_CACHE);
     setupLazyThumbObserver();
+    setupAlphabetNavigation();
 
     status.textContent = `${ARTISTS_CACHE.length} artists`;
   } catch (err) {

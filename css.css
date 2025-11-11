@@ -9,10 +9,16 @@
   --color-sidebar: #081330;
   --color-spot: #56CCFF;
   --page-maxwidth: 1400px;
+
+  /* SVG Icons */
+  --icon-plus-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>');
+  --icon-checkmark-black: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23000"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
+  --icon-checkmark-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
 }
 
 body {
   margin: 0;
+  margin-left: var(--sidebar-width);
   font-family: 'Lexend', sans-serif;
   font-optical-sizing: auto;
   background-color: var(--color-bg);
@@ -66,6 +72,48 @@ p {
   flex-wrap: wrap;
 }
 
+/* Alphabet Navigation */
+.alphabet-nav {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: -20px -20px 40px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  padding: 20px 12px;
+  z-index: 10;
+  backdrop-filter: blur(12px);
+  background: rgba(12, 27, 68, 0.95);
+}
+
+.alphabet-link {
+  display: inline-block;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 32px;
+  color: var(--color-txt);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+}
+
+.alphabet-link:hover {
+  background: rgba(86, 204, 255, 0.1);
+  border-color: var(--color-spot);
+  color: var(--color-spot);
+}
+
+.alphabet-link.active {
+  background: var(--color-spot);
+  border-color: var(--color-spot);
+  color: var(--color-bg);
+}
+
 .tag-status {
   text-align: center;
   margin: 0;
@@ -99,15 +147,9 @@ p {
   transform: translateY(0);
 }
 
-.hidden { display: none; }
 
-
-/* Layout 
+/* Layout
 -----------------------------*/
-
-body {
-  margin-left: var(--sidebar-width);
-}
 
 aside {
   height: 100%;
@@ -168,11 +210,6 @@ aside .own-art {
   border-radius: 10px;
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
-aside .own-art:hover {
-  box-shadow:
-    white 0 0 0 2px;
-  transform: scale(1.03);
-}
 aside .own-art a {
   color: var(--color-txt);
   text-decoration: none;
@@ -196,7 +233,9 @@ aside .own-art a {
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
-.kofi-button:hover {
+/* Shared hover effect for Ko-fi button and own-art */
+.kofi-button:hover,
+aside .own-art:hover {
   box-shadow: white 0 0 0 2px;
   transform: scale(1.03);
 }
@@ -313,8 +352,11 @@ aside .own-art a {
   display: inline-block;
   margin: 0 20px 20px 0;
 }
-.tile:hover, 
-.card.artist:hover {
+/* Shared hover effect for tiles and cards */
+.tile:hover,
+.card.artist:hover,
+.card:hover img,
+.card.mobile-active img {
   box-shadow:
     white 0 0 0 4px,
     rgba(0, 0, 0, 0.5) 0 12px 30px;
@@ -389,13 +431,13 @@ aside .own-art a {
   grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
   gap: 10px;
 }
+
 .tag-grid {
-  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-  gap: 40px;
+  gap: 30px;
 }
+
 .vertical .tag-grid {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 40px;
 }
 
 .card {
@@ -412,19 +454,11 @@ aside .own-art a {
   width: 100%;
   height: auto;
   display: block;
-    border-radius: 2px;
+  border-radius: 2px;
   box-shadow:
     rgba(6, 24, 44, 0.4) 0px 0px 0px 2px,
     rgba(6, 24, 44, 0.65) 0px 4px 6px -1px;
   transition: transform 150ms ease, box-shadow 150ms ease;
-}
-
-.card:hover img,
-.card.mobile-active img {
-  box-shadow:
-    white 0 0 0 4px,
-    rgba(0, 0, 0, 0.5) 0 12px 30px;
-  transform: scale(1.01);
 }
 
 .card:hover img::after,
@@ -435,7 +469,7 @@ aside .own-art a {
 .artwork::after {
   content: "Download";
   display: block;
-  background: rgba(0, 0, 0, .7) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>') no-repeat center 10px;
+  background: rgba(0, 0, 0, .7) var(--icon-plus-white) no-repeat center 10px;
   background-size: 24px 24px;
   position: absolute;
   top: 50%;
@@ -750,7 +784,7 @@ aside .own-art a {
   right: 0;
   height: 60px;
   background-color: var(--color-sidebar);
-  z-index: 3;
+  z-index: 99;
   align-items: center;
   justify-content: center;
   padding: 0 20px;
@@ -871,8 +905,9 @@ aside .own-art a {
 -----------------------------*/
 
 @media (min-width: 769px) and (max-width: 1450px) {
-  /* Tag grid for tablets - 2 columns */
-  .tag-grid {
+  /* Tag grid and recently added grid for tablets - unified 2 columns */
+  .tag-grid,
+  .recently-added-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 30px;
   }
@@ -973,8 +1008,9 @@ aside .own-art a {
     grid-template-columns: 1fr;
   }
 
-  /* Tag grid mobile */
-  .tag-grid {
+  /* Tag grid and recently added grid mobile - unified styling */
+  .tag-grid,
+  .recently-added-grid {
     grid-template-columns: 1fr !important;
     gap: 20px !important;
   }
@@ -995,6 +1031,7 @@ aside .own-art a {
   .recently-added-title {
     font-size: 22px;
     letter-spacing: 0.5px;
+    margin-bottom: 10px;
   }
 
   /* Tag header row on mobile */
@@ -1002,6 +1039,19 @@ aside .own-art a {
     flex-direction: column;
     gap: 12px;
     margin: 0 0 30px;
+  }
+
+  /* Alphabet navigation on mobile */
+  .alphabet-nav {
+    gap: 8px;
+    margin: 0 -20px 30px;
+    padding: 12px 0;
+    top: 60px; /* Account for mobile top bar */
+  }
+
+  .alphabet-link {
+    padding: 8px 16px;
+    font-size: 12px;
   }
 
   .add-all-button {
@@ -1052,6 +1102,10 @@ aside .own-art a {
   .card {
     gap: 1rem;
     padding: 4px;
+  }
+  .card.artist {
+    margin: 0;
+    padding: 0;
   }
 
   .contact-page {
@@ -1142,6 +1196,7 @@ aside .own-art a {
   position: relative;
 }
 
+/* Checkmark circle badge - shared styles */
 .artwork.in-downloads::before {
   content: '';
   position: absolute;
@@ -1154,7 +1209,7 @@ aside .own-art a {
   border: 2px solid black;
   z-index: 5;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23000"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
+  background-image: var(--icon-checkmark-black);
   background-repeat: no-repeat;
   background-position: center;
   background-size: 20px 20px;
@@ -1162,7 +1217,7 @@ aside .own-art a {
 
 .artwork.in-downloads::after {
   content: "Added to Downloads";
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
+  background-image: var(--icon-checkmark-white);
 }
 
 /* Change hover text for items not in downloads */
@@ -1371,9 +1426,10 @@ aside .own-art a {
   border: 3px solid var(--color-spot);
   border-top-color: transparent;
   border-radius: 50%;
-  animation: downloadSpinner 0.8s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
+/* Checkmark circle badge for completed downloads */
 .downloads-item.completed .downloads-item-status::after {
   content: '';
   position: absolute;
@@ -1386,7 +1442,7 @@ aside .own-art a {
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(50, 205, 50, 0.4);
   animation: checkmarkPop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
+  background-image: var(--icon-checkmark-white);
   background-repeat: no-repeat;
   background-position: center;
   background-size: 20px 20px;
@@ -1402,9 +1458,6 @@ aside .own-art a {
   display: none;
 }
 
-@keyframes downloadSpinner {
-  to { transform: rotate(360deg); }
-}
 
 @keyframes checkmarkPop {
   0% { transform: scale(0); opacity: 0; }
