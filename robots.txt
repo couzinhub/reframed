@@ -1,0 +1,7 @@
+# robots.txt for Reframed
+User-agent: *
+Allow: /
+Disallow: /img/
+
+# Sitemap location
+Sitemap: https://reframed.gallery/sitemap.xml

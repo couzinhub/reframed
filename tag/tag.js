@@ -139,6 +139,56 @@ function getLabelForTag(tagName) {
   return tagName.charAt(0).toUpperCase() + tagName.slice(1);
 }
 
+// Update meta tags for SEO
+function updateMetaTags(tagName, displayName, imageCount) {
+  const prettyTag = tagName.trim()
+    .replace(/-/g, "%2D")
+    .replace(/\s+/g, "-");
+
+  const pageUrl = `https://reframed.gallery/tag/#${prettyTag}`;
+  const pageTitle = `${displayName} - Reframed | Frame TV Art Gallery`;
+  const pageDesc = `Browse ${imageCount} ${displayName.toLowerCase()} artworks optimized for Samsung Frame TV. High-quality images ready to download and display.`;
+
+  // Update title
+  const titleEl = document.getElementById("pageTitle");
+  if (titleEl) titleEl.textContent = pageTitle;
+  document.title = pageTitle;
+
+  // Update description
+  const descEl = document.getElementById("pageDescription");
+  if (descEl) descEl.setAttribute("content", pageDesc);
+
+  // Update keywords
+  const keywordsEl = document.getElementById("pageKeywords");
+  if (keywordsEl) {
+    keywordsEl.setAttribute("content", `${displayName}, Frame TV art, Samsung Frame TV, ${tagName}, digital art gallery`);
+  }
+
+  // Update canonical
+  const canonicalEl = document.getElementById("pageCanonical");
+  if (canonicalEl) canonicalEl.setAttribute("href", pageUrl);
+
+  // Update Open Graph
+  const ogUrlEl = document.getElementById("ogUrl");
+  if (ogUrlEl) ogUrlEl.setAttribute("content", pageUrl);
+
+  const ogTitleEl = document.getElementById("ogTitle");
+  if (ogTitleEl) ogTitleEl.setAttribute("content", pageTitle);
+
+  const ogDescEl = document.getElementById("ogDescription");
+  if (ogDescEl) ogDescEl.setAttribute("content", pageDesc);
+
+  // Update Twitter
+  const twitterUrlEl = document.getElementById("twitterUrl");
+  if (twitterUrlEl) twitterUrlEl.setAttribute("content", pageUrl);
+
+  const twitterTitleEl = document.getElementById("twitterTitle");
+  if (twitterTitleEl) twitterTitleEl.setAttribute("content", pageTitle);
+
+  const twitterDescEl = document.getElementById("twitterDescription");
+  if (twitterDescEl) twitterDescEl.setAttribute("content", pageDesc);
+}
+
 
 async function fetchImagesForTag(tagName) {
   // tagName here is already like "Vincent Van Gogh"
@@ -166,7 +216,9 @@ function renderTagGallery(tagName, images) {
   // Get the display label from collections data, or fallback to tag name
   const displayName = getLabelForTag(tagName);
   tagTitleEl.textContent = displayName;
-  document.title = displayName + " – Reframed";
+
+  // Update SEO meta tags
+  updateMetaTags(tagName, displayName, images.length);
 
   tagStatusEl.textContent = `${images.length} artwork${images.length === 1 ? "" : "s"}`;
 
