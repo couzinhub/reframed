@@ -213,10 +213,18 @@ async function fetchImagesForTagPage(tagName) {
     throw new Error(`Tag "${tagName}" not found`);
   }
 
-  // sort newest first
-  return items.sort(
-    (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
-  );
+  // Sort with thumbnail-tagged images first, then by date (newest first)
+  return items.sort((a, b) => {
+    const aHasThumbnail = a.tags && a.tags.some(tag => tag.toLowerCase() === 'thumbnail');
+    const bHasThumbnail = b.tags && b.tags.some(tag => tag.toLowerCase() === 'thumbnail');
+
+    // If one has thumbnail and the other doesn't, thumbnail comes first
+    if (aHasThumbnail && !bHasThumbnail) return -1;
+    if (!aHasThumbnail && bHasThumbnail) return 1;
+
+    // Otherwise sort by date (newest first)
+    return (b.created_at || "").localeCompare(a.created_at || "");
+  });
 }
 
 function renderTagGallery(tagName, images) {

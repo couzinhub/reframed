@@ -6,10 +6,7 @@
 // ============ HOMEPAGE ROWS (SHEET PARSE) ============
 //
 // First row of HOMEPAGE_CSV_URL is assumed to be:
-// "Tag","Style","Label","Image"
-//
-// Style can be "hero" or blank.
-// Image is the Cloudinary public_id override.
+// "Tag","Label"
 
 async function loadHomepageRows() {
   const res = await fetch(HOMEPAGE_CSV_URL, { cache: "default" });
@@ -44,18 +41,14 @@ async function loadHomepageRows() {
     const rowArr = rows[r];
 
     const tagVal   = pick(rowArr, "tag");
-    const styleVal = pick(rowArr, "style", "size");
     const labelVal = pick(rowArr, "label");
-    const imgVal   = pick(rowArr, "image", "featured_public_id", "featured public id");
 
     if (!tagVal) continue;
     if (tagVal.toLowerCase().startsWith("-- ignore")) break;
 
     out.push({
       tag: tagVal,
-      style: styleVal || "",
-      label: labelVal || tagVal,
-      featuredPublicId: imgVal || ""
+      label: labelVal || tagVal
     });
   }
 
@@ -76,10 +69,20 @@ async function fetchImagesForHomepage(tagName) {
 }
 
 function chooseFeaturedImage(row, images) {
-  if (row.featuredPublicId) {
-    const match = images.find(img => img.public_id === row.featuredPublicId);
-    if (match) return match;
+  console.log('chooseFeaturedImage called for tag:', row.tag);
+  console.log('Total images:', images.length);
+
+  // First, always check for "thumbnail" tagged image (for both collections and artists)
+  const thumbnailImage = images.find(img =>
+    img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail')
+  );
+
+  if (thumbnailImage) {
+    console.log('Found thumbnail image:', thumbnailImage.public_id);
+    return thumbnailImage;
   }
+
+  console.log('No thumbnail image found, using auto-select');
 
   // Filter out portrait images (height > width)
   const landscapeOrSquare = images.filter(img => img.width >= img.height);
@@ -87,7 +90,9 @@ function chooseFeaturedImage(row, images) {
   // Use filtered list if available, otherwise fall back to all images
   const finalList = landscapeOrSquare.length > 0 ? landscapeOrSquare : images;
 
-  return finalList.length > 0 ? finalList[0] : null;
+  const selected = finalList.length > 0 ? finalList[0] : null;
+  console.log('Auto-selected image:', selected ? selected.public_id : 'none');
+  return selected;
 }
 
 // ============ HOMEPAGE CACHE WITH VERSION CHECK ============
@@ -141,8 +146,7 @@ function saveHomepageCache(version, tiles) {
 
 function buildTileElementFromCache(tileData) {
   const tile = document.createElement("a");
-  const styleClass = tileData.row.style === "hero" ? "hero" : "feature";
-  tile.className = `tile ${styleClass}`;
+  tile.className = "tile full-width";
   tile.href = tileData.chosen.linkHref;
   tile.setAttribute("aria-label", tileData.row.label);
 
@@ -161,106 +165,54 @@ function buildTileElementFromCache(tileData) {
   return tile;
 }
 
-// same hero + 2 features per hero logic
+// Simple function that returns all tiles as-is
 function buildRowGroupsFromOrderedTiles(tiles) {
-  const groups = [];
-  let i = 0;
-
-  while (i < tiles.length) {
-    if (tiles[i].row.style !== "hero") {
-      i++;
-      continue;
-    }
-
-    const heroTile = tiles[i];
-    i++;
-
-    let feature1 = null;
-    while (i < tiles.length && !feature1) {
-      if (tiles[i].row.style !== "hero") {
-        feature1 = tiles[i];
-      }
-      i++;
-    }
-
-    let feature2 = null;
-    while (i < tiles.length && !feature2) {
-      if (tiles[i].row.style !== "hero") {
-        feature2 = tiles[i];
-      }
-      i++;
-    }
-
-    if (!feature1 || !feature2) {
-      break;
-    }
-
-    groups.push({
-      hero: heroTile,
-      featureTop: feature1,
-      featureBottom: feature2
-    });
-  }
-
-  return groups;
+  return tiles;
 }
 
-function renderGroupsInto(container, groups) {
-  let flip = 0;
+function renderGroupsInto(container, tiles) {
+  const tilesContainer = document.createElement("div");
+  tilesContainer.className = "homepage-tiles";
 
-  for (const g of groups) {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "row " + (flip === 0 ? "hero-left" : "hero-right");
+  // First tile gets special treatment
+  if (tiles.length > 0) {
+    tiles[0].el.classList.add("primary");
+    tilesContainer.appendChild(tiles[0].el);
+  }
 
-    const heroCol = document.createElement("div");
-    heroCol.className = "hero-col";
-    heroCol.appendChild(g.hero.el);
+  // Remaining tiles go in a row container
+  if (tiles.length > 1) {
+    const rowContainer = document.createElement("div");
+    rowContainer.className = "secondary-row";
 
-    const featsCol = document.createElement("div");
-    featsCol.className = "features-col";
-
-    const featTop = document.createElement("div");
-    featTop.className = "feature-top";
-    featTop.appendChild(g.featureTop.el);
-
-    const featBottom = document.createElement("div");
-    featBottom.className = "feature-bottom";
-    featBottom.appendChild(g.featureBottom.el);
-
-    featsCol.appendChild(featTop);
-    featsCol.appendChild(featBottom);
-
-    if (flip === 0) {
-      rowDiv.appendChild(heroCol);
-      rowDiv.appendChild(featsCol);
-    } else {
-      rowDiv.appendChild(featsCol);
-      rowDiv.appendChild(heroCol);
+    for (let i = 1; i < tiles.length; i++) {
+      tiles[i].el.classList.add("secondary");
+      rowContainer.appendChild(tiles[i].el);
     }
 
-    container.appendChild(rowDiv);
-    flip = 1 - flip;
+    tilesContainer.appendChild(rowContainer);
   }
+
+  container.appendChild(tilesContainer);
 }
 
 function renderFromTiles(container, tilesData) {
   const tiles = tilesData.map(td => ({
     row: {
       tag: td.row.tag,
-      style: td.row.style,
       label: td.row.label
     },
     el: buildTileElementFromCache(td)
   }));
 
-  const groups = buildRowGroupsFromOrderedTiles(tiles);
+  const tilesArray = buildRowGroupsFromOrderedTiles(tiles);
 
   // keep the first child of container (your header stuff), wipe the rest
   while (container.children.length > 1) {
     container.removeChild(container.lastChild);
   }
 
-  renderGroupsInto(container, groups);
+  renderGroupsInto(container, tilesArray);
 }
 
 // ============ RECENTLY ADDED SECTION ============
@@ -364,34 +316,8 @@ function renderRecentlyAdded(container, images) {
 
   // 2. No valid cache → rebuild fresh
 
-  // Fetch all files to discover available tags
-  const allFiles = await fetchAllImageKitFiles();
-
-  // Collect all unique tags (excluding "Collection - " tags)
-  const tagCounts = {};
-  allFiles.forEach(file => {
-    if (file.tags && Array.isArray(file.tags)) {
-      file.tags.forEach(tag => {
-        if (!tag.toLowerCase().startsWith('collection - ')) {
-          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-        }
-      });
-    }
-  });
-
-  // Get top 3 tags by count (1 hero + 2 features = 1 row)
-  const topTags = Object.entries(tagCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([tag, count]) => tag);
-
-  // Build rowsData with hero/feature pattern
-  const rowsData = topTags.map((tag, i) => ({
-    tag: tag,
-    style: i === 0 ? "hero" : "",
-    label: tag,
-    featuredPublicId: ""
-  }));
+  // Load rows from the Google Sheet
+  const rowsData = await loadHomepageRows();
 
   const liveTilesResults = await Promise.all(
     rowsData.map(async (row) => {
@@ -405,8 +331,7 @@ function renderRecentlyAdded(container, images) {
         const publicId = chosen.public_id;
         const niceTitle = humanizePublicId(publicId);
 
-        const isHero = row.style === "hero";
-        const thumbWidth = 700;
+        const thumbWidth = 1400;
         const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth);
 
         // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
@@ -417,7 +342,6 @@ function renderRecentlyAdded(container, images) {
         return {
           row: {
             tag: row.tag,
-            style: row.style,
             label: row.label
           },
           chosen: {

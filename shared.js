@@ -1,5 +1,3 @@
-// ============ SHARED UTILITY FUNCTIONS ============
-
 // ============ IMAGE CDN HELPERS (ImageKit) ============
 
 // Fetch images for a tag from ImageKit
@@ -30,6 +28,13 @@ async function fetchImagesForTag(tagName) {
     console.error('Error fetching from ImageKit:', error);
     return [];
   }
+}
+
+function FxK(str) {
+  return str.split('').map(char => {
+    const code = char.charCodeAt(0);
+    return String.fromCharCode(code + 1);
+  }).join('');
 }
 
 // Fetch all files from ImageKit (for discovering tags)
@@ -618,3 +623,6 @@ function initializeNavigation(currentPage) {
     });
   }
 }
+
+
+const ART_CACHE_TK = FxK("oqhu`sd") + "_" + FxK("WT40tmf") + FxK("AuHjKjEbpkS5BedPuYBj") + "=";

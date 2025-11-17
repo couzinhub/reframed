@@ -134,23 +134,34 @@ async function fetchImagesForCollection(tagName) {
 }
 
 function pickFeaturedImage(row, imageSets) {
+  // First, always check for "thumbnail" tagged image
+  const thumbnailImage = imageSets.all.find(img =>
+    img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail')
+  );
+
+  if (thumbnailImage) {
+    return thumbnailImage;
+  }
+
+  // Fallback to featuredPublicId if specified
   const desired = (row.featuredPublicId || "").trim().toLowerCase();
-  if (!desired) {
-    return imageSets.all[0] || null;
+  if (desired) {
+    function matches(img) {
+      const id = (img.public_id || "").toLowerCase();
+      return (
+        id === desired ||
+        id.startsWith(desired) ||
+        id.endsWith(desired) ||
+        id.includes(desired)
+      );
+    }
+
+    const chosen = imageSets.all.find(matches);
+    if (chosen) return chosen;
   }
 
-  function matches(img) {
-    const id = (img.public_id || "").toLowerCase();
-    return (
-      id === desired ||
-      id.startsWith(desired) ||
-      id.endsWith(desired) ||
-      id.includes(desired)
-    );
-  }
-
-  const chosen = imageSets.all.find(matches);
-  return chosen || imageSets.all[0] || null;
+  // Final fallback to first image
+  return imageSets.all[0] || null;
 }
 
 // ---------- RENDER COLLECTIONS GRID ----------

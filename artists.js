@@ -52,14 +52,15 @@ function saveArtistsToLocalStorage(artists) {
 async function loadTagsFromImageKit() {
   const files = await fetchAllImageKitFiles();
 
-  // Extract all unique tags (excluding collection tags)
+  // Extract all unique tags (excluding collection tags and thumbnail tag)
   const tagSet = new Set();
   files.forEach(file => {
     if (file.tags && Array.isArray(file.tags)) {
       file.tags.forEach(tag => {
         const trimmedTag = tag.trim();
-        // Exclude collection tags (format: "collection - NAME")
-        if (!trimmedTag.toLowerCase().startsWith('collection - ')) {
+        const lowerTag = trimmedTag.toLowerCase();
+        // Exclude collection tags (format: "collection - NAME") and thumbnail tag
+        if (!lowerTag.startsWith('collection - ') && lowerTag !== 'thumbnail') {
           tagSet.add(trimmedTag);
         }
       });
@@ -108,6 +109,15 @@ async function fetchImagesForArtist(tagName) {
 }
 
 function pickFeaturedImage(imageSets) {
+  // First, check if any image has the "thumbnail" tag
+  const thumbnailImage = imageSets.all.find(img =>
+    img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail')
+  );
+
+  if (thumbnailImage) {
+    return thumbnailImage;
+  }
+
   // Prefer landscape images for thumbnails
   const landscape = imageSets.all.find(img => {
     const w = img.width;

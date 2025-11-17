@@ -397,6 +397,46 @@ aside .own-art:hover {
   aspect-ratio: 16 / 9;
 }
 
+/* Full-width homepage tiles */
+.homepage-tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  width: 100%;
+  max-width: var(--page-maxwidth);
+  margin: 0 auto;
+}
+
+.tile.full-width {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.tile.full-width img {
+  object-fit: contain;
+  background: #000;
+}
+
+/* Primary tile (first one) */
+.tile.full-width.primary {
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+/* Secondary row (2nd and 3rd tiles) */
+.secondary-row {
+  display: flex;
+  gap: 30px;
+  width: 100%;
+  justify-content: center;
+}
+
+.tile.full-width.secondary {
+  flex: 1;
+  max-width: 635px;
+}
+
 /* make <img> behave like a background cover */
 .tile img {
   position: absolute;
@@ -1049,6 +1089,17 @@ aside .own-art:hover {
     height: auto;
     aspect-ratio: 16 / 9;
     flex: 1;
+  }
+
+  /* Homepage tiles - stack vertically on smaller screens */
+  .secondary-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .tile.full-width.primary,
+  .tile.full-width.secondary {
+    max-width: 100%;
   }
 }
 
