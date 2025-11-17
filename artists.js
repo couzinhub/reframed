@@ -138,7 +138,7 @@ function buildArtistCard(artist) {
 
   if (artist.chosenImage) {
     const niceName = humanizePublicId(artist.chosenImage.public_id);
-    const thumbUrl = getThumbnailUrlWithCrop(artist.chosenImage.public_id, 400);
+    const thumbUrl = getThumbnailUrlWithCrop(artist.chosenImage.public_id, 700);
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";
     imgEl.src = thumbUrl;
@@ -290,7 +290,7 @@ function setupLazyThumbObserver() {
         if (thumbWrapper && chosenImage) {
           thumbWrapper.innerHTML = "";
           const niceName = humanizePublicId(chosenImage.public_id);
-          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 400);
+          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
           const imgEl = document.createElement("img");
           imgEl.loading = "lazy";
           imgEl.src = thumbUrl;
@@ -430,7 +430,7 @@ function setupAlphabetNavigation() {
     setupLazyThumbObserver();
     setupAlphabetNavigation();
 
-    status.textContent = `${ARTISTS_CACHE.length} tags`;
+    status.textContent = `${ARTISTS_CACHE.length} artists`;
   } catch (err) {
     console.error(err);
     status.textContent = "Error loading tags: " + err.message;

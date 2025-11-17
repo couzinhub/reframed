@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Art Collections - Reframed | Curated Galleries for Samsung Frame TV</title>
-  <meta name="description" content="Explore curated art collections for Samsung Frame TV. Browse themed galleries of classic paintings, modern photography, landscapes, portraits, and more - all optimized for your Frame TV.">
-  <meta name="keywords" content="art collections, Frame TV galleries, curated art, themed galleries, Samsung Frame TV collections">
+  <title>Search - Reframed | Search Frame TV Artworks</title>
+  <meta name="description" content="Search through thousands of artworks optimized for Samsung Frame TV. Find the perfect piece by name, artist, or keyword.">
+  <meta name="keywords" content="search art, Frame TV search, find artwork, digital art search">
 
   <!-- Canonical URL -->
-  <link rel="canonical" href="https://reframed.gallery/collections.html">
+  <link rel="canonical" href="https://reframed.gallery/search.html">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://reframed.gallery/collections.html">
-  <meta property="og:title" content="Art Collections - Reframed">
-  <meta property="og:description" content="Explore curated art collections for Samsung Frame TV.">
+  <meta property="og:url" content="https://reframed.gallery/search.html">
+  <meta property="og:title" content="Search - Reframed">
+  <meta property="og:description" content="Search through thousands of artworks optimized for Samsung Frame TV.">
   <meta property="og:image" content="https://reframed.gallery/img/og-image.jpg">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://reframed.gallery/collections.html">
-  <meta name="twitter:title" content="Art Collections - Reframed">
-  <meta name="twitter:description" content="Explore curated art collections for Samsung Frame TV.">
+  <meta name="twitter:url" content="https://reframed.gallery/search.html">
+  <meta name="twitter:title" content="Search - Reframed">
+  <meta name="twitter:description" content="Search through thousands of artworks optimized for Samsung Frame TV.">
   <meta name="twitter:image" content="https://reframed.gallery/img/og-image.jpg">
 
   <link rel="icon" href="img/favicon.ico" type="image/x-icon">
@@ -41,23 +41,35 @@
     gtag('config', 'G-14360H9J7X');
   </script>
 </head>
-<body class="collections">
+<body class="search-page">
 
   <main id="appView">
-    <section id="collectionsPage">
-      <h1>Collections</h1>
-      <div class="tag-header-row">
-        <p id="collectionsStatus" class="tag-status"></p>
+    <section id="searchPage">
+      <h1>Search</h1>
+
+      <div class="search-container">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search by artwork name..."
+          autocomplete="off"
+        />
+        <button id="clearSearch" aria-label="Clear search">&times;</button>
       </div>
-      <div id="collectionsGrid"></div>
+
+      <div class="tag-header-row">
+        <p id="searchStatus" class="tag-status"></p>
+      </div>
+
+      <div id="searchGrid" class="tag-grid"></div>
     </section>
   </main>
 
   <script src="config.js"></script>
   <script src="test.js"></script>
   <script src="shared.js"></script>
-  <script>initializeNavigation('collections');</script>
-  <script src="collections.js"></script>
+  <script>initializeNavigation('search');</script>
+  <script src="search.js"></script>
   <script src="downloads.js"></script>
 </body>
 </html>

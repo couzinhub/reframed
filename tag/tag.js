@@ -201,7 +201,8 @@ async function fetchImagesForTagPage(tagName) {
       public_id: file.filePath.substring(1), // Remove leading slash
       width: file.width,
       height: file.height,
-      created_at: file.createdAt
+      created_at: file.createdAt,
+      tags: file.tags || []
     }));
   } else {
     // Use shared helper function from shared.js for tag-based queries
@@ -238,52 +239,7 @@ function renderTagGallery(tagName, images) {
   for (const img of images) {
     const publicId = img.public_id;
     const niceName = humanizePublicId(publicId);
-
-    const w = img.width;
-    const h = img.height;
-    const isPortrait =
-      typeof w === "number" &&
-      typeof h === "number" &&
-      h > w;
-
-    // Use 400px for portraits on Vertical artworks page, 600px for everything else
-    const thumbWidth = (tagName === "Vertical artworks" && isPortrait) ? 400 : 600;
-
-    const card = document.createElement("div");
-    card.className = "card artwork";
-    card.dataset.publicId = publicId;
-
-    const imageUrl = getImageUrl(publicId);
-
-    // Add click handler to toggle downloads queue
-    card.addEventListener('click', (e) => {
-      e.preventDefault();
-
-      if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
-        if (window.isInDownloads(publicId)) {
-          window.removeFromDownloads(publicId);
-        } else {
-          window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape');
-        }
-      }
-    });
-
-    // Set initial state if in downloads
-    if (typeof window.isInDownloads === 'function' && window.isInDownloads(publicId)) {
-      card.classList.add('in-downloads');
-    }
-
-    const imgEl = document.createElement("img");
-    imgEl.loading = "lazy";
-    imgEl.src = getThumbnailUrl(publicId, thumbWidth);
-    imgEl.alt = niceName;
-
-    const caption = document.createElement("div");
-    caption.className = "artwork-title";
-    caption.textContent = niceName;
-
-    card.appendChild(imgEl);
-    card.appendChild(caption);
+    const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
     frag.appendChild(card);
   }
 

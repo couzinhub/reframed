@@ -5,7 +5,7 @@
 // Fetch images for a tag from ImageKit
 async function fetchImagesForTag(tagName) {
   try {
-    const authHeader = 'Basic ' + btoa(IMAGEKIT_PRIVATE_KEY + ':');
+    const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
     const apiUrl = `https://api.imagekit.io/v1/files?tags=${encodeURIComponent(tagName)}&limit=1000`;
 
     const response = await fetch(apiUrl, {
@@ -23,7 +23,8 @@ async function fetchImagesForTag(tagName) {
       public_id: file.filePath.substring(1), // Remove leading slash
       width: file.width,
       height: file.height,
-      created_at: file.createdAt
+      created_at: file.createdAt,
+      tags: file.tags || []
     }));
   } catch (error) {
     console.error('Error fetching from ImageKit:', error);
@@ -34,7 +35,7 @@ async function fetchImagesForTag(tagName) {
 // Fetch all files from ImageKit (for discovering tags)
 async function fetchAllImageKitFiles() {
   try {
-    const authHeader = 'Basic ' + btoa(IMAGEKIT_PRIVATE_KEY + ':');
+    const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
     const apiUrl = 'https://api.imagekit.io/v1/files?limit=1000';
 
     const response = await fetch(apiUrl, {
@@ -128,6 +129,234 @@ function humanizePublicId(publicId) {
     .replace(/\s*[-_]\s*portrait\s*/gi, "") // Remove "portrait", "- portrait", "_portrait"
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+// Extract artist name from artwork title (assumes format "Artist Name - Artwork Title")
+function extractArtistFromTitle(title) {
+  const parts = title.split(' - ');
+  return parts.length > 1 ? parts[0].trim() : null;
+}
+
+// Create artwork card element (shared across all pages)
+function createArtworkCard(publicId, niceName, tags, width, height) {
+  const isPortrait =
+    typeof width === "number" &&
+    typeof height === "number" &&
+    height > width;
+
+  const thumbWidth = 700;
+
+  const card = document.createElement("div");
+  card.className = "card artwork";
+  card.dataset.publicId = publicId;
+
+  const imageUrl = getImageUrl(publicId);
+
+  // Add click handler to toggle downloads queue
+  card.addEventListener('click', (e) => {
+    // Don't toggle if clicking on artist link
+    if (e.target.classList.contains('artist-link-inline')) {
+      return;
+    }
+
+    e.preventDefault();
+
+    if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
+      if (window.isInDownloads(publicId)) {
+        window.removeFromDownloads(publicId);
+      } else {
+        window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape');
+      }
+    }
+  });
+
+  // Set initial state if in downloads
+  if (typeof window.isInDownloads === 'function' && window.isInDownloads(publicId)) {
+    card.classList.add('in-downloads');
+  }
+
+  const imgEl = document.createElement("img");
+  imgEl.loading = "lazy";
+  imgEl.src = getThumbnailUrl(publicId, thumbWidth);
+  imgEl.alt = niceName;
+
+  // Create zoom icon
+  const zoomIcon = document.createElement("button");
+  zoomIcon.className = "zoom-icon";
+  zoomIcon.setAttribute("aria-label", "Preview artwork");
+  zoomIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+    <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/>
+  </svg>`;
+
+  zoomIcon.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showZoomOverlay(publicId, niceName, width, height);
+  });
+
+  const caption = document.createElement("div");
+  caption.className = "artwork-title";
+
+  // Check if title contains artist name (format: "Artist - Title")
+  const artistName = extractArtistFromTitle(niceName);
+
+  if (artistName && tags && tags.length > 0) {
+    // Find matching tag (case-insensitive)
+    const matchingTag = tags.find(tag =>
+      !tag.toLowerCase().startsWith('collection - ') &&
+      tag.toLowerCase() === artistName.toLowerCase()
+    );
+
+    if (matchingTag) {
+      // Create clickable artist name
+      const prettyTag = matchingTag.trim()
+        .replace(/-/g, "%2D")
+        .replace(/\s+/g, "-");
+
+      const artistLink = document.createElement("a");
+      artistLink.href = `/tag/#${prettyTag}`;
+      artistLink.className = "artist-link-inline";
+      artistLink.textContent = artistName;
+
+      // Prevent click from toggling download
+      artistLink.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      // Add artist link and the rest of the title (including " - " separator)
+      const remainingText = niceName.substring(artistName.length);
+      caption.appendChild(artistLink);
+      caption.appendChild(document.createTextNode(remainingText));
+    } else {
+      // No matching tag, just show title
+      caption.textContent = niceName;
+    }
+  } else {
+    // No artist in title or no tags, just show title
+    caption.textContent = niceName;
+  }
+
+  card.appendChild(imgEl);
+  card.appendChild(zoomIcon);
+  card.appendChild(caption);
+
+  return card;
+}
+
+// ============ ZOOM OVERLAY ============
+function showZoomOverlay(publicId, niceName, width, height) {
+  // Remove existing overlay if any
+  const existingOverlay = document.getElementById('zoomOverlay');
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'zoomOverlay';
+  overlay.className = 'zoom-overlay';
+
+  // Add loading state with spinner and percentage
+  overlay.innerHTML = `
+    <div class="zoom-loading">
+      <div class="spinner"></div>
+      <div class="zoom-percentage">0%</div>
+    </div>
+  `;
+
+  const percentageEl = overlay.querySelector('.zoom-percentage');
+  const imageUrl = getImageUrl(publicId);
+
+  // Fetch image with progress tracking
+  fetch(imageUrl)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const contentLength = response.headers.get('content-length');
+
+      if (!contentLength) {
+        // If content-length is not available, fall back to simple loading
+        return response.blob().then(blob => {
+          percentageEl.textContent = '100%';
+          return blob;
+        });
+      }
+
+      const total = parseInt(contentLength, 10);
+      let loaded = 0;
+
+      const reader = response.body.getReader();
+      const chunks = [];
+
+      return new ReadableStream({
+        start(controller) {
+          function push() {
+            reader.read().then(({ done, value }) => {
+              if (done) {
+                controller.close();
+                return;
+              }
+
+              loaded += value.length;
+              const percentage = Math.round((loaded / total) * 100);
+              percentageEl.textContent = `${percentage}%`;
+
+              chunks.push(value);
+              controller.enqueue(value);
+              push();
+            }).catch(error => {
+              console.error('Stream reading error:', error);
+              controller.error(error);
+            });
+          }
+          push();
+        }
+      });
+    })
+    .then(stream => new Response(stream))
+    .then(response => response.blob())
+    .then(blob => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(blob);
+      img.alt = niceName;
+      img.style.maxWidth = '90vw';
+      img.style.maxHeight = '90vh';
+      img.style.objectFit = 'contain';
+
+      img.onload = () => {
+        overlay.innerHTML = '';
+
+        // Create message banner
+        const message = document.createElement('div');
+        message.className = 'zoom-message';
+        message.textContent = 'This preview is half the size of the original, add to download to get the full version';
+
+        overlay.appendChild(message);
+        overlay.appendChild(img);
+        URL.revokeObjectURL(img.src);
+      };
+    })
+    .catch(error => {
+      console.error('Error loading image:', error);
+      overlay.innerHTML = '<div class="zoom-loading">Error loading image</div>';
+    });
+
+  // Close on click
+  overlay.addEventListener('click', () => {
+    overlay.remove();
+  });
+
+  // Close on escape key
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
+
+  document.body.appendChild(overlay);
 }
 
 // Generic Cache Helpers
@@ -307,6 +536,7 @@ function initializeNavigation(currentPage) {
       </a>
       <ul>
         <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
+        <li class="${currentPage === 'search' ? 'current' : ''}"><a href="/search.html">Search</a></li>
         <li class="${currentPage === 'artists' ? 'current' : ''}"><a href="/artists.html">Artists</a></li>
         <li class="${currentPage === 'collections' ? 'current' : ''}"><a href="/collections.html">Collections</a></li>
         <li class="${currentPage === 'tag' && window.location.hash === '#Vertical-artworks' ? 'current' : ''}"><a href="/tag/#Vertical-artworks">Vertical artworks</a></li>

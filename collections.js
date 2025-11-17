@@ -175,7 +175,7 @@ function buildCollectionCard(row, imgData) {
 
   if (imgData) {
     const niceName = humanizePublicId(imgData.public_id);
-    const thumbUrl = getThumbnailUrlWithCrop(imgData.public_id, 400);
+    const thumbUrl = getThumbnailUrlWithCrop(imgData.public_id, 700);
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";
     imgEl.src = thumbUrl;
@@ -278,7 +278,7 @@ function setupLazyThumbObserver() {
         if (thumbWrapper && chosenImage) {
           thumbWrapper.innerHTML = "";
           const niceName = humanizePublicId(chosenImage.public_id);
-          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 400);
+          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
           const imgEl = document.createElement("img");
           imgEl.loading = "lazy";
           imgEl.src = thumbUrl;
