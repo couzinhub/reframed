@@ -10,6 +10,9 @@ let COLLECTIONS_SCROLL_Y = 0;
 const TAG_IMAGES_CACHE = {};
 const TAG_TTL_MS = (window.DEBUG ? 2 : 20) * 60 * 1000;
 
+// Track which images have been used as thumbnails to avoid duplicates
+const USED_THUMBNAILS = new Set();
+
 // cache for collection rows from the CSV
 let COLLECTION_ROWS_CACHE = null;
 let COLLECTION_ROWS_FETCHED_AT = 0;
@@ -133,20 +136,29 @@ async function fetchImagesForCollection(tagName) {
   return { all, count };
 }
 
-function pickFeaturedImage(row, imageSets) {
-  // First, always check for "thumbnail" tagged image
-  const thumbnailImage = imageSets.all.find(img =>
-    img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail')
-  );
+function pickFeaturedImage(row, imageSets, usedThumbnails = null) {
+  // First, always check for "thumbnail" tagged image (that hasn't been used)
+  const thumbnailImage = imageSets.all.find(img => {
+    if (usedThumbnails && usedThumbnails.has(img.public_id)) {
+      return false; // Skip if already used
+    }
+    return img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail');
+  });
 
   if (thumbnailImage) {
+    if (usedThumbnails) {
+      usedThumbnails.add(thumbnailImage.public_id);
+    }
     return thumbnailImage;
   }
 
-  // Fallback to featuredPublicId if specified
+  // Fallback to featuredPublicId if specified (and not used)
   const desired = (row.featuredPublicId || "").trim().toLowerCase();
   if (desired) {
     function matches(img) {
+      if (usedThumbnails && usedThumbnails.has(img.public_id)) {
+        return false; // Skip if already used
+      }
       const id = (img.public_id || "").toLowerCase();
       return (
         id === desired ||
@@ -157,11 +169,24 @@ function pickFeaturedImage(row, imageSets) {
     }
 
     const chosen = imageSets.all.find(matches);
-    if (chosen) return chosen;
+    if (chosen) {
+      if (usedThumbnails) {
+        usedThumbnails.add(chosen.public_id);
+      }
+      return chosen;
+    }
   }
 
-  // Final fallback to first image
-  return imageSets.all[0] || null;
+  // Final fallback to first unused image
+  const availableImage = imageSets.all.find(img =>
+    !usedThumbnails || !usedThumbnails.has(img.public_id)
+  );
+
+  if (availableImage && usedThumbnails) {
+    usedThumbnails.add(availableImage.public_id);
+  }
+
+  return availableImage || imageSets.all[0] || null;
 }
 
 // ---------- RENDER COLLECTIONS GRID ----------
@@ -282,7 +307,7 @@ function setupLazyThumbObserver() {
 
       // pick thumb if missing
       if (!alreadyHasThumb) {
-        const chosenImage = pickFeaturedImage(cacheItem.row, imageSets);
+        const chosenImage = pickFeaturedImage(cacheItem.row, imageSets, USED_THUMBNAILS);
         cacheItem.chosenImage = chosenImage;
 
         const thumbWrapper = cardEl.querySelector(".thumb");
@@ -308,6 +333,9 @@ function setupLazyThumbObserver() {
       if (cardEl.__countSpan && typeof cacheItem.imageCount === "number") {
         cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
       }
+
+      // Save updated cache to localStorage
+      saveCollectionsToLocalStorage(COLLECTIONS_CACHE);
 
       observer.unobserve(cardEl);
     }

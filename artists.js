@@ -320,6 +320,8 @@ function setupLazyThumbObserver() {
         cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
       }
 
+      // Save updated cache to localStorage
+      saveArtistsToLocalStorage(ARTISTS_CACHE);
 
       observer.unobserve(cardEl);
     }
