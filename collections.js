@@ -16,7 +16,7 @@ let COLLECTION_ROWS_FETCHED_AT = 0;
 const ROWS_TTL_MS = 5 * 60 * 1000; // 5 min
 
 // localStorage cache for collections page
-const COLLECTIONS_LOCALSTORAGE_KEY = "reframed_collections_cache_v1";
+const COLLECTIONS_LOCALSTORAGE_KEY = "reframed_collections_cache_v4";
 
 // ---------- LOCALSTORAGE CACHE HELPERS ----------
 function loadCollectionsFromLocalStorage() {
@@ -64,34 +64,35 @@ async function loadCollectionRows() {
     return COLLECTION_ROWS_CACHE;
   }
 
-  const res = await fetch(COLLECTIONS_CSV_URL + "&t=" + Date.now(), { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to load collections sheet: HTTP " + res.status);
+  // Fetch all files from ImageKit
+  const files = await fetchAllImageKitFiles();
 
-  const csvText = await res.text();
-  const rows = parseCSV(csvText);
-  if (!rows.length) {
-    COLLECTION_ROWS_CACHE = [];
-    COLLECTION_ROWS_FETCHED_AT = Date.now();
-    return [];
-  }
+  // Extract collection tags (format: "collection - NAME")
+  const collectionTagsSet = new Set();
+  files.forEach(file => {
+    if (file.tags && Array.isArray(file.tags)) {
+      file.tags.forEach(tag => {
+        const trimmedTag = tag.trim();
+        if (trimmedTag.toLowerCase().startsWith('collection - ')) {
+          collectionTagsSet.add(trimmedTag);
+        }
+      });
+    }
+  });
 
-  const header = rows[0].map(h => h.toLowerCase().trim());
-  const tagCol = header.indexOf("tag");
-  const labelCol = header.indexOf("label");
-  const idCol = header.indexOf("image");
+  // Convert to array and sort by the display name (without "collection - ")
+  const collectionTags = Array.from(collectionTagsSet).sort((a, b) => {
+    const nameA = a.substring(13); // Remove "collection - " (13 chars)
+    const nameB = b.substring(13);
+    return nameA.localeCompare(nameB);
+  });
 
-  const out = [];
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    const tag = (r[tagCol] || "").trim();
-    if (!tag || tag.toLowerCase().startsWith("-- ignore")) continue;
-
-    out.push({
-      tag,
-      label: (r[labelCol] || tag).trim(),
-      featuredPublicId: (r[idCol] || "").trim()
-    });
-  }
+  // Create rows with tag (full) and label (without prefix)
+  const out = collectionTags.map(tag => ({
+    tag: tag, // Keep full tag for API queries
+    label: tag.substring(13), // Remove "collection - " for display
+    featuredPublicId: "" // Will be determined by lazy load
+  }));
 
   COLLECTION_ROWS_CACHE = out;
   COLLECTION_ROWS_FETCHED_AT = Date.now();
@@ -102,54 +103,40 @@ async function loadCollectionRows() {
   return out;
 }
 
-// ---------- CLOUDINARY HELPERS FOR THUMBS ----------
-async function fetchImagesForTag(tagName) {
+// ---------- IMAGE HELPERS FOR THUMBS ----------
+async function fetchImagesForCollection(tagName) {
   // Check memory cache first
   const cached = TAG_IMAGES_CACHE[tagName];
   if (cached && (Date.now() - cached.lastFetched < TAG_TTL_MS)) {
     return {
       all: cached.all,
-      landscape: cached.landscape,
       count: cached.count
     };
   }
 
-  // Fetch from Cloudinary
-  const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
-  const res = await fetch(url, { mode: "cors" });
-  if (!res.ok) {
-    return { all: [], landscape: [], count: 0 };
-  }
-
-  const data = await res.json();
+  // Use shared helper function from shared.js (works with both Cloudinary and ImageKit)
+  const items = await fetchImagesForTag(tagName);
 
   // newest first
-  const all = (data.resources || []).sort((a, b) =>
+  const all = items.sort((a, b) =>
     (b.created_at || "").localeCompare(a.created_at || "")
   );
-
-  const landscape = all.filter(img => {
-    const w = img.width;
-    const h = img.height;
-    return (typeof w === "number" && typeof h === "number") ? w >= h : true;
-  });
 
   const count = all.length;
 
   TAG_IMAGES_CACHE[tagName] = {
     all,
-    landscape,
     count,
     lastFetched: Date.now()
   };
 
-  return { all, landscape, count };
+  return { all, count };
 }
 
 function pickFeaturedImage(row, imageSets) {
   const desired = (row.featuredPublicId || "").trim().toLowerCase();
   if (!desired) {
-    return imageSets.landscape[0] || imageSets.all[0] || null;
+    return imageSets.all[0] || null;
   }
 
   function matches(img) {
@@ -163,7 +150,7 @@ function pickFeaturedImage(row, imageSets) {
   }
 
   const chosen = imageSets.all.find(matches);
-  return chosen || imageSets.landscape[0] || imageSets.all[0] || null;
+  return chosen || imageSets.all[0] || null;
 }
 
 // ---------- RENDER COLLECTIONS GRID ----------
@@ -188,7 +175,7 @@ function buildCollectionCard(row, imgData) {
 
   if (imgData) {
     const niceName = humanizePublicId(imgData.public_id);
-    const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_400,q_auto,f_auto/${encodeURIComponent(imgData.public_id)}`;
+    const thumbUrl = getThumbnailUrlWithCrop(imgData.public_id, 400);
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";
     imgEl.src = thumbUrl;
@@ -280,7 +267,7 @@ function setupLazyThumbObserver() {
       }
 
       // Fetch images (this gives us image list + count)
-      const imageSets = await fetchImagesForTag(tagName);
+      const imageSets = await fetchImagesForCollection(tagName);
 
       // pick thumb if missing
       if (!alreadyHasThumb) {
@@ -291,7 +278,7 @@ function setupLazyThumbObserver() {
         if (thumbWrapper && chosenImage) {
           thumbWrapper.innerHTML = "";
           const niceName = humanizePublicId(chosenImage.public_id);
-          const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_400,q_auto,f_auto/${encodeURIComponent(chosenImage.public_id)}`;
+          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 400);
           const imgEl = document.createElement("img");
           imgEl.loading = "lazy";
           imgEl.src = thumbUrl;

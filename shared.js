@@ -1,5 +1,73 @@
 // ============ SHARED UTILITY FUNCTIONS ============
 
+// ============ IMAGE CDN HELPERS (ImageKit) ============
+
+// Fetch images for a tag from ImageKit
+async function fetchImagesForTag(tagName) {
+  try {
+    const authHeader = 'Basic ' + btoa(IMAGEKIT_PRIVATE_KEY + ':');
+    const apiUrl = `https://api.imagekit.io/v1/files?tags=${encodeURIComponent(tagName)}&limit=1000`;
+
+    const response = await fetch(apiUrl, {
+      headers: { 'Authorization': authHeader }
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch from ImageKit API:', response.status);
+      return [];
+    }
+
+    const files = await response.json();
+
+    return files.map(file => ({
+      public_id: file.filePath.substring(1), // Remove leading slash
+      width: file.width,
+      height: file.height,
+      created_at: file.createdAt
+    }));
+  } catch (error) {
+    console.error('Error fetching from ImageKit:', error);
+    return [];
+  }
+}
+
+// Fetch all files from ImageKit (for discovering tags)
+async function fetchAllImageKitFiles() {
+  try {
+    const authHeader = 'Basic ' + btoa(IMAGEKIT_PRIVATE_KEY + ':');
+    const apiUrl = 'https://api.imagekit.io/v1/files?limit=1000';
+
+    const response = await fetch(apiUrl, {
+      headers: { 'Authorization': authHeader }
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch from ImageKit API:', response.status);
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching from ImageKit:', error);
+    return [];
+  }
+}
+
+// Get full-size image URL
+function getImageUrl(publicId) {
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=f-auto,q-auto`;
+}
+
+// Get thumbnail URL with specified width
+function getThumbnailUrl(publicId, width) {
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},q-auto,f-auto`;
+}
+
+// Get thumbnail URL with crop/fill (for card thumbnails)
+function getThumbnailUrlWithCrop(publicId, width) {
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},h-${width},c-at_max,q-auto,f-auto`;
+}
+
 // CSV Parser - parses CSV text into rows
 function parseCSV(text) {
   const rows = [];
@@ -47,12 +115,17 @@ function parseCSV(text) {
   return rows;
 }
 
-// Humanize Public ID - converts Cloudinary public IDs to readable names
+// Humanize Public ID - converts public IDs to readable names
 function humanizePublicId(publicId) {
   let base = publicId.split("/").pop();
+
+  // Remove file extension (e.g., .jpg, .png, .webp, etc.)
+  base = base.replace(/\.[^.]+$/, "");
+
   return base
     .replace(/_/g, " ")
-    .replace(/\s*-\s*reframed[\s_-]*[a-z0-9]+$/i, "")
+    .replace(/\s*[-_]\s*reframed[\s_-]*[a-z0-9]*/gi, "") // Remove "-reframed", "- reframed", "_reframed" with optional suffix
+    .replace(/\s*[-_]\s*portrait\s*/gi, "") // Remove "portrait", "- portrait", "_portrait"
     .replace(/\s{2,}/g, " ")
     .trim();
 }

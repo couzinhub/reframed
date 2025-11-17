@@ -1,6 +1,6 @@
 // assumes config.js and shared.js are loaded before this script
-// config.js provides: CLOUD_NAME, HOMEPAGE_CSV_URL
-// shared.js provides: parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
+// config.js provides: IMAGEKIT_URL_ENDPOINT, IMAGEKIT_PRIVATE_KEY, HOMEPAGE_CSV_URL
+// shared.js provides: fetchImagesForTag, fetchAllImageKitFiles, parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
 
 // ============ HOMEPAGE ROWS (SHEET PARSE) ============
 //
@@ -61,31 +61,15 @@ async function loadHomepageRows() {
   return out;
 }
 
-// ============ CLOUDINARY FETCH / IMAGE PICK ============
-async function fetchLandscapeImagesForTag(tagName) {
-  const listUrl = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
-
-  const res = await fetch(listUrl, { mode: "cors" });
-  if (!res.ok) {
-    return [];
-  }
-
-  const data = await res.json();
+// ============ IMAGE FETCH / IMAGE PICK ============
+async function fetchImagesForHomepage(tagName) {
+  // Use shared helper function (works with both Cloudinary and ImageKit)
+  let items = await fetchImagesForTag(tagName);
 
   // newest first
-  let items = (data.resources || []).sort(
+  items = items.sort(
     (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
   );
-
-  // filter out portrait for homepage
-  items = items.filter(img => {
-    const w = img.width;
-    const h = img.height;
-    if (typeof w === "number" && typeof h === "number") {
-      return w >= h;
-    }
-    return true;
-  });
 
   return items;
 }
@@ -274,24 +258,26 @@ function renderFromTiles(container, tilesData) {
 
 async function fetchRecentlyAdded() {
   try {
-    // Use "Recently added" with a space to match the actual Cloudinary tag
-    const listUrl = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent('Recently added')}.json`;
-    const res = await fetch(listUrl, { mode: "cors" });
-    if (!res.ok) {
-      console.log('Recently added tag not found or empty');
-      return [];
-    }
+    // Fetch all files from ImageKit
+    const allFiles = await fetchAllImageKitFiles();
 
-    const data = await res.json();
+    // Sort by upload date (newest first) and take the last 20
+    const sorted = allFiles
+      .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+      .slice(0, 20);
 
-    // Sort newest first and return all
-    const sorted = (data.resources || []).sort(
-      (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
-    );
-    console.log(`Fetched ${sorted.length} recently added images`);
-    return sorted;
+    // Transform to match expected format
+    const items = sorted.map(file => ({
+      public_id: file.filePath.substring(1), // Remove leading slash
+      width: file.width,
+      height: file.height,
+      created_at: file.createdAt
+    }));
+
+    console.log(`Fetched ${items.length} recently uploaded images`);
+    return items;
   } catch (err) {
-    console.error('Error fetching recently added:', err);
+    console.error('Error fetching recently uploaded:', err);
     return [];
   }
 }
@@ -337,7 +323,7 @@ function renderRecentlyAdded(container, images) {
     card.className = "card artwork";
     card.dataset.publicId = publicId;
 
-    const cloudinaryUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
+    const imageUrl = getImageUrl(publicId);
 
     // Add click handler to toggle downloads queue
     card.addEventListener('click', (e) => {
@@ -347,7 +333,7 @@ function renderRecentlyAdded(container, images) {
         if (window.isInDownloads(publicId)) {
           window.removeFromDownloads(publicId);
         } else {
-          window.addToDownloads(publicId, niceName, cloudinaryUrl, isPortrait ? 'portrait' : 'landscape');
+          window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape');
         }
       }
     });
@@ -359,7 +345,7 @@ function renderRecentlyAdded(container, images) {
 
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";
-    imgEl.src = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,w_${thumbWidth}/${encodeURIComponent(publicId)}`;
+    imgEl.src = getThumbnailUrl(publicId, thumbWidth);
     imgEl.alt = niceName;
 
     const caption = document.createElement("div");
@@ -407,7 +393,7 @@ function renderRecentlyAdded(container, images) {
   const liveTilesResults = await Promise.all(
     rowsData.map(async (row) => {
       try {
-        const images = await fetchLandscapeImagesForTag(row.tag);
+        const images = await fetchImagesForHomepage(row.tag);
         if (!images.length) return null;
 
         const chosen = chooseFeaturedImage(row, images);
@@ -418,7 +404,7 @@ function renderRecentlyAdded(container, images) {
 
         const isHero = row.style === "hero";
         const thumbWidth = isHero ? 700 : 400;
-        const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_${thumbWidth},q_auto,f_auto/${encodeURI(publicId)}`;
+        const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth);
 
         // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
         const prettyTag = row.tag.trim()

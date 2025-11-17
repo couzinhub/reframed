@@ -230,7 +230,7 @@ function renderDownloadsModal(queue) {
     }
 
     const thumbWidth = item.aspectRatio === 'portrait' ? 200 : 300;
-    const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,w_${thumbWidth}/${encodeURIComponent(item.publicId)}`;
+    const thumbUrl = getThumbnailUrl(item.publicId, thumbWidth);
 
     card.innerHTML = `
       <div class="downloads-item-image">
