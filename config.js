@@ -1,19 +1,14 @@
 // === CONFIG ===
 
 // Cache version - bump this to invalidate all cached data
-const CACHE_VERSION = "9";
+const CACHE_VERSION = "15";
 
-// Cache duration in milliseconds (30 minutes)
-const CACHE_TTL_MS = 30 * 60 * 1000;
+// Cache duration in minutes
+const CACHE_TTL_MINUTES = 30;
+const CACHE_TTL_MS = CACHE_TTL_MINUTES * 60 * 1000;
 
-// === Cloudinary ===
-const CLOUD_NAME = "dqqutqsna";
+// Constants
+const IMAGEKIT_URL_ENDPOINT = "https://ik.imagekit.io/lt3qfuwky";
 
 // === Home content ===
-const HOMEPAGE_CSV_URL = "https://docs.google.com/spreadsheets/d/14TPNDckAz1iXVpGYnoiQYccHTj-fcdo-dbAw_R8l0GE/export?format=csv&gid=0";
-
-// === Artists ===
-const ARTISTS_CSV_URL = "https://docs.google.com/spreadsheets/d/14TPNDckAz1iXVpGYnoiQYccHTj-fcdo-dbAw_R8l0GE/export?format=csv&gid=1042899634";
-
-// === Collections ===
-const COLLECTIONS_CSV_URL = "https://docs.google.com/spreadsheets/d/14TPNDckAz1iXVpGYnoiQYccHTj-fcdo-dbAw_R8l0GE/export?format=csv&gid=1366790496";
+const HOMEPAGE_CSV_URL = "https://docs.google.com/spreadsheets/d/14TPNDckAz1iXVpGYnoiQYccHTj-fcdo-dbAw_R8l0GE/export?format=csv&gid=1840797304";

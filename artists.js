@@ -1,22 +1,16 @@
 // assumes config.js and shared.js are loaded first
-// config.js provides: CLOUD_NAME, ARTISTS_CSV_URL
-// shared.js provides: parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
+// shared.js provides: fetchImagesForTag, fetchAllImageKitFiles, humanizePublicId, showToast, mobile menu functionality
 
 // ---------- lightweight in-tab cache ----------
-let ARTISTS_CACHE = null; // [{ row, chosenImage }, ...]
+let ARTISTS_CACHE = null; // [{ tag, label, chosenImage, imageCount }, ...]
 let ARTISTS_SCROLL_Y = 0;
 
-// cache for each tag's Cloudinary listing (thumb fetch)
+// cache for each tag's ImageKit listing
 const TAG_IMAGES_CACHE = {};
 const TAG_TTL_MS = (window.DEBUG ? 2 : 20) * 60 * 1000;
 
-// cache for artist rows from the CSV
-let ARTIST_ROWS_CACHE = null;
-let ARTIST_ROWS_FETCHED_AT = 0;
-const ROWS_TTL_MS = 5 * 60 * 1000; // 5 min
-
 // localStorage cache for artists page
-const ARTISTS_LOCALSTORAGE_KEY = "reframed_artists_cache_v1";
+const ARTISTS_LOCALSTORAGE_KEY = "reframed_artists_cache_v4";
 
 // ---------- LOCALSTORAGE CACHE HELPERS ----------
 function loadArtistsFromLocalStorage() {
@@ -54,138 +48,107 @@ function saveArtistsToLocalStorage(artists) {
   }
 }
 
-// ---------- LOAD ARTIST ROWS ----------
-async function loadArtistRows() {
-  // serve cached rows if still "fresh"
-  if (
-    ARTIST_ROWS_CACHE &&
-    (Date.now() - ARTIST_ROWS_FETCHED_AT < ROWS_TTL_MS)
-  ) {
-    return ARTIST_ROWS_CACHE;
-  }
+// ---------- LOAD TAGS FROM IMAGEKIT ----------
+async function loadTagsFromImageKit() {
+  const files = await fetchAllImageKitFiles();
 
-  const res = await fetch(ARTISTS_CSV_URL + "&t=" + Date.now(), { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to load artist sheet: HTTP " + res.status);
+  // Extract all unique tags (excluding collection tags and thumbnail tag)
+  const tagSet = new Set();
+  files.forEach(file => {
+    if (file.tags && Array.isArray(file.tags)) {
+      file.tags.forEach(tag => {
+        const trimmedTag = tag.trim();
+        const lowerTag = trimmedTag.toLowerCase();
+        // Exclude collection tags (format: "collection - NAME") and thumbnail tag
+        if (!lowerTag.startsWith('collection - ') && lowerTag !== 'thumbnail') {
+          tagSet.add(trimmedTag);
+        }
+      });
+    }
+  });
 
-  const csvText = await res.text();
-  const rows = parseCSV(csvText);
-  if (!rows.length) {
-    ARTIST_ROWS_CACHE = [];
-    ARTIST_ROWS_FETCHED_AT = Date.now();
-    return [];
-  }
+  // Convert to array and sort
+  const tags = Array.from(tagSet).sort((a, b) => a.localeCompare(b));
 
-  const header = rows[0].map(h => h.toLowerCase().trim());
-  const tagCol = header.indexOf("tag");
-  const labelCol = header.indexOf("label");
-  const idCol = header.indexOf("featured public id");
-
-  const out = [];
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    const tag = (r[tagCol] || "").trim();
-    if (!tag || tag.toLowerCase().startsWith("-- ignore")) continue;
-
-    out.push({
-      tag,
-      label: (r[labelCol] || tag).trim(),
-      featuredPublicId: (r[idCol] || "").trim()
-    });
-  }
-
-  ARTIST_ROWS_CACHE = out;
-  ARTIST_ROWS_FETCHED_AT = Date.now();
-  return out;
+  // Return in format compatible with rest of code
+  return tags.map(tag => ({
+    tag: tag,
+    label: tag
+  }));
 }
 
-// ---------- CLOUDINARY HELPERS FOR THUMBS ----------
-async function fetchImagesForTag(tagName) {
+// ---------- IMAGE HELPERS FOR THUMBS ----------
+async function fetchImagesForArtist(tagName) {
   // Check memory cache first
   const cached = TAG_IMAGES_CACHE[tagName];
   if (cached && (Date.now() - cached.lastFetched < TAG_TTL_MS)) {
     return {
       all: cached.all,
-      landscape: cached.landscape,
       count: cached.count
     };
   }
 
-  // Fetch from Cloudinary
-  const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
-  const res = await fetch(url, { mode: "cors" });
-  if (!res.ok) {
-    return { all: [], landscape: [], count: 0 };
-  }
-
-  const data = await res.json();
+  // Use shared helper function from shared.js
+  const items = await fetchImagesForTag(tagName);
 
   // newest first
-  const all = (data.resources || []).sort((a, b) =>
+  const all = items.sort((a, b) =>
     (b.created_at || "").localeCompare(a.created_at || "")
   );
 
-  const landscape = all.filter(img => {
-    const w = img.width;
-    const h = img.height;
-    return (typeof w === "number" && typeof h === "number") ? w >= h : true;
-  });
-
-  // Count only landscape artworks (exclude vertical)
-  const count = landscape.length;
+  // Count all artworks (both portrait and landscape)
+  const count = all.length;
 
   TAG_IMAGES_CACHE[tagName] = {
     all,
-    landscape,
     count,
     lastFetched: Date.now()
   };
 
-  return { all, landscape, count };
+  return { all, count };
 }
 
-function pickFeaturedImage(row, imageSets) {
-  const desired = (row.featuredPublicId || "").trim().toLowerCase();
-  if (!desired) {
-    return imageSets.landscape[0] || imageSets.all[0] || null;
+function pickFeaturedImage(imageSets) {
+  // First, check if any image has the "thumbnail" tag
+  const thumbnailImage = imageSets.all.find(img =>
+    img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail')
+  );
+
+  if (thumbnailImage) {
+    return thumbnailImage;
   }
 
-  function matches(img) {
-    const id = (img.public_id || "").toLowerCase();
-    return (
-      id === desired ||
-      id.startsWith(desired) ||
-      id.endsWith(desired) ||
-      id.includes(desired)
-    );
-  }
+  // Prefer landscape images for thumbnails
+  const landscape = imageSets.all.find(img => {
+    const w = img.width;
+    const h = img.height;
+    return (typeof w === "number" && typeof h === "number") && (w >= h);
+  });
 
-  const chosen = imageSets.all.find(matches);
-  return chosen || imageSets.landscape[0] || imageSets.all[0] || null;
+  // Fallback to any image if no landscape found
+  return landscape || imageSets.all[0] || null;
 }
 
 // ---------- RENDER ARTIST GRID ----------
-function buildArtistCard(row, imgData) {
-  // row: { tag, label, featuredPublicId }
+function buildArtistCard(artist) {
+  // artist: { tag, label, chosenImage, imageCount }
 
-  // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
-  // "John Lennon" -> "John-Lennon"
-  // "Charles-François Daubigny" -> "Charles%2DFrançois-Daubigny"
-  const prettyTag = row.tag.trim()
-    .replace(/-/g, "%2D")  // Encode existing hyphens
-    .replace(/\s+/g, "-");  // Convert spaces to dashes
+  const prettyTag = artist.tag.trim()
+    .replace(/-/g, "%2D")
+    .replace(/\s+/g, "-");
 
   const card = document.createElement("a");
   card.className = "card artist";
   card.href = "/tag/#" + prettyTag;
-  card.setAttribute("aria-label", row.label);
-  card.setAttribute("data-tag", row.tag);
+  card.setAttribute("aria-label", artist.label);
+  card.setAttribute("data-tag", artist.tag);
 
   const thumbWrapper = document.createElement("div");
   thumbWrapper.className = "thumb";
 
-  if (imgData) {
-    const niceName = humanizePublicId(imgData.public_id);
-    const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_400,q_auto,f_auto/${encodeURIComponent(imgData.public_id)}`;
+  if (artist.chosenImage) {
+    const niceName = humanizePublicId(artist.chosenImage.public_id);
+    const thumbUrl = getThumbnailUrlWithCrop(artist.chosenImage.public_id, 700);
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";
     imgEl.src = thumbUrl;
@@ -197,25 +160,20 @@ function buildArtistCard(row, imgData) {
 
   card.appendChild(thumbWrapper);
 
-  // label with optional count
+  // label with count
   const labelEl = document.createElement("div");
   labelEl.className = "artist-name";
-
-  // try to find matching cache entry so we can pre-fill "(N)" on rerender
-  const cacheItem = ARTISTS_CACHE
-    ? ARTISTS_CACHE.find(a => a.row.tag === row.tag)
-    : null;
 
   const countSpan = document.createElement("span");
   countSpan.className = "art-count";
 
-  if (cacheItem && typeof cacheItem.imageCount === "number") {
-    countSpan.textContent = `(${cacheItem.imageCount})`;
+  if (typeof artist.imageCount === "number") {
+    countSpan.textContent = `(${artist.imageCount})`;
   } else {
     countSpan.textContent = "";
   }
 
-  labelEl.textContent = row.label + " ";
+  labelEl.textContent = artist.label + " ";
   labelEl.appendChild(countSpan);
 
   card.__labelEl = labelEl;
@@ -226,12 +184,7 @@ function buildArtistCard(row, imgData) {
   card.addEventListener("click", (ev) => {
     ev.preventDefault();
     ARTISTS_SCROLL_Y = window.scrollY;
-
-    const prettyTag = row.tag.trim()
-      .replace(/-/g, "%2D")
-      .replace(/\s+/g, "-");
-    const dest = "/tag/#" + prettyTag;
-    window.location.href = dest;
+    window.location.href = "/tag/#" + prettyTag;
   });
 
   return card;
@@ -262,8 +215,8 @@ function renderArtistsGrid(artistsList) {
 
   // Sort artists alphabetically by last name
   const sortedArtists = [...artistsList].sort((a, b) => {
-    const lastNameA = getLastName(a.row.label);
-    const lastNameB = getLastName(b.row.label);
+    const lastNameA = getLastName(a.label);
+    const lastNameB = getLastName(b.label);
     return lastNameA.localeCompare(lastNameB);
   });
 
@@ -280,7 +233,7 @@ function renderArtistsGrid(artistsList) {
   };
 
   for (const artist of sortedArtists) {
-    const section = getAlphabetSection(artist.row.label);
+    const section = getAlphabetSection(artist.label);
     sections[section].push(artist);
   }
 
@@ -292,7 +245,7 @@ function renderArtistsGrid(artistsList) {
 
     // Add artist cards, assigning section ID to the first one
     artists.forEach((artist, index) => {
-      const card = buildArtistCard(artist.row, artist.chosenImage);
+      const card = buildArtistCard(artist);
 
       // Assign section ID to first card in each section for navigation
       if (index === 0) {
@@ -320,7 +273,7 @@ function setupLazyThumbObserver() {
         continue;
       }
 
-      const cacheItem = ARTISTS_CACHE.find(a => a.row.tag === tagName);
+      const cacheItem = ARTISTS_CACHE.find(a => a.tag === tagName);
       if (!cacheItem) {
         observer.unobserve(cardEl);
         continue;
@@ -336,18 +289,18 @@ function setupLazyThumbObserver() {
       }
 
       // Fetch images (this gives us image list + count)
-      const imageSets = await fetchImagesForTag(tagName);
+      const imageSets = await fetchImagesForArtist(tagName);
 
       // pick thumb if missing
       if (!alreadyHasThumb) {
-        const chosenImage = pickFeaturedImage(cacheItem.row, imageSets);
+        const chosenImage = pickFeaturedImage(imageSets);
         cacheItem.chosenImage = chosenImage;
 
         const thumbWrapper = cardEl.querySelector(".thumb");
         if (thumbWrapper && chosenImage) {
           thumbWrapper.innerHTML = "";
           const niceName = humanizePublicId(chosenImage.public_id);
-          const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_400,q_auto,f_auto/${encodeURIComponent(chosenImage.public_id)}`;
+          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
           const imgEl = document.createElement("img");
           imgEl.loading = "lazy";
           imgEl.src = thumbUrl;
@@ -367,6 +320,8 @@ function setupLazyThumbObserver() {
         cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
       }
 
+      // Save updated cache to localStorage
+      saveArtistsToLocalStorage(ARTISTS_CACHE);
 
       observer.unobserve(cardEl);
     }
@@ -471,12 +426,13 @@ function setupAlphabetNavigation() {
   status.innerHTML = 'Loading<span class="spinner"></span>';
 
   try {
-    const rows = await loadArtistRows();
+    const tags = await loadTagsFromImageKit();
 
-    ARTISTS_CACHE = rows.map(row => ({
-      row,
+    ARTISTS_CACHE = tags.map(tagData => ({
+      tag: tagData.tag,
+      label: tagData.label,
       chosenImage: null,
-      imageCount: null // will become a number after we load that tag
+      imageCount: null
     }));
 
     // Save to localStorage
@@ -489,6 +445,6 @@ function setupAlphabetNavigation() {
     status.textContent = `${ARTISTS_CACHE.length} artists`;
   } catch (err) {
     console.error(err);
-    status.textContent = "Error loading artists: " + err.message;
+    status.textContent = "Error loading tags: " + err.message;
   }
 })();

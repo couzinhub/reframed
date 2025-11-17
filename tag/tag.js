@@ -190,22 +190,41 @@ function updateMetaTags(tagName, displayName, imageCount) {
 }
 
 
-async function fetchImagesForTag(tagName) {
-  // tagName here is already like "Vincent Van Gogh"
-  // Cloudinary expects that exact string (with spaces), URL-encoded.
-  const url = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
+async function fetchImagesForTagPage(tagName) {
+  let items;
 
-  const res = await fetch(url, { mode: "cors" });
-  if (!res.ok) {
-    throw new Error(`Tag "${tagName}" not found (HTTP ${res.status})`);
+  // Special case: "Vertical artworks" fetches ALL images (no tag filter)
+  if (tagName === "Vertical artworks") {
+    items = await fetchAllImageKitFiles();
+    // Transform to match expected format
+    items = items.map(file => ({
+      public_id: file.filePath.substring(1), // Remove leading slash
+      width: file.width,
+      height: file.height,
+      created_at: file.createdAt,
+      tags: file.tags || []
+    }));
+  } else {
+    // Use shared helper function from shared.js for tag-based queries
+    items = await fetchImagesForTag(tagName);
   }
 
-  const data = await res.json();
+  if (!items || items.length === 0) {
+    throw new Error(`Tag "${tagName}" not found`);
+  }
 
-  // sort newest first
-  return (data.resources || []).sort(
-    (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
-  );
+  // Sort with thumbnail-tagged images first, then by date (newest first)
+  return items.sort((a, b) => {
+    const aHasThumbnail = a.tags && a.tags.some(tag => tag.toLowerCase() === 'thumbnail');
+    const bHasThumbnail = b.tags && b.tags.some(tag => tag.toLowerCase() === 'thumbnail');
+
+    // If one has thumbnail and the other doesn't, thumbnail comes first
+    if (aHasThumbnail && !bHasThumbnail) return -1;
+    if (!aHasThumbnail && bHasThumbnail) return 1;
+
+    // Otherwise sort by date (newest first)
+    return (b.created_at || "").localeCompare(a.created_at || "");
+  });
 }
 
 function renderTagGallery(tagName, images) {
@@ -228,51 +247,7 @@ function renderTagGallery(tagName, images) {
   for (const img of images) {
     const publicId = img.public_id;
     const niceName = humanizePublicId(publicId);
-
-    const w = img.width;
-    const h = img.height;
-    const isPortrait =
-      typeof w === "number" &&
-      typeof h === "number" &&
-      h > w;
-
-    const thumbWidth = isPortrait ? 400 : 600;
-
-    const card = document.createElement("div");
-    card.className = "card artwork";
-    card.dataset.publicId = publicId;
-
-    const cloudinaryUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
-
-    // Add click handler to toggle downloads queue
-    card.addEventListener('click', (e) => {
-      e.preventDefault();
-
-      if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
-        if (window.isInDownloads(publicId)) {
-          window.removeFromDownloads(publicId);
-        } else {
-          window.addToDownloads(publicId, niceName, cloudinaryUrl, isPortrait ? 'portrait' : 'landscape');
-        }
-      }
-    });
-
-    // Set initial state if in downloads
-    if (typeof window.isInDownloads === 'function' && window.isInDownloads(publicId)) {
-      card.classList.add('in-downloads');
-    }
-
-    const imgEl = document.createElement("img");
-    imgEl.loading = "lazy";
-    imgEl.src = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,w_${thumbWidth}/${encodeURIComponent(publicId)}`;
-    imgEl.alt = niceName;
-
-    const caption = document.createElement("div");
-    caption.className = "artwork-title";
-    caption.textContent = niceName;
-
-    card.appendChild(imgEl);
-    card.appendChild(caption);
+    const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
     frag.appendChild(card);
   }
 
@@ -322,7 +297,7 @@ async function loadAndRenderTagPage() {
   tagStatusEl.innerHTML = 'Loading<span class="spinner"></span>';
 
   try {
-    const images = await fetchImagesForTag(tagName);
+    const images = await fetchImagesForTagPage(tagName);
 
     // Special layout rule
     if (tagName === "Vertical artworks") {
@@ -331,17 +306,18 @@ async function loadAndRenderTagPage() {
       tagViewEl.classList.remove("vertical");
     }
 
-    // Only landscapes unless it's "Vertical artworks"
+    // Filter by orientation (only for Vertical artworks page)
     const filtered =
       tagName === "Vertical artworks"
-        ? images
-        : images.filter(img => {
+        ? images.filter(img => {
+            // Show only portrait images
             const w = img.width;
             const h = img.height;
             return (typeof w === "number" && typeof h === "number")
-              ? (w >= h)
-              : true;
-          });
+              ? (h > w)
+              : false;
+          })
+        : images; // Show all images regardless of orientation
 
     if (!filtered.length) {
       tagStatusEl.textContent = "No artworks found.";

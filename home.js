@@ -1,14 +1,12 @@
-// assumes config.js and shared.js are loaded before this script
-// config.js provides: CLOUD_NAME, HOMEPAGE_CSV_URL
-// shared.js provides: parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
+// assumes config.js, test.js, and shared.js are loaded before this script
+// config.js provides: IMAGEKIT_URL_ENDPOINT, ARTWRK_R_CACHE, SEARCH_CACHE, HOMEPAGE_CSV_URL
+// test.js provides: ART_CACHE_TK
+// shared.js provides: fetchImagesForTag, fetchAllImageKitFiles, parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
 
 // ============ HOMEPAGE ROWS (SHEET PARSE) ============
 //
 // First row of HOMEPAGE_CSV_URL is assumed to be:
-// "Tag","Style","Label","Image"
-//
-// Style can be "hero" or blank.
-// Image is the Cloudinary public_id override.
+// "Tag","Label"
 
 async function loadHomepageRows() {
   const res = await fetch(HOMEPAGE_CSV_URL, { cache: "default" });
@@ -43,59 +41,58 @@ async function loadHomepageRows() {
     const rowArr = rows[r];
 
     const tagVal   = pick(rowArr, "tag");
-    const styleVal = pick(rowArr, "style", "size");
     const labelVal = pick(rowArr, "label");
-    const imgVal   = pick(rowArr, "image", "featured_public_id", "featured public id");
 
     if (!tagVal) continue;
     if (tagVal.toLowerCase().startsWith("-- ignore")) break;
 
     out.push({
       tag: tagVal,
-      style: styleVal || "",
-      label: labelVal || tagVal,
-      featuredPublicId: imgVal || ""
+      label: labelVal || tagVal
     });
   }
 
   return out;
 }
 
-// ============ CLOUDINARY FETCH / IMAGE PICK ============
-async function fetchLandscapeImagesForTag(tagName) {
-  const listUrl = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent(tagName)}.json`;
-
-  const res = await fetch(listUrl, { mode: "cors" });
-  if (!res.ok) {
-    return [];
-  }
-
-  const data = await res.json();
+// ============ IMAGE FETCH / IMAGE PICK ============
+async function fetchImagesForHomepage(tagName) {
+  // Use shared helper function (works with both Cloudinary and ImageKit)
+  let items = await fetchImagesForTag(tagName);
 
   // newest first
-  let items = (data.resources || []).sort(
+  items = items.sort(
     (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
   );
-
-  // filter out portrait for homepage
-  items = items.filter(img => {
-    const w = img.width;
-    const h = img.height;
-    if (typeof w === "number" && typeof h === "number") {
-      return w >= h;
-    }
-    return true;
-  });
 
   return items;
 }
 
 function chooseFeaturedImage(row, images) {
-  if (row.featuredPublicId) {
-    const match = images.find(img => img.public_id === row.featuredPublicId);
-    if (match) return match;
+  console.log('chooseFeaturedImage called for tag:', row.tag);
+  console.log('Total images:', images.length);
+
+  // First, always check for "thumbnail" tagged image (for both collections and artists)
+  const thumbnailImage = images.find(img =>
+    img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail')
+  );
+
+  if (thumbnailImage) {
+    console.log('Found thumbnail image:', thumbnailImage.public_id);
+    return thumbnailImage;
   }
-  return images.length > 0 ? images[0] : null;
+
+  console.log('No thumbnail image found, using auto-select');
+
+  // Filter out portrait images (height > width)
+  const landscapeOrSquare = images.filter(img => img.width >= img.height);
+
+  // Use filtered list if available, otherwise fall back to all images
+  const finalList = landscapeOrSquare.length > 0 ? landscapeOrSquare : images;
+
+  const selected = finalList.length > 0 ? finalList[0] : null;
+  console.log('Auto-selected image:', selected ? selected.public_id : 'none');
+  return selected;
 }
 
 // ============ HOMEPAGE CACHE WITH VERSION CHECK ============
@@ -149,7 +146,7 @@ function saveHomepageCache(version, tiles) {
 
 function buildTileElementFromCache(tileData) {
   const tile = document.createElement("a");
-  tile.className = `tile${tileData.row.style ? " " + tileData.row.style : ""}`;
+  tile.className = "tile full-width";
   tile.href = tileData.chosen.linkHref;
   tile.setAttribute("aria-label", tileData.row.label);
 
@@ -168,130 +165,79 @@ function buildTileElementFromCache(tileData) {
   return tile;
 }
 
-// same hero + 2 features per hero logic
+// Simple function that returns all tiles as-is
 function buildRowGroupsFromOrderedTiles(tiles) {
-  const groups = [];
-  let i = 0;
-
-  while (i < tiles.length) {
-    if (tiles[i].row.style !== "hero") {
-      i++;
-      continue;
-    }
-
-    const heroTile = tiles[i];
-    i++;
-
-    let feature1 = null;
-    while (i < tiles.length && !feature1) {
-      if (tiles[i].row.style !== "hero") {
-        feature1 = tiles[i];
-      }
-      i++;
-    }
-
-    let feature2 = null;
-    while (i < tiles.length && !feature2) {
-      if (tiles[i].row.style !== "hero") {
-        feature2 = tiles[i];
-      }
-      i++;
-    }
-
-    if (!feature1 || !feature2) {
-      break;
-    }
-
-    groups.push({
-      hero: heroTile,
-      featureTop: feature1,
-      featureBottom: feature2
-    });
-  }
-
-  return groups;
+  return tiles;
 }
 
-function renderGroupsInto(container, groups) {
-  let flip = 0;
+function renderGroupsInto(container, tiles) {
+  const tilesContainer = document.createElement("div");
+  tilesContainer.className = "homepage-tiles";
 
-  for (const g of groups) {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "row " + (flip === 0 ? "hero-left" : "hero-right");
+  // First tile gets special treatment
+  if (tiles.length > 0) {
+    tiles[0].el.classList.add("primary");
+    tilesContainer.appendChild(tiles[0].el);
+  }
 
-    const heroCol = document.createElement("div");
-    heroCol.className = "hero-col";
-    heroCol.appendChild(g.hero.el);
+  // Remaining tiles go in a row container
+  if (tiles.length > 1) {
+    const rowContainer = document.createElement("div");
+    rowContainer.className = "secondary-row";
 
-    const featsCol = document.createElement("div");
-    featsCol.className = "features-col";
-
-    const featTop = document.createElement("div");
-    featTop.className = "feature-top";
-    featTop.appendChild(g.featureTop.el);
-
-    const featBottom = document.createElement("div");
-    featBottom.className = "feature-bottom";
-    featBottom.appendChild(g.featureBottom.el);
-
-    featsCol.appendChild(featTop);
-    featsCol.appendChild(featBottom);
-
-    if (flip === 0) {
-      rowDiv.appendChild(heroCol);
-      rowDiv.appendChild(featsCol);
-    } else {
-      rowDiv.appendChild(featsCol);
-      rowDiv.appendChild(heroCol);
+    for (let i = 1; i < tiles.length; i++) {
+      tiles[i].el.classList.add("secondary");
+      rowContainer.appendChild(tiles[i].el);
     }
 
-    container.appendChild(rowDiv);
-    flip = 1 - flip;
+    tilesContainer.appendChild(rowContainer);
   }
+
+  container.appendChild(tilesContainer);
 }
 
 function renderFromTiles(container, tilesData) {
   const tiles = tilesData.map(td => ({
     row: {
       tag: td.row.tag,
-      style: td.row.style,
       label: td.row.label
     },
     el: buildTileElementFromCache(td)
   }));
 
-  const groups = buildRowGroupsFromOrderedTiles(tiles);
+  const tilesArray = buildRowGroupsFromOrderedTiles(tiles);
 
   // keep the first child of container (your header stuff), wipe the rest
   while (container.children.length > 1) {
     container.removeChild(container.lastChild);
   }
 
-  renderGroupsInto(container, groups);
+  renderGroupsInto(container, tilesArray);
 }
 
 // ============ RECENTLY ADDED SECTION ============
 
 async function fetchRecentlyAdded() {
   try {
-    // Use "Recently added" with a space to match the actual Cloudinary tag
-    const listUrl = `https://res.cloudinary.com/${encodeURIComponent(CLOUD_NAME)}/image/list/${encodeURIComponent('Recently added')}.json`;
-    const res = await fetch(listUrl, { mode: "cors" });
-    if (!res.ok) {
-      console.log('Recently added tag not found or empty');
-      return [];
-    }
+    // Fetch all files from ImageKit
+    const allFiles = await fetchAllImageKitFiles();
 
-    const data = await res.json();
+    // Sort by upload date (newest first)
+    const sorted = allFiles
+      .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 
-    // Sort newest first and return all
-    const sorted = (data.resources || []).sort(
-      (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
-    );
-    console.log(`Fetched ${sorted.length} recently added images`);
-    return sorted;
+    // Transform to match expected format
+    const items = sorted.map(file => ({
+      public_id: file.filePath.substring(1), // Remove leading slash
+      width: file.width,
+      height: file.height,
+      created_at: file.createdAt,
+      tags: file.tags || []
+    }));
+
+    return items;
   } catch (err) {
-    console.error('Error fetching recently added:', err);
+    console.error('Error fetching recently uploaded:', err);
     return [];
   }
 }
@@ -307,71 +253,48 @@ function renderRecentlyAdded(container, images) {
   title.textContent = "Recently added";
   section.appendChild(title);
 
-  const headerRow = document.createElement("div");
-  headerRow.className = "tag-header-row";
-
-  const status = document.createElement("div");
-  status.className = "tag-status";
-  status.textContent = `${images.length} artwork${images.length === 1 ? "" : "s"}`;
-  headerRow.appendChild(status);
-
-  section.appendChild(headerRow);
-
   const grid = document.createElement("div");
   grid.className = "recently-added-grid";
 
-  images.forEach(img => {
-    const publicId = img.public_id;
-    const niceName = humanizePublicId(publicId);
+  let currentIndex = 0;
+  const itemsPerLoad = 10;
 
-    const w = img.width;
-    const h = img.height;
-    const isPortrait =
-      typeof w === "number" &&
-      typeof h === "number" &&
-      h > w;
+  function loadMore() {
+    const endIndex = Math.min(currentIndex + itemsPerLoad, images.length);
+    const batch = images.slice(currentIndex, endIndex);
 
-    const thumbWidth = isPortrait ? 400 : 600;
-
-    const card = document.createElement("div");
-    card.className = "card artwork";
-    card.dataset.publicId = publicId;
-
-    const cloudinaryUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${encodeURIComponent(publicId)}`;
-
-    // Add click handler to toggle downloads queue
-    card.addEventListener('click', (e) => {
-      e.preventDefault();
-
-      if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
-        if (window.isInDownloads(publicId)) {
-          window.removeFromDownloads(publicId);
-        } else {
-          window.addToDownloads(publicId, niceName, cloudinaryUrl, isPortrait ? 'portrait' : 'landscape');
-        }
-      }
+    batch.forEach(img => {
+      const publicId = img.public_id;
+      const niceName = humanizePublicId(publicId);
+      const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
+      grid.appendChild(card);
     });
 
-    // Set initial state if in downloads
-    if (typeof window.isInDownloads === 'function' && window.isInDownloads(publicId)) {
-      card.classList.add('in-downloads');
+    currentIndex = endIndex;
+
+    // Hide load more button if all items are loaded
+    if (currentIndex >= images.length) {
+      loadMoreBtn.style.display = "none";
     }
+  }
 
-    const imgEl = document.createElement("img");
-    imgEl.loading = "lazy";
-    imgEl.src = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,w_${thumbWidth}/${encodeURIComponent(publicId)}`;
-    imgEl.alt = niceName;
-
-    const caption = document.createElement("div");
-    caption.className = "artwork-title";
-    caption.textContent = niceName;
-
-    card.appendChild(imgEl);
-    card.appendChild(caption);
-    grid.appendChild(card);
-  });
+  // Load initial batch
+  loadMore();
 
   section.appendChild(grid);
+
+  // Create load more button
+  const loadMoreBtn = document.createElement("button");
+  loadMoreBtn.className = "load-more-btn";
+  loadMoreBtn.textContent = "Load more";
+  loadMoreBtn.onclick = loadMore;
+
+  // Hide button if all items are already loaded
+  if (currentIndex >= images.length) {
+    loadMoreBtn.style.display = "none";
+  }
+
+  section.appendChild(loadMoreBtn);
   container.appendChild(section);
 }
 
@@ -393,21 +316,13 @@ function renderRecentlyAdded(container, images) {
 
   // 2. No valid cache → rebuild fresh
 
-  let rowsData;
-  try {
-    rowsData = await loadHomepageRows();
-  } catch (err) {
-    const errBox = document.createElement("div");
-    errBox.className = "error-msg";
-    errBox.textContent = "Couldn't load homepage data: " + err.message;
-    container.appendChild(errBox);
-    return;
-  }
+  // Load rows from the Google Sheet
+  const rowsData = await loadHomepageRows();
 
   const liveTilesResults = await Promise.all(
     rowsData.map(async (row) => {
       try {
-        const images = await fetchLandscapeImagesForTag(row.tag);
+        const images = await fetchImagesForHomepage(row.tag);
         if (!images.length) return null;
 
         const chosen = chooseFeaturedImage(row, images);
@@ -416,9 +331,8 @@ function renderRecentlyAdded(container, images) {
         const publicId = chosen.public_id;
         const niceTitle = humanizePublicId(publicId);
 
-        const isHero = row.style === "hero";
-        const thumbWidth = isHero ? 700 : 400;
-        const thumbUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_${thumbWidth},q_auto,f_auto/${encodeURI(publicId)}`;
+        const thumbWidth = 1400;
+        const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth);
 
         // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
         const prettyTag = row.tag.trim()
@@ -428,7 +342,6 @@ function renderRecentlyAdded(container, images) {
         return {
           row: {
             tag: row.tag,
-            style: row.style,
             label: row.label
           },
           chosen: {
@@ -439,7 +352,8 @@ function renderRecentlyAdded(container, images) {
             linkHref: `/tag/#${prettyTag}`
           }
         };
-      } catch {
+      } catch (err) {
+        console.error(`Failed to fetch images for tag "${row.tag}":`, err);
         return null;
       }
     })
