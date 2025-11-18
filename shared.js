@@ -190,7 +190,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   zoomIcon.className = "zoom-icon";
   zoomIcon.setAttribute("aria-label", "Preview artwork");
   zoomIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-    <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/>
+    <path d="M120-120v-240h80v104l124-124 56 56-124 124h104v80H120Zm480 0v-80h104L580-324l56-56 124 124v-104h80v240H600ZM324-580 200-704v104h-80v-240h240v80H256l124 124-56 56Zm312 0-56-56 124-124H600v-80h240v240h-80v-104L636-580Z"/>
   </svg>`;
 
   zoomIcon.addEventListener('click', (e) => {
@@ -332,11 +332,24 @@ function showZoomOverlay(publicId, niceName, width, height) {
       img.onload = () => {
         overlay.innerHTML = '';
 
+        // Create close button
+        const closeButton = document.createElement('button');
+        closeButton.className = 'zoom-close';
+        closeButton.setAttribute('aria-label', 'Close preview');
+        closeButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+          <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
+        </svg>`;
+        closeButton.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeOverlay();
+        });
+
         // Create message banner
         const message = document.createElement('div');
         message.className = 'zoom-message';
         message.textContent = 'This preview is half the size of the original, add to download to get the full version';
 
+        overlay.appendChild(closeButton);
         overlay.appendChild(message);
         overlay.appendChild(img);
         URL.revokeObjectURL(img.src);
@@ -347,16 +360,22 @@ function showZoomOverlay(publicId, niceName, width, height) {
       overlay.innerHTML = '<div class="zoom-loading">Error loading image</div>';
     });
 
+  // Function to close overlay with animation
+  const closeOverlay = () => {
+    overlay.classList.add('zoom-out');
+    setTimeout(() => {
+      overlay.remove();
+      document.removeEventListener('keydown', handleEscape);
+    }, 300); // Match the animation duration
+  };
+
   // Close on click
-  overlay.addEventListener('click', () => {
-    overlay.remove();
-  });
+  overlay.addEventListener('click', closeOverlay);
 
   // Close on escape key
   const handleEscape = (e) => {
     if (e.key === 'Escape') {
-      overlay.remove();
-      document.removeEventListener('keydown', handleEscape);
+      closeOverlay();
     }
   };
   document.addEventListener('keydown', handleEscape);

@@ -302,72 +302,88 @@ function renderRecentlyAdded(container, images) {
 
 (async function initHomepage() {
   const container = document.getElementById("homeView");
+  const pageLoader = document.getElementById("pageLoader");
 
-  // 1. Try to use cache if version matches
-  const cached = loadHomepageCache(CACHE_VERSION);
-  if (cached && Array.isArray(cached.tiles)) {
-    renderFromTiles(container, cached.tiles);
+  try {
+    // 1. Try to use cache if version matches
+    const cached = loadHomepageCache(CACHE_VERSION);
+    if (cached && Array.isArray(cached.tiles)) {
+      // Hide loader immediately - we have cached content
+      if (pageLoader) {
+        pageLoader.style.display = 'none';
+      }
 
-    // Load recently added artworks (not cached)
+      renderFromTiles(container, cached.tiles);
+
+      // Load recently added artworks (not cached)
+      const recentImages = await fetchRecentlyAdded();
+      renderRecentlyAdded(container, recentImages);
+
+      return;
+    }
+
+    // 2. No valid cache → rebuild fresh (show loader)
+
+    // Load rows from the Google Sheet
+    const rowsData = await loadHomepageRows();
+
+    const liveTilesResults = await Promise.all(
+      rowsData.map(async (row) => {
+        try {
+          const images = await fetchImagesForHomepage(row.tag);
+          if (!images.length) return null;
+
+          const chosen = chooseFeaturedImage(row, images);
+          if (!chosen) return null;
+
+          const publicId = chosen.public_id;
+          const niceTitle = humanizePublicId(publicId);
+
+          const thumbWidth = 1400;
+          const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth);
+
+          // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
+          const prettyTag = row.tag.trim()
+            .replace(/-/g, "%2D")
+            .replace(/\s+/g, "-");
+
+          return {
+            row: {
+              tag: row.tag,
+              label: row.label
+            },
+            chosen: {
+              public_id: publicId,
+              niceTitle: niceTitle,
+              thumbWidth: thumbWidth,
+              thumbUrl: thumbUrl,
+              linkHref: `/tag/#${prettyTag}`
+            }
+          };
+        } catch (err) {
+          console.error(`Failed to fetch images for tag "${row.tag}":`, err);
+          return null;
+        }
+      })
+    );
+
+    const liveTiles = liveTilesResults.filter(Boolean);
+
+    // 3. Save to cache along with version
+    saveHomepageCache(CACHE_VERSION, liveTiles);
+
+    // 4. Render
+    renderFromTiles(container, liveTiles);
+
+    // 5. Load recently added artworks
     const recentImages = await fetchRecentlyAdded();
     renderRecentlyAdded(container, recentImages);
-    return;
+  } catch (error) {
+    console.error('Error loading homepage:', error);
+  } finally {
+    // Always hide loader when done (success or error)
+    if (pageLoader) {
+      pageLoader.classList.add('hidden');
+    }
   }
-
-  // 2. No valid cache → rebuild fresh
-
-  // Load rows from the Google Sheet
-  const rowsData = await loadHomepageRows();
-
-  const liveTilesResults = await Promise.all(
-    rowsData.map(async (row) => {
-      try {
-        const images = await fetchImagesForHomepage(row.tag);
-        if (!images.length) return null;
-
-        const chosen = chooseFeaturedImage(row, images);
-        if (!chosen) return null;
-
-        const publicId = chosen.public_id;
-        const niceTitle = humanizePublicId(publicId);
-
-        const thumbWidth = 1400;
-        const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth);
-
-        // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
-        const prettyTag = row.tag.trim()
-          .replace(/-/g, "%2D")
-          .replace(/\s+/g, "-");
-
-        return {
-          row: {
-            tag: row.tag,
-            label: row.label
-          },
-          chosen: {
-            public_id: publicId,
-            niceTitle: niceTitle,
-            thumbWidth: thumbWidth,
-            thumbUrl: thumbUrl,
-            linkHref: `/tag/#${prettyTag}`
-          }
-        };
-      } catch (err) {
-        console.error(`Failed to fetch images for tag "${row.tag}":`, err);
-        return null;
-      }
-    })
-  );
-
-  const liveTiles = liveTilesResults.filter(Boolean);
-
-  // 3. Save to cache along with version
-  saveHomepageCache(CACHE_VERSION, liveTiles);
-
-  // 4. Render
-  renderFromTiles(container, liveTiles);
-
-  // 5. Load recently added artworks
-  const recentImages = await fetchRecentlyAdded();
-  renderRecentlyAdded(container, recentImages);
 })();
