@@ -4,7 +4,7 @@
 const CACHE_VERSION = "15";
 
 // Cache duration in minutes
-const CACHE_TTL_MINUTES = 30;
+const CACHE_TTL_MINUTES = 60;
 const CACHE_TTL_MS = CACHE_TTL_MINUTES * 60 * 1000;
 
 // Constants
