@@ -139,6 +139,13 @@ function getLabelForTag(tagName) {
   return tagName.charAt(0).toUpperCase() + tagName.slice(1);
 }
 
+// Get display name with "Collection - " prefix removed
+function getDisplayName(tagName) {
+  const label = getLabelForTag(tagName);
+  // Remove "Collection - " prefix from display
+  return label.replace(/^Collection\s*-\s*/i, '');
+}
+
 // Update meta tags for SEO
 function updateMetaTags(tagName, displayName, imageCount) {
   const prettyTag = tagName.trim()
@@ -233,7 +240,7 @@ function renderTagGallery(tagName, images) {
   const tagGridEl = document.getElementById("tagGrid");
 
   // Get the display label from collections data, or fallback to tag name
-  const displayName = getLabelForTag(tagName);
+  const displayName = getDisplayName(tagName);
   tagTitleEl.textContent = displayName;
 
   // Update SEO meta tags
@@ -276,7 +283,7 @@ async function loadAndRenderTagPage() {
   // Load collection rows to get labels if not already loaded
   await loadCollectionRowsIfNeeded();
 
-  const displayName = getLabelForTag(tagName);
+  const displayName = getDisplayName(tagName);
   tagTitleEl.textContent = displayName;
   document.title = displayName + " – Reframed";
 
