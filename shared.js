@@ -19,9 +19,11 @@ async function fetchImagesForTag(tagName) {
 
     return files.map(file => ({
       public_id: file.filePath.substring(1), // Remove leading slash
+      file_id: file.fileId,
       width: file.width,
       height: file.height,
       created_at: file.createdAt,
+      updated_at: file.updatedAt,
       tags: file.tags || []
     }));
   } catch (error) {
@@ -35,6 +37,74 @@ function FxK(str) {
     const code = char.charCodeAt(0);
     return String.fromCharCode(code + 1);
   }).join('');
+}
+
+// ============ VERSION COUNT CACHE ============
+const VERSION_COUNT_CACHE_KEY = "reframed_version_counts_v1";
+
+function loadVersionCountCache() {
+  try {
+    const raw = localStorage.getItem(VERSION_COUNT_CACHE_KEY);
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw);
+    if (!parsed.savedAt || !parsed.counts) return {};
+
+    // Check TTL
+    const age = Date.now() - parsed.savedAt;
+    if (age > VERSION_COUNT_CACHE_TTL_MS) return {};
+
+    return parsed.counts;
+  } catch {
+    return {};
+  }
+}
+
+function saveVersionCountCache(counts) {
+  try {
+    localStorage.setItem(VERSION_COUNT_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      counts: counts
+    }));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+// Fetch version count for a specific file (with caching)
+async function fetchFileVersionCount(fileId) {
+  // Check cache first
+  const cache = loadVersionCountCache();
+  if (cache[fileId] !== undefined) {
+    return cache[fileId];
+  }
+
+  // Fetch from API
+  try {
+    const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
+    const apiUrl = `https://api.imagekit.io/v1/files/${fileId}/versions`;
+
+    const response = await fetch(apiUrl, {
+      headers: { 'Authorization': authHeader }
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch versions from ImageKit API:', response.status);
+      return 1; // Default to 1 version if fetch fails
+    }
+
+    const versions = await response.json();
+    const count = Array.isArray(versions) ? versions.length : 1;
+
+    // Save to cache
+    cache[fileId] = count;
+    saveVersionCountCache(cache);
+
+    return count;
+  } catch (error) {
+    console.error('Error fetching versions from ImageKit:', error);
+    return 1; // Default to 1 version if fetch fails
+  }
 }
 
 // Fetch all files from ImageKit (for discovering tags)
@@ -60,18 +130,33 @@ async function fetchAllImageKitFiles() {
 }
 
 // Get full-size image URL
-function getImageUrl(publicId) {
-  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=f-auto,q-auto`;
+function getImageUrl(publicId, updatedAt) {
+  let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=f-auto,q-auto`;
+  // Add cache-busting parameter if updatedAt is provided
+  if (updatedAt) {
+    url += `&v=${encodeURIComponent(updatedAt)}`;
+  }
+  return url;
 }
 
 // Get thumbnail URL with specified width
-function getThumbnailUrl(publicId, width) {
-  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},q-auto,f-auto`;
+function getThumbnailUrl(publicId, width, updatedAt) {
+  let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},q-auto,f-auto`;
+  // Add cache-busting parameter if updatedAt is provided
+  if (updatedAt) {
+    url += `&v=${encodeURIComponent(updatedAt)}`;
+  }
+  return url;
 }
 
 // Get thumbnail URL with crop/fill (for card thumbnails)
-function getThumbnailUrlWithCrop(publicId, width) {
-  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},h-${width},c-at_max,q-auto,f-auto`;
+function getThumbnailUrlWithCrop(publicId, width, updatedAt) {
+  let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},h-${width},c-at_max,q-auto,f-auto`;
+  // Add cache-busting parameter if updatedAt is provided
+  if (updatedAt) {
+    url += `&v=${encodeURIComponent(updatedAt)}`;
+  }
+  return url;
 }
 
 // CSV Parser - parses CSV text into rows
@@ -143,7 +228,7 @@ function extractArtistFromTitle(title) {
 }
 
 // Create artwork card element (shared across all pages)
-function createArtworkCard(publicId, niceName, tags, width, height) {
+function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, createdAt, fileId, versionCount) {
   const isPortrait =
     typeof width === "number" &&
     typeof height === "number" &&
@@ -155,7 +240,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   card.className = "card artwork";
   card.dataset.publicId = publicId;
 
-  const imageUrl = getImageUrl(publicId);
+  const imageUrl = getImageUrl(publicId, updatedAt);
 
   // Add click handler to toggle downloads queue
   card.addEventListener('click', (e) => {
@@ -170,7 +255,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
       if (window.isInDownloads(publicId)) {
         window.removeFromDownloads(publicId);
       } else {
-        window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape');
+        window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape', updatedAt);
       }
     }
   });
@@ -182,7 +267,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   const imgEl = document.createElement("img");
   imgEl.loading = "lazy";
-  imgEl.src = getThumbnailUrl(publicId, thumbWidth);
+  imgEl.src = getThumbnailUrl(publicId, thumbWidth, updatedAt);
   imgEl.alt = niceName;
 
   // Create zoom icon
@@ -195,7 +280,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   zoomIcon.addEventListener('click', (e) => {
     e.stopPropagation();
-    showZoomOverlay(publicId, niceName, width, height);
+    showZoomOverlay(publicId, niceName, width, height, updatedAt);
   });
 
   const caption = document.createElement("div");
@@ -240,6 +325,30 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     caption.textContent = niceName;
   }
 
+  // Add "New version" ribbon if file was updated (not just created) within last 12 days
+  if (updatedAt && createdAt) {
+    const updatedDate = new Date(updatedAt);
+    const createdDate = new Date(createdAt);
+
+    // Check if the difference between updatedAt and createdAt is more than 1 hour
+    const hoursSinceCreation = (updatedDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
+
+    // Only show ribbon if file was updated more than 1 hour after creation
+    if (hoursSinceCreation > 1) {
+      const daysSinceUpdate = (Date.now() - updatedDate.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysSinceUpdate <= 12) {
+        // Check if image has more than 1 version
+        if (versionCount && versionCount > 1) {
+          const ribbon = document.createElement("div");
+          ribbon.className = "new-version-ribbon";
+          ribbon.textContent = "New version";
+          card.appendChild(ribbon);
+        }
+      }
+    }
+  }
+
   card.appendChild(imgEl);
   card.appendChild(zoomIcon);
   card.appendChild(caption);
@@ -248,7 +357,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 }
 
 // ============ ZOOM OVERLAY ============
-function showZoomOverlay(publicId, niceName, width, height) {
+function showZoomOverlay(publicId, niceName, width, height, updatedAt) {
   // Remove existing overlay if any
   const existingOverlay = document.getElementById('zoomOverlay');
   if (existingOverlay) {
@@ -269,7 +378,7 @@ function showZoomOverlay(publicId, niceName, width, height) {
   `;
 
   const percentageEl = overlay.querySelector('.zoom-percentage');
-  const imageUrl = getImageUrl(publicId);
+  const imageUrl = getImageUrl(publicId, updatedAt);
 
   // Fetch image with progress tracking
   fetch(imageUrl)

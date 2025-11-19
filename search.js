@@ -104,7 +104,7 @@ function renderSearchResults(artworks) {
   for (const artwork of artworks) {
     const publicId = artwork.public_id;
     const niceName = humanizePublicId(publicId);
-    const card = createArtworkCard(publicId, niceName, artwork.tags, artwork.width, artwork.height);
+    const card = createArtworkCard(publicId, niceName, artwork.tags, artwork.width, artwork.height, artwork.updated_at, artwork.created_at);
     frag.appendChild(card);
   }
 

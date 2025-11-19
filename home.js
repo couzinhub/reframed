@@ -222,20 +222,55 @@ async function fetchRecentlyAdded() {
     // Fetch all files from ImageKit
     const allFiles = await fetchAllImageKitFiles();
 
-    // Sort by upload date (newest first)
+    // Sort by most recent activity (upload or update), newest first
     const sorted = allFiles
-      .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      .sort((a, b) => {
+        // Get the most recent date for each file (either created or updated)
+        const aDate = [a.createdAt, a.updatedAt].filter(Boolean).sort().reverse()[0] || "";
+        const bDate = [b.createdAt, b.updatedAt].filter(Boolean).sort().reverse()[0] || "";
+        return bDate.localeCompare(aDate);
+      });
 
-    // Transform to match expected format
-    const items = sorted.map(file => ({
+    // Take only the first 50 items and transform to expected format
+    const recentItems = sorted.slice(0, 50).map(file => ({
       public_id: file.filePath.substring(1), // Remove leading slash
+      file_id: file.fileId,
       width: file.width,
       height: file.height,
       created_at: file.createdAt,
+      updated_at: file.updatedAt,
       tags: file.tags || []
     }));
 
-    return items;
+    // Filter items that need version count check (updated > 1 hour after creation AND updated within last 12 days)
+    const itemsNeedingVersionCheck = recentItems.filter(item => {
+      if (!item.updated_at || !item.created_at) return false;
+
+      const updatedDate = new Date(item.updated_at);
+      const createdDate = new Date(item.created_at);
+
+      const hoursSinceCreation = (updatedDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
+      const daysSinceUpdate = (Date.now() - updatedDate.getTime()) / (1000 * 60 * 60 * 24);
+
+      return hoursSinceCreation > 1 && daysSinceUpdate <= 12;
+    });
+
+    // Fetch version counts only for items that need it
+    const versionCounts = await Promise.all(
+      itemsNeedingVersionCheck.map(item => fetchFileVersionCount(item.file_id))
+    );
+
+    // Map version counts back to items
+    const versionCountMap = new Map();
+    itemsNeedingVersionCheck.forEach((item, index) => {
+      versionCountMap.set(item.file_id, versionCounts[index]);
+    });
+
+    // Add version_count to all items
+    return recentItems.map(item => ({
+      ...item,
+      version_count: versionCountMap.get(item.file_id) || 1
+    }));
   } catch (err) {
     console.error('Error fetching recently uploaded:', err);
     return [];
@@ -266,7 +301,7 @@ function renderRecentlyAdded(container, images) {
     batch.forEach(img => {
       const publicId = img.public_id;
       const niceName = humanizePublicId(publicId);
-      const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
+      const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height, img.updated_at, img.created_at, img.file_id, img.version_count);
       grid.appendChild(card);
     });
 
@@ -340,7 +375,7 @@ function renderRecentlyAdded(container, images) {
           const niceTitle = humanizePublicId(publicId);
 
           const thumbWidth = 1400;
-          const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth);
+          const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth, chosen.updated_at);
 
           // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
           const prettyTag = row.tag.trim()

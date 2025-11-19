@@ -842,6 +842,29 @@ aside .own-art:hover {
   aspect-ratio: unset;
 }
 
+/* New version ribbon */
+.new-version-ribbon {
+  position: absolute;
+  top: 15px;
+  right: -10px;
+  background: linear-gradient(135deg, #0082b9 0%, #084c99 100%);
+  color: var(--color-txt);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+  pointer-events: none;
+  transition: right .1s ease-in-out;
+}
+
+.in-downloads .new-version-ribbon {
+  right: 55px;
+}
+
 /* FAQ Page
 -----------------------------*/
 
@@ -1505,13 +1528,12 @@ aside .own-art:hover {
 .artwork.in-downloads::before {
   content: '';
   position: absolute;
-  top: 10px;
+  top: 12px;
   right: 10px;
   width: 32px;
   height: 32px;
   background: var(--color-spot);
   border-radius: 50%;
-  border: 2px solid black;
   z-index: 5;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   background-image: var(--icon-checkmark-black);

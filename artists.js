@@ -148,7 +148,7 @@ function buildArtistCard(artist) {
 
   if (artist.chosenImage) {
     const niceName = humanizePublicId(artist.chosenImage.public_id);
-    const thumbUrl = getThumbnailUrlWithCrop(artist.chosenImage.public_id, 700);
+    const thumbUrl = getThumbnailUrlWithCrop(artist.chosenImage.public_id, 700, artist.chosenImage.updated_at);
     const imgEl = document.createElement("img");
     imgEl.loading = "lazy";
     imgEl.src = thumbUrl;
@@ -300,7 +300,7 @@ function setupLazyThumbObserver() {
         if (thumbWrapper && chosenImage) {
           thumbWrapper.innerHTML = "";
           const niceName = humanizePublicId(chosenImage.public_id);
-          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
+          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700, chosenImage.updated_at);
           const imgEl = document.createElement("img");
           imgEl.loading = "lazy";
           imgEl.src = thumbUrl;

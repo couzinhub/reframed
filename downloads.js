@@ -28,7 +28,7 @@ function saveDownloadsQueue(queue) {
   }
 }
 
-function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landscape') {
+function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landscape', updatedAt) {
   const queue = loadDownloadsQueue();
 
   // Check if already in queue
@@ -41,6 +41,7 @@ function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landsc
     niceName,
     cloudinaryUrl,
     aspectRatio,
+    updatedAt,
     addedAt: Date.now()
   });
 
@@ -230,7 +231,7 @@ function renderDownloadsModal(queue) {
     }
 
     const thumbWidth = item.aspectRatio === 'portrait' ? 200 : 300;
-    const thumbUrl = getThumbnailUrl(item.publicId, thumbWidth);
+    const thumbUrl = getThumbnailUrl(item.publicId, thumbWidth, item.updatedAt);
 
     card.innerHTML = `
       <div class="downloads-item-image">

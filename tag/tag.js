@@ -3,7 +3,7 @@
 // shared.js provides: parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
 
 // ---------- TAG GALLERY CACHE ----------
-const TAG_GALLERY_CACHE_KEY = "reframed_tag_gallery_cache_v1";
+const TAG_GALLERY_CACHE_KEY = "reframed_tag_gallery_cache_v3"; // Bumped for file_id and version_count support
 
 function loadTagGalleryCache(tagName) {
   try {
@@ -202,13 +202,15 @@ async function fetchImagesForTagPage(tagName) {
 
   // Special case: "Vertical artworks" fetches ALL images (no tag filter)
   if (tagName === "Vertical artworks") {
-    items = await fetchAllImageKitFiles();
+    const rawFiles = await fetchAllImageKitFiles();
     // Transform to match expected format
-    items = items.map(file => ({
+    items = rawFiles.map(file => ({
       public_id: file.filePath.substring(1), // Remove leading slash
+      file_id: file.fileId,
       width: file.width,
       height: file.height,
       created_at: file.createdAt,
+      updated_at: file.updatedAt,
       tags: file.tags || []
     }));
   } else {
@@ -221,7 +223,7 @@ async function fetchImagesForTagPage(tagName) {
   }
 
   // Sort with thumbnail-tagged images first, then by date (newest first)
-  return items.sort((a, b) => {
+  const sorted = items.sort((a, b) => {
     const aHasThumbnail = a.tags && a.tags.some(tag => tag.toLowerCase() === 'thumbnail');
     const bHasThumbnail = b.tags && b.tags.some(tag => tag.toLowerCase() === 'thumbnail');
 
@@ -232,6 +234,36 @@ async function fetchImagesForTagPage(tagName) {
     // Otherwise sort by date (newest first)
     return (b.created_at || "").localeCompare(a.created_at || "");
   });
+
+  // Filter items that need version count check (updated > 1 hour after creation AND updated within last 12 days)
+  const itemsNeedingVersionCheck = sorted.filter(item => {
+    if (!item.updated_at || !item.created_at) return false;
+
+    const updatedDate = new Date(item.updated_at);
+    const createdDate = new Date(item.created_at);
+
+    const hoursSinceCreation = (updatedDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
+    const daysSinceUpdate = (Date.now() - updatedDate.getTime()) / (1000 * 60 * 60 * 24);
+
+    return hoursSinceCreation > 1 && daysSinceUpdate <= 12;
+  });
+
+  // Fetch version counts only for items that need it
+  const versionCounts = await Promise.all(
+    itemsNeedingVersionCheck.map(item => fetchFileVersionCount(item.file_id))
+  );
+
+  // Map version counts back to items
+  const versionCountMap = new Map();
+  itemsNeedingVersionCheck.forEach((item, index) => {
+    versionCountMap.set(item.file_id, versionCounts[index]);
+  });
+
+  // Add version_count to all items
+  return sorted.map(item => ({
+    ...item,
+    version_count: versionCountMap.get(item.file_id) || 1
+  }));
 }
 
 function renderTagGallery(tagName, images) {
@@ -254,7 +286,7 @@ function renderTagGallery(tagName, images) {
   for (const img of images) {
     const publicId = img.public_id;
     const niceName = humanizePublicId(publicId);
-    const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
+    const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height, img.updated_at, img.created_at, img.file_id, img.version_count);
     frag.appendChild(card);
   }
 
