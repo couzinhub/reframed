@@ -217,8 +217,45 @@ function renderFromTiles(container, tilesData) {
 
 // ============ RECENTLY ADDED SECTION ============
 
+const RECENTLY_ADDED_CACHE_KEY = "reframed_recently_added_v1";
+
+function loadRecentlyAddedCache() {
+  try {
+    const raw = localStorage.getItem(RECENTLY_ADDED_CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed.savedAt || !parsed.items) return null;
+
+    // Check TTL (use same as main cache)
+    const age = Date.now() - parsed.savedAt;
+    if (age > CACHE_TTL_MS) return null;
+
+    return parsed.items;
+  } catch {
+    return null;
+  }
+}
+
+function saveRecentlyAddedCache(items) {
+  try {
+    localStorage.setItem(RECENTLY_ADDED_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      items: items
+    }));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
 async function fetchRecentlyAdded() {
   try {
+    // Check cache first
+    const cached = loadRecentlyAddedCache();
+    if (cached) {
+      return cached;
+    }
+
     // Fetch all files from ImageKit
     const allFiles = await fetchAllImageKitFiles();
 
@@ -267,10 +304,15 @@ async function fetchRecentlyAdded() {
     });
 
     // Add version_count to all items
-    return recentItems.map(item => ({
+    const finalItems = recentItems.map(item => ({
       ...item,
       version_count: versionCountMap.get(item.file_id) || 1
     }));
+
+    // Save to cache
+    saveRecentlyAddedCache(finalItems);
+
+    return finalItems;
   } catch (err) {
     console.error('Error fetching recently uploaded:', err);
     return [];
