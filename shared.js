@@ -261,8 +261,35 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
       return;
     }
 
+    // Don't toggle if clicking zoom icon
+    if (e.target.closest('.zoom-icon')) {
+      return;
+    }
+
     e.preventDefault();
 
+    // Check if we're on mobile
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+      // Mobile behavior: first tap shows hover state, second tap adds to downloads
+      if (!card.classList.contains('mobile-active')) {
+        // First tap: show hover state
+        card.classList.add('mobile-active');
+
+        // Remove mobile-active class from all other cards
+        document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
+          if (otherCard !== card) {
+            otherCard.classList.remove('mobile-active');
+          }
+        });
+
+        return; // Don't add to downloads yet
+      }
+      // Second tap will continue to download logic below
+    }
+
+    // Desktop behavior or second mobile tap: toggle downloads
     if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
       if (window.isInDownloads(publicId)) {
         window.removeFromDownloads(publicId);
@@ -650,6 +677,19 @@ if (document.readyState === 'loading') {
 } else {
   initializeDownloadsUI();
 }
+
+// Remove mobile-active state when tapping outside of cards
+document.addEventListener('click', (e) => {
+  // Only run on mobile
+  if (window.innerWidth > 768) return;
+
+  // If the click is not on a card or its children, remove mobile-active from all cards
+  if (!e.target.closest('.card')) {
+    document.querySelectorAll('.card.mobile-active').forEach(card => {
+      card.classList.remove('mobile-active');
+    });
+  }
+});
 
 // ============ NAVIGATION MENU COMPONENT ============
 // This code is shared across all pages
