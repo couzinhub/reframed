@@ -139,6 +139,17 @@ function getImageUrl(publicId, updatedAt) {
   return url;
 }
 
+// Get original image URL without any transformations (for downloads)
+function getOriginalImageUrl(publicId, updatedAt) {
+  // Use orig-true to get the original uploaded file with no transformations
+  let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=orig-true`;
+  // Add cache-busting parameter if updatedAt is provided
+  if (updatedAt) {
+    url += `&v=${encodeURIComponent(updatedAt)}`;
+  }
+  return url;
+}
+
 // Get thumbnail URL with specified width
 function getThumbnailUrl(publicId, width, updatedAt) {
   let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},q-auto,f-auto`;
@@ -241,6 +252,7 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
   card.dataset.publicId = publicId;
 
   const imageUrl = getImageUrl(publicId, updatedAt);
+  const originalUrl = getOriginalImageUrl(publicId, updatedAt);
 
   // Add click handler to toggle downloads queue
   card.addEventListener('click', (e) => {
@@ -255,7 +267,7 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
       if (window.isInDownloads(publicId)) {
         window.removeFromDownloads(publicId);
       } else {
-        window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape', updatedAt);
+        window.addToDownloads(publicId, niceName, originalUrl, isPortrait ? 'portrait' : 'landscape', updatedAt);
       }
     }
   });
