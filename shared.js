@@ -729,11 +729,10 @@ function initializeNavigation(currentPage) {
         <img src="${imgPath}" alt="Reframed Logo" class="top-logo">
       </a>
       <ul class="nav-menu">
-        <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
-        <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
-        <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
+        <li class="menu-item faq"><a href="/faq.html"></a></li>
+        <li class="menu-item contact"><a href="/contact.html"></a></li>
+        <li class="tip-button-container"></li>
       </ul>
-      <div class="tip-button-container"></div>
     </nav>
   `;
 

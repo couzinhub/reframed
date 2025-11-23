@@ -170,27 +170,8 @@ function buildRowGroupsFromOrderedTiles(tiles) {
   return tiles;
 }
 
-function renderGroupsInto(container, tiles) {
-  const tilesContainer = document.createElement("div");
-  tilesContainer.className = "homepage-tiles";
-
-  // Show first two tiles side by side
-  if (tiles.length > 0) {
-    const featuredRow = document.createElement("div");
-    featuredRow.className = "featured-row";
-
-    tiles[0].el.classList.add("featured");
-    featuredRow.appendChild(tiles[0].el);
-
-    if (tiles.length > 1) {
-      tiles[1].el.classList.add("featured");
-      featuredRow.appendChild(tiles[1].el);
-    }
-
-    tilesContainer.appendChild(featuredRow);
-  }
-
-  container.appendChild(tilesContainer);
+function renderGroupsInto() {
+  // Features removed - no tiles displayed
 }
 
 function renderFromTiles(container, tilesData) {
@@ -786,7 +767,9 @@ function groupArtworksByArtist(artworks) {
 // ---------- SEARCH FUNCTION ----------
 function searchArtworks(query, artworks) {
   if (!query || query.trim() === "") {
-    return null;
+    // Return random artworks when search is empty
+    const shuffled = [...artworks].sort(() => Math.random() - 0.5);
+    return shuffled;
   }
 
   const searchTerms = query.toLowerCase().trim().split(/\s+/);
@@ -1020,19 +1003,17 @@ async function initBrowse() {
 
           const browseSection = document.getElementById('browse');
           if (browseSection) {
-            browseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            browseSection.scrollIntoView({ behavior: 'auto', block: 'start' });
           }
 
           const query = searchInput.value.trim();
-          if (query) {
-            const results = searchArtworks(query, ALL_ARTWORKS);
-            if (results && results.length > 0) {
-              const sorted = applySorting(results, query);
-              renderSearchResults(sorted);
-            }
+          const results = searchArtworks(query, ALL_ARTWORKS);
+          if (results && results.length > 0) {
+            const sorted = query ? applySorting(results, query) : results;
+            renderSearchResults(sorted);
           } else {
             document.getElementById("searchGrid").innerHTML = "";
-            statusEl.textContent = "";
+            statusEl.textContent = query ? "No artworks found" : "";
           }
         } else if (tab === 'collections') {
           CURRENT_TAB = 'collections';
@@ -1049,7 +1030,7 @@ async function initBrowse() {
 
           const browseSection = document.getElementById('browse');
           if (browseSection) {
-            browseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            browseSection.scrollIntoView({ behavior: 'auto', block: 'start' });
           }
         } else {
           CURRENT_TAB = tab;
@@ -1070,7 +1051,7 @@ async function initBrowse() {
 
           const browseSection = document.getElementById('browse');
           if (browseSection) {
-            browseSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            browseSection.scrollIntoView({ behavior: 'auto', block: 'start' });
           }
         }
       });
@@ -1091,11 +1072,11 @@ async function initBrowse() {
       searchTimeout = setTimeout(() => {
         const results = searchArtworks(query, ALL_ARTWORKS);
 
-        if (results === null || results.length === 0) {
+        if (results.length === 0) {
           document.getElementById("searchGrid").innerHTML = "";
-          statusEl.textContent = query ? "No artworks found" : "";
+          statusEl.textContent = "No artworks found";
         } else {
-          const sorted = applySorting(results, query.trim());
+          const sorted = query.trim() ? applySorting(results, query.trim()) : results;
           renderSearchResults(sorted);
         }
       }, 300);
@@ -1104,13 +1085,13 @@ async function initBrowse() {
     clearButton.addEventListener("click", () => {
       searchInput.value = "";
       clearButton.style.display = "none";
-      document.getElementById("searchGrid").innerHTML = "";
-      statusEl.textContent = "";
+
+      // Show random artworks when search is cleared
+      const results = searchArtworks("", ALL_ARTWORKS);
+      renderSearchResults(results);
+
       searchInput.focus();
     });
-
-    // ============ SCROLL BEHAVIOR FOR TABS/MENU SWITCHING ============
-    setupTabsScrollBehavior();
 
   } catch (err) {
     console.error(err);
@@ -1118,63 +1099,6 @@ async function initBrowse() {
   }
 }
 
-// ============ TABS/MENU SCROLL BEHAVIOR ============
-function setupTabsScrollBehavior() {
-  const topBar = document.querySelector('.top-bar');
-  const browseTabs = document.querySelector('.browse-tabs');
-  const navMenu = document.querySelector('.nav-menu');
-  const tipButton = document.querySelector('.tip-button-container');
-
-  if (!topBar || !browseTabs || !navMenu || !tipButton) return;
-
-  let lastScrollY = window.scrollY;
-  let tabsOverlaying = false;
-
-  // Get the original position of tabs
-  const section = browseTabs.parentElement;
-  const getTabsOriginalTop = () => {
-    const sectionRect = section.getBoundingClientRect();
-    const tabsOffsetInSection = browseTabs.offsetTop - section.offsetTop;
-    return sectionRect.top + window.scrollY + tabsOffsetInSection;
-  };
-
-  window.addEventListener('scroll', () => {
-    const currentScrollY = window.scrollY;
-    const scrollDirection = currentScrollY > lastScrollY ? 'down' : 'up';
-    lastScrollY = currentScrollY;
-
-    const tabsRect = browseTabs.getBoundingClientRect();
-    const topBarHeight = topBar.offsetHeight;
-    const tabsOriginalTop = getTabsOriginalTop();
-
-    // Calculate if tabs would naturally be at the top bar position
-    const tabsReachedTop = (tabsOriginalTop - currentScrollY) <= topBarHeight;
-
-    if (tabsReachedTop && scrollDirection === 'down') {
-      // Tabs reached the top, make them overlay
-      if (!tabsOverlaying) {
-        tabsOverlaying = true;
-        browseTabs.classList.add('tabs-overlaying');
-        navMenu.style.opacity = '0';
-        navMenu.style.pointerEvents = 'none';
-        tipButton.style.opacity = '0';
-        tipButton.style.pointerEvents = 'none';
-      }
-    } else if (scrollDirection === 'up' && tabsOverlaying) {
-      // Scrolling up, show nav menu again when tabs move below top bar
-      const tabsShouldStopOverlaying = (tabsOriginalTop - currentScrollY) > topBarHeight;
-
-      if (tabsShouldStopOverlaying) {
-        tabsOverlaying = false;
-        browseTabs.classList.remove('tabs-overlaying');
-        navMenu.style.opacity = '1';
-        navMenu.style.pointerEvents = 'auto';
-        tipButton.style.opacity = '1';
-        tipButton.style.pointerEvents = 'auto';
-      }
-    }
-  }, { passive: true });
-}
 
 // ============ MAIN HOMEPAGE BOOTSTRAP ============
 
