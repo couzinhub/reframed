@@ -8,22 +8,6 @@
     <priority>1.0</priority>
   </url>
 
-  <!-- Collections Page -->
-  <url>
-    <loc>https://reframed.gallery/collections.html</loc>
-    <lastmod>2025-11-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- Artists Page -->
-  <url>
-    <loc>https://reframed.gallery/artists.html</loc>
-    <lastmod>2025-11-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
   <!-- FAQ Page -->
   <url>
     <loc>https://reframed.gallery/faq.html</loc>
