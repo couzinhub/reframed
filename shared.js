@@ -379,13 +379,36 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
       if (daysSinceUpdate <= 12) {
         // Check if image has more than 1 version
         if (versionCount && versionCount > 1) {
+          console.log(`[RIBBON] Adding ribbon for ${publicId}:`, {
+            hoursSinceCreation,
+            daysSinceUpdate,
+            versionCount
+          });
           const ribbon = document.createElement("div");
           ribbon.className = "new-version-ribbon";
           ribbon.textContent = "New version";
           card.appendChild(ribbon);
+        } else {
+          console.log(`[RIBBON] No ribbon for ${publicId} - versionCount check failed:`, {
+            versionCount,
+            versionCountType: typeof versionCount
+          });
         }
+      } else {
+        console.log(`[RIBBON] No ribbon for ${publicId} - too old:`, {
+          daysSinceUpdate
+        });
       }
+    } else {
+      console.log(`[RIBBON] No ribbon for ${publicId} - not updated enough:`, {
+        hoursSinceCreation
+      });
     }
+  } else {
+    console.log(`[RIBBON] No ribbon for ${publicId} - missing dates:`, {
+      updatedAt,
+      createdAt
+    });
   }
 
   card.appendChild(imgEl);

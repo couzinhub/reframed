@@ -117,6 +117,54 @@ p {
   flex-wrap: wrap;
 }
 
+/* Browse tabs */
+.browse-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto 40px;
+  flex-wrap: wrap;
+  max-width: 800px;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--color-txt);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 300;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.tab-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-spot);
+  transform: translateY(-1px);
+}
+
+.tab-button.active {
+  background-color: var(--color-spot);
+  color: #000;
+  border-color: var(--color-spot);
+  font-weight: 400;
+}
+
+/* Search input container */
+.search-input-container {
+  max-width: 600px;
+  margin: 0 auto 30px;
+  transition: all 0.3s ease;
+}
+
+.search-input-container.hidden {
+  display: none;
+}
+
 /* Alphabet Navigation */
 .alphabet-nav {
   display: flex;
@@ -543,6 +591,30 @@ aside .own-art:hover {
 
 .vertical .tag-grid {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* Grouped results styling */
+.grouped-results {
+  display: block;
+}
+
+.artist-group {
+  margin-bottom: 60px;
+}
+
+.artist-group-header {
+  width: 100%;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 300;
+  letter-spacing: 0.2rem;
+  margin: 0 0 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(86, 204, 255, 0.3);
+  color: var(--color-spot);
+  position: relative;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .card {
