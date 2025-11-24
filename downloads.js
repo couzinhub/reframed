@@ -28,7 +28,7 @@ function saveDownloadsQueue(queue) {
   }
 }
 
-function addToDownloads(publicId, niceName, url, aspectRatio = 'landscape', updatedAt) {
+function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landscape') {
   const queue = loadDownloadsQueue();
 
   // Check if already in queue
@@ -39,9 +39,8 @@ function addToDownloads(publicId, niceName, url, aspectRatio = 'landscape', upda
   queue.push({
     publicId,
     niceName,
-    url,
+    cloudinaryUrl,
     aspectRatio,
-    updatedAt,
     addedAt: Date.now()
   });
 
@@ -231,7 +230,7 @@ function renderDownloadsModal(queue) {
     }
 
     const thumbWidth = item.aspectRatio === 'portrait' ? 200 : 300;
-    const thumbUrl = getThumbnailUrl(item.publicId, thumbWidth, item.updatedAt);
+    const thumbUrl = getThumbnailUrl(item.publicId, thumbWidth);
 
     card.innerHTML = `
       <div class="downloads-item-image">
@@ -440,7 +439,7 @@ async function startSequentialDownload() {
     }
 
     try {
-      await downloadArtwork(nextItem.url, nextItem.niceName);
+      await downloadArtwork(nextItem.cloudinaryUrl, nextItem.niceName);
       successCount++;
 
       // Mark as completed

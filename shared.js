@@ -19,11 +19,9 @@ async function fetchImagesForTag(tagName) {
 
     return files.map(file => ({
       public_id: file.filePath.substring(1), // Remove leading slash
-      file_id: file.fileId,
       width: file.width,
       height: file.height,
       created_at: file.createdAt,
-      updated_at: file.updatedAt,
       tags: file.tags || []
     }));
   } catch (error) {
@@ -37,74 +35,6 @@ function FxK(str) {
     const code = char.charCodeAt(0);
     return String.fromCharCode(code + 1);
   }).join('');
-}
-
-// ============ VERSION COUNT CACHE ============
-const VERSION_COUNT_CACHE_KEY = "reframed_version_counts_v1";
-
-function loadVersionCountCache() {
-  try {
-    const raw = localStorage.getItem(VERSION_COUNT_CACHE_KEY);
-    if (!raw) return {};
-
-    const parsed = JSON.parse(raw);
-    if (!parsed.savedAt || !parsed.counts) return {};
-
-    // Check TTL
-    const age = Date.now() - parsed.savedAt;
-    if (age > VERSION_COUNT_CACHE_TTL_MS) return {};
-
-    return parsed.counts;
-  } catch {
-    return {};
-  }
-}
-
-function saveVersionCountCache(counts) {
-  try {
-    localStorage.setItem(VERSION_COUNT_CACHE_KEY, JSON.stringify({
-      savedAt: Date.now(),
-      counts: counts
-    }));
-  } catch {
-    // Ignore quota errors
-  }
-}
-
-// Fetch version count for a specific file (with caching)
-async function fetchFileVersionCount(fileId) {
-  // Check cache first
-  const cache = loadVersionCountCache();
-  if (cache[fileId] !== undefined) {
-    return cache[fileId];
-  }
-
-  // Fetch from API
-  try {
-    const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
-    const apiUrl = `https://api.imagekit.io/v1/files/${fileId}/versions`;
-
-    const response = await fetch(apiUrl, {
-      headers: { 'Authorization': authHeader }
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch versions from ImageKit API:', response.status);
-      return 1; // Default to 1 version if fetch fails
-    }
-
-    const versions = await response.json();
-    const count = Array.isArray(versions) ? versions.length : 1;
-
-    // Save to cache
-    cache[fileId] = count;
-    saveVersionCountCache(cache);
-
-    return count;
-  } catch (error) {
-    console.error('Error fetching versions from ImageKit:', error);
-    return 1; // Default to 1 version if fetch fails
-  }
 }
 
 // Fetch all files from ImageKit (for discovering tags)
@@ -130,44 +60,18 @@ async function fetchAllImageKitFiles() {
 }
 
 // Get full-size image URL
-function getImageUrl(publicId, updatedAt) {
-  let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=f-auto,q-auto`;
-  // Add cache-busting parameter if updatedAt is provided
-  if (updatedAt) {
-    url += `&v=${encodeURIComponent(updatedAt)}`;
-  }
-  return url;
-}
-
-// Get original image URL without any transformations (for downloads)
-function getOriginalImageUrl(publicId, updatedAt) {
-  // Use orig-true to get the original uploaded file with no transformations
-  let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=orig-true`;
-  // Add cache-busting parameter if updatedAt is provided
-  if (updatedAt) {
-    url += `&v=${encodeURIComponent(updatedAt)}`;
-  }
-  return url;
+function getImageUrl(publicId) {
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=f-auto,q-auto`;
 }
 
 // Get thumbnail URL with specified width
-function getThumbnailUrl(publicId, width, updatedAt) {
-  let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},q-auto,f-auto`;
-  // Add cache-busting parameter if updatedAt is provided
-  if (updatedAt) {
-    url += `&v=${encodeURIComponent(updatedAt)}`;
-  }
-  return url;
+function getThumbnailUrl(publicId, width) {
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},q-auto,f-auto`;
 }
 
 // Get thumbnail URL with crop/fill (for card thumbnails)
-function getThumbnailUrlWithCrop(publicId, width, updatedAt) {
-  let url = `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},h-${width},c-at_max,q-auto,f-auto`;
-  // Add cache-busting parameter if updatedAt is provided
-  if (updatedAt) {
-    url += `&v=${encodeURIComponent(updatedAt)}`;
-  }
-  return url;
+function getThumbnailUrlWithCrop(publicId, width) {
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},h-${width},c-at_max,q-auto,f-auto`;
 }
 
 // CSV Parser - parses CSV text into rows
@@ -239,7 +143,7 @@ function extractArtistFromTitle(title) {
 }
 
 // Create artwork card element (shared across all pages)
-function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, createdAt, fileId, versionCount) {
+function createArtworkCard(publicId, niceName, tags, width, height) {
   const isPortrait =
     typeof width === "number" &&
     typeof height === "number" &&
@@ -251,8 +155,7 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
   card.className = "card artwork";
   card.dataset.publicId = publicId;
 
-  const imageUrl = getImageUrl(publicId, updatedAt);
-  const originalUrl = getOriginalImageUrl(publicId, updatedAt);
+  const imageUrl = getImageUrl(publicId);
 
   // Add click handler to toggle downloads queue
   card.addEventListener('click', (e) => {
@@ -261,40 +164,13 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
       return;
     }
 
-    // Don't toggle if clicking zoom icon
-    if (e.target.closest('.zoom-icon')) {
-      return;
-    }
-
     e.preventDefault();
 
-    // Check if we're on mobile
-    const isMobile = window.innerWidth <= 768;
-
-    if (isMobile) {
-      // Mobile behavior: first tap shows hover state, second tap adds to downloads
-      if (!card.classList.contains('mobile-active')) {
-        // First tap: show hover state
-        card.classList.add('mobile-active');
-
-        // Remove mobile-active class from all other cards
-        document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
-          if (otherCard !== card) {
-            otherCard.classList.remove('mobile-active');
-          }
-        });
-
-        return; // Don't add to downloads yet
-      }
-      // Second tap will continue to download logic below
-    }
-
-    // Desktop behavior or second mobile tap: toggle downloads
     if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
       if (window.isInDownloads(publicId)) {
         window.removeFromDownloads(publicId);
       } else {
-        window.addToDownloads(publicId, niceName, originalUrl, isPortrait ? 'portrait' : 'landscape', updatedAt);
+        window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape');
       }
     }
   });
@@ -306,7 +182,7 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
 
   const imgEl = document.createElement("img");
   imgEl.loading = "lazy";
-  imgEl.src = getThumbnailUrl(publicId, thumbWidth, updatedAt);
+  imgEl.src = getThumbnailUrl(publicId, thumbWidth);
   imgEl.alt = niceName;
 
   // Create zoom icon
@@ -314,12 +190,12 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
   zoomIcon.className = "zoom-icon";
   zoomIcon.setAttribute("aria-label", "Preview artwork");
   zoomIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-    <path d="M120-120v-240h80v104l124-124 56 56-124 124h104v80H120Zm480 0v-80h104L580-324l56-56 124 124v-104h80v240H600ZM324-580 200-704v104h-80v-240h240v80H256l124 124-56 56Zm312 0-56-56 124-124H600v-80h240v240h-80v-104L636-580Z"/>
+    <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/>
   </svg>`;
 
   zoomIcon.addEventListener('click', (e) => {
     e.stopPropagation();
-    showZoomOverlay(publicId, niceName, width, height, updatedAt);
+    showZoomOverlay(publicId, niceName, width, height);
   });
 
   const caption = document.createElement("div");
@@ -364,30 +240,6 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
     caption.textContent = niceName;
   }
 
-  // Add "New version" ribbon if file was updated (not just created) within last 12 days
-  if (updatedAt && createdAt) {
-    const updatedDate = new Date(updatedAt);
-    const createdDate = new Date(createdAt);
-
-    // Check if the difference between updatedAt and createdAt is more than 1 hour
-    const hoursSinceCreation = (updatedDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
-
-    // Only show ribbon if file was updated more than 1 hour after creation
-    if (hoursSinceCreation > 1) {
-      const daysSinceUpdate = (Date.now() - updatedDate.getTime()) / (1000 * 60 * 60 * 24);
-
-      if (daysSinceUpdate <= 12) {
-        // Check if image has more than 1 version
-        if (versionCount && versionCount > 1) {
-          const ribbon = document.createElement("div");
-          ribbon.className = "new-version-ribbon";
-          ribbon.textContent = "New version";
-          card.appendChild(ribbon);
-        }
-      }
-    }
-  }
-
   card.appendChild(imgEl);
   card.appendChild(zoomIcon);
   card.appendChild(caption);
@@ -396,7 +248,7 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
 }
 
 // ============ ZOOM OVERLAY ============
-function showZoomOverlay(publicId, niceName, width, height, updatedAt) {
+function showZoomOverlay(publicId, niceName, width, height) {
   // Remove existing overlay if any
   const existingOverlay = document.getElementById('zoomOverlay');
   if (existingOverlay) {
@@ -417,7 +269,7 @@ function showZoomOverlay(publicId, niceName, width, height, updatedAt) {
   `;
 
   const percentageEl = overlay.querySelector('.zoom-percentage');
-  const imageUrl = getImageUrl(publicId, updatedAt);
+  const imageUrl = getImageUrl(publicId);
 
   // Fetch image with progress tracking
   fetch(imageUrl)
@@ -480,24 +332,11 @@ function showZoomOverlay(publicId, niceName, width, height, updatedAt) {
       img.onload = () => {
         overlay.innerHTML = '';
 
-        // Create close button
-        const closeButton = document.createElement('button');
-        closeButton.className = 'zoom-close';
-        closeButton.setAttribute('aria-label', 'Close preview');
-        closeButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-          <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
-        </svg>`;
-        closeButton.addEventListener('click', (e) => {
-          e.stopPropagation();
-          closeOverlay();
-        });
-
         // Create message banner
         const message = document.createElement('div');
         message.className = 'zoom-message';
         message.textContent = 'This preview is half the size of the original, add to download to get the full version';
 
-        overlay.appendChild(closeButton);
         overlay.appendChild(message);
         overlay.appendChild(img);
         URL.revokeObjectURL(img.src);
@@ -508,22 +347,16 @@ function showZoomOverlay(publicId, niceName, width, height, updatedAt) {
       overlay.innerHTML = '<div class="zoom-loading">Error loading image</div>';
     });
 
-  // Function to close overlay with animation
-  const closeOverlay = () => {
-    overlay.classList.add('zoom-out');
-    setTimeout(() => {
-      overlay.remove();
-      document.removeEventListener('keydown', handleEscape);
-    }, 300); // Match the animation duration
-  };
-
   // Close on click
-  overlay.addEventListener('click', closeOverlay);
+  overlay.addEventListener('click', () => {
+    overlay.remove();
+  });
 
   // Close on escape key
   const handleEscape = (e) => {
     if (e.key === 'Escape') {
-      closeOverlay();
+      overlay.remove();
+      document.removeEventListener('keydown', handleEscape);
     }
   };
   document.addEventListener('keydown', handleEscape);
@@ -678,19 +511,6 @@ if (document.readyState === 'loading') {
   initializeDownloadsUI();
 }
 
-// Remove mobile-active state when tapping outside of cards
-document.addEventListener('click', (e) => {
-  // Only run on mobile
-  if (window.innerWidth > 768) return;
-
-  // If the click is not on a card or its children, remove mobile-active from all cards
-  if (!e.target.closest('.card')) {
-    document.querySelectorAll('.card.mobile-active').forEach(card => {
-      card.classList.remove('mobile-active');
-    });
-  }
-});
-
 // ============ NAVIGATION MENU COMPONENT ============
 // This code is shared across all pages
 
@@ -698,28 +518,110 @@ function initializeNavigation(currentPage) {
   // Determine if we're in a subdirectory - use absolute paths for tag pages
   const isSubdirectory = window.location.pathname.includes('/tag/');
   const imgPath = isSubdirectory ? '/img/reframed.svg' : 'img/reframed.svg';
-  const homePath = '/';
-  const browsePath = isSubdirectory ? '/browse.html' : 'browse.html';
 
-  // Insert top navigation bar
-  const topBar = `
-    <nav class="top-bar">
-      <a href="/" class="logo-link">
-        <img src="${imgPath}" alt="Reframed Logo" class="top-logo">
+  // Insert mobile top bar
+  const mobileTopBar = `
+    <div class="mobile-top-bar">
+      <button class="hamburger-menu" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <a href="/">
+        <img src="${imgPath}" alt="Reframed Logo" class="mobile-logo">
       </a>
-      <ul class="nav-menu">
-        <li class="menu-item home ${currentPage === 'home' ? 'active' : ''}"><a href="${homePath}">Home</a></li>
-        <li class="menu-item browse ${currentPage === 'browse' ? 'active' : ''}"><a href="${browsePath}">Browse</a></li>
+    </div>
+  `;
+
+  // Insert sidebar
+  const aside = `
+    <aside>
+      <a href="/">
+        <img id="logo" src="${imgPath}" alt="Reframed Logo">
+      </a>
+      <ul>
+        <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
+        <li class="${currentPage === 'search' ? 'current' : ''}"><a href="/search.html">Search</a></li>
+        <li class="${currentPage === 'artists' ? 'current' : ''}"><a href="/artists.html">Artists</a></li>
+        <li class="${currentPage === 'collections' ? 'current' : ''}"><a href="/collections.html">Collections</a></li>
+        <li class="${currentPage === 'tag' && window.location.hash === '#Vertical-artworks' ? 'current' : ''}"><a href="/tag/#Vertical-artworks">Vertical artworks</a></li>
+        <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
+        <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
       </ul>
+      <div class="button tip"></div>
+      <div class="button own-art">
+        <a class="contact" href="/contact.html">Get your own art reframed</a>
+      </div>
+    </aside>
+  `;
+
+  // Insert into page
+  document.body.insertAdjacentHTML('afterbegin', mobileTopBar + aside);
+
+  // Add Ko-fi button styled like the original widget
+  const tipContainer = document.querySelector('.button.tip');
+  if (tipContainer) {
+    tipContainer.innerHTML = `
       <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button">
         <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
         <span>Thank me with a tip</span>
       </a>
-    </nav>
-  `;
+    `;
+  }
 
-  // Insert into page
-  document.body.insertAdjacentHTML('afterbegin', topBar);
+  // Update tag menu items if on tag page with hash
+  if (currentPage === 'tag') {
+    const updateTagMenuItems = () => {
+      const asideElement = document.querySelector('aside');
+      if (!asideElement) return;
+
+      // Update Vertical artworks menu item
+      const verticalItem = asideElement.querySelector('a[href="/tag/#Vertical-artworks"]')?.parentElement;
+      if (verticalItem) {
+        if (window.location.hash === '#Vertical-artworks') {
+          verticalItem.classList.add('current');
+        } else {
+          verticalItem.classList.remove('current');
+        }
+      }
+    };
+
+    // Update immediately and on hash change
+    setTimeout(updateTagMenuItems, 0);
+    window.addEventListener('hashchange', updateTagMenuItems);
+  }
+
+  // Initialize mobile menu functionality
+  const hamburgerMenu = document.querySelector('.hamburger-menu');
+  const asideElement = document.querySelector('aside');
+
+  if (hamburgerMenu && asideElement) {
+    hamburgerMenu.addEventListener('click', () => {
+      hamburgerMenu.classList.toggle('active');
+      asideElement.classList.toggle('active');
+      document.body.classList.toggle('menu-open');
+    });
+
+    // Close menu when clicking overlay
+    document.body.addEventListener('click', (e) => {
+      if (document.body.classList.contains('menu-open') &&
+          !asideElement.contains(e.target) &&
+          !hamburgerMenu.contains(e.target)) {
+        hamburgerMenu.classList.remove('active');
+        asideElement.classList.remove('active');
+        document.body.classList.remove('menu-open');
+      }
+    });
+
+    // Close menu when clicking a link in the sidebar
+    asideElement.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        hamburgerMenu.classList.remove('active');
+        asideElement.classList.remove('active');
+        document.body.classList.remove('menu-open');
+      });
+    });
+  }
 }
 
 

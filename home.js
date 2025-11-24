@@ -57,7 +57,7 @@ async function loadHomepageRows() {
 
 // ============ IMAGE FETCH / IMAGE PICK ============
 async function fetchImagesForHomepage(tagName) {
-  // Use shared helper function
+  // Use shared helper function (works with both Cloudinary and ImageKit)
   let items = await fetchImagesForTag(tagName);
 
   // newest first
@@ -68,15 +68,21 @@ async function fetchImagesForHomepage(tagName) {
   return items;
 }
 
-function chooseFeaturedImage(images) {
+function chooseFeaturedImage(row, images) {
+  console.log('chooseFeaturedImage called for tag:', row.tag);
+  console.log('Total images:', images.length);
+
   // First, always check for "thumbnail" tagged image (for both collections and artists)
   const thumbnailImage = images.find(img =>
     img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail')
   );
 
   if (thumbnailImage) {
+    console.log('Found thumbnail image:', thumbnailImage.public_id);
     return thumbnailImage;
   }
+
+  console.log('No thumbnail image found, using auto-select');
 
   // Filter out portrait images (height > width)
   const landscapeOrSquare = images.filter(img => img.width >= img.height);
@@ -85,6 +91,7 @@ function chooseFeaturedImage(images) {
   const finalList = landscapeOrSquare.length > 0 ? landscapeOrSquare : images;
 
   const selected = finalList.length > 0 ? finalList[0] : null;
+  console.log('Auto-selected image:', selected ? selected.public_id : 'none');
   return selected;
 }
 
@@ -163,166 +170,33 @@ function buildRowGroupsFromOrderedTiles(tiles) {
   return tiles;
 }
 
-async function renderRecentlyAdded(container) {
-  try {
-    // Fetch all images and sort by created_at
-    const allFiles = await fetchAllImageKitFiles();
-    const sortedFiles = allFiles
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 20);
+function renderGroupsInto(container, tiles) {
+  const tilesContainer = document.createElement("div");
+  tilesContainer.className = "homepage-tiles";
 
-    // Create recently added section
-    const section = document.createElement('div');
-    section.className = 'recently-added-section';
-
-    const title = document.createElement('h2');
-    title.className = 'recently-added-title';
-    title.textContent = 'Recently Added';
-    section.appendChild(title);
-
-    // Create grid
-    const grid = document.createElement('div');
-    grid.className = 'grid';
-
-    // Fetch version counts for all files
-    const cardsPromises = sortedFiles.map(async (file) => {
-      const versionCount = await fetchFileVersionCount(file.fileId);
-      return createArtworkCard(
-        file.filePath.substring(1),
-        humanizePublicId(file.filePath),
-        file.tags || [],
-        file.width,
-        file.height,
-        file.updatedAt,
-        file.createdAt,
-        file.fileId,
-        versionCount
-      );
-    });
-
-    const cards = await Promise.all(cardsPromises);
-    cards.forEach(card => grid.appendChild(card));
-
-    section.appendChild(grid);
-
-    // Add "View More" button
-    const btnContainer = document.createElement('div');
-    btnContainer.style.textAlign = 'center';
-    btnContainer.style.margin = '40px 0';
-
-    const viewMoreBtn = document.createElement('a');
-    viewMoreBtn.href = 'browse.html';
-    viewMoreBtn.className = 'view-more-button';
-    viewMoreBtn.textContent = 'View More';
-
-    btnContainer.appendChild(viewMoreBtn);
-    section.appendChild(btnContainer);
-
-    container.appendChild(section);
-  } catch (error) {
-    console.error('Error rendering recently added:', error);
+  // First tile gets special treatment
+  if (tiles.length > 0) {
+    tiles[0].el.classList.add("primary");
+    tilesContainer.appendChild(tiles[0].el);
   }
+
+  // Remaining tiles go in a row container
+  if (tiles.length > 1) {
+    const rowContainer = document.createElement("div");
+    rowContainer.className = "secondary-row";
+
+    for (let i = 1; i < tiles.length; i++) {
+      tiles[i].el.classList.add("secondary");
+      rowContainer.appendChild(tiles[i].el);
+    }
+
+    tilesContainer.appendChild(rowContainer);
+  }
+
+  container.appendChild(tilesContainer);
 }
 
-async function renderGroupsInto(container, tiles) {
-  // Render the first 3 tiles as a carousel
-  const tilesToShow = tiles.slice(0, 3);
-
-  // Create carousel container
-  const carouselWrapper = document.createElement('div');
-  carouselWrapper.className = 'carousel-wrapper';
-
-  const carousel = document.createElement('div');
-  carousel.className = 'carousel';
-
-  const carouselTrack = document.createElement('div');
-  carouselTrack.className = 'carousel-track';
-
-  // Add tiles to carousel track
-  for (const tileObj of tilesToShow) {
-    const slide = document.createElement('div');
-    slide.className = 'carousel-slide';
-    slide.appendChild(tileObj.el);
-    carouselTrack.appendChild(slide);
-  }
-
-  carousel.appendChild(carouselTrack);
-
-  // Create progress bars indicator
-  const dotsContainer = document.createElement('div');
-  dotsContainer.className = 'carousel-dots';
-
-  for (let i = 0; i < tilesToShow.length; i++) {
-    const dot = document.createElement('button');
-    dot.className = 'carousel-dot';
-    if (i === 0) dot.classList.add('active');
-    dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
-    dotsContainer.appendChild(dot);
-  }
-
-  carouselWrapper.appendChild(carousel);
-  carouselWrapper.appendChild(dotsContainer);
-  container.appendChild(carouselWrapper);
-
-  // Initialize carousel functionality
-  initCarousel(carouselTrack, dotsContainer, tilesToShow.length);
-
-  // Render "Recently Added" section
-  await renderRecentlyAdded(container);
-}
-
-function initCarousel(track, dotsContainer, slideCount) {
-  let currentIndex = 0;
-
-  function updateCarousel() {
-    const slideWidth = track.offsetWidth;
-    track.style.transform = `translateX(-${currentIndex * slideWidth}px)`;
-
-    // Update progress bars - remove and re-add active class to restart animation
-    const dots = dotsContainer.querySelectorAll('.carousel-dot');
-    dots.forEach((dot, index) => {
-      if (index === currentIndex) {
-        // Force animation restart by removing and re-adding the class
-        dot.classList.remove('active');
-        void dot.offsetWidth; // Trigger reflow
-        dot.classList.add('active');
-      } else {
-        dot.classList.remove('active');
-      }
-    });
-  }
-
-  function goToSlide(index) {
-    currentIndex = (index + slideCount) % slideCount;
-    updateCarousel();
-  }
-
-  // Progress bar navigation
-  const dots = dotsContainer.querySelectorAll('.carousel-dot');
-  dots.forEach((dot, index) => {
-    dot.addEventListener('click', () => {
-      goToSlide(index);
-      // Restart auto-advance after manual click
-      clearInterval(autoPlayInterval);
-      autoPlayInterval = setInterval(() => {
-        goToSlide(currentIndex + 1);
-      }, 8000);
-    });
-  });
-
-  // Auto-advance carousel every 8 seconds
-  let autoPlayInterval = setInterval(() => {
-    goToSlide(currentIndex + 1);
-  }, 8000);
-
-  // Handle window resize
-  window.addEventListener('resize', updateCarousel);
-
-  // Initial update
-  updateCarousel();
-}
-
-async function renderFromTiles(container, tilesData) {
+function renderFromTiles(container, tilesData) {
   const tiles = tilesData.map(td => ({
     row: {
       tag: td.row.tag,
@@ -338,89 +212,162 @@ async function renderFromTiles(container, tilesData) {
     container.removeChild(container.lastChild);
   }
 
-  await renderGroupsInto(container, tilesArray);
+  renderGroupsInto(container, tilesArray);
 }
 
+// ============ RECENTLY ADDED SECTION ============
 
+async function fetchRecentlyAdded() {
+  try {
+    // Fetch all files from ImageKit
+    const allFiles = await fetchAllImageKitFiles();
 
-// ============ MAIN HOMEPAGE BOOTSTRAP ============
+    // Sort by upload date (newest first)
+    const sorted = allFiles
+      .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+
+    // Transform to match expected format
+    const items = sorted.map(file => ({
+      public_id: file.filePath.substring(1), // Remove leading slash
+      width: file.width,
+      height: file.height,
+      created_at: file.createdAt,
+      tags: file.tags || []
+    }));
+
+    return items;
+  } catch (err) {
+    console.error('Error fetching recently uploaded:', err);
+    return [];
+  }
+}
+
+function renderRecentlyAdded(container, images) {
+  if (!images || images.length === 0) return;
+
+  const section = document.createElement("div");
+  section.className = "recently-added-section";
+
+  const title = document.createElement("h3");
+  title.className = "recently-added-title";
+  title.textContent = "Recently added";
+  section.appendChild(title);
+
+  const grid = document.createElement("div");
+  grid.className = "recently-added-grid";
+
+  let currentIndex = 0;
+  const itemsPerLoad = 10;
+
+  function loadMore() {
+    const endIndex = Math.min(currentIndex + itemsPerLoad, images.length);
+    const batch = images.slice(currentIndex, endIndex);
+
+    batch.forEach(img => {
+      const publicId = img.public_id;
+      const niceName = humanizePublicId(publicId);
+      const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
+      grid.appendChild(card);
+    });
+
+    currentIndex = endIndex;
+
+    // Hide load more button if all items are loaded
+    if (currentIndex >= images.length) {
+      loadMoreBtn.style.display = "none";
+    }
+  }
+
+  // Load initial batch
+  loadMore();
+
+  section.appendChild(grid);
+
+  // Create load more button
+  const loadMoreBtn = document.createElement("button");
+  loadMoreBtn.className = "load-more-btn";
+  loadMoreBtn.textContent = "Load more";
+  loadMoreBtn.onclick = loadMore;
+
+  // Hide button if all items are already loaded
+  if (currentIndex >= images.length) {
+    loadMoreBtn.style.display = "none";
+  }
+
+  section.appendChild(loadMoreBtn);
+  container.appendChild(section);
+}
+
+// ============ MAIN BOOTSTRAP ============
 
 (async function initHomepage() {
   const container = document.getElementById("homeView");
-  const pageLoader = document.getElementById("pageLoader");
 
-  try {
-    // 1. Try to use cache if version matches
-    const cached = loadHomepageCache(CACHE_VERSION);
-    if (cached && Array.isArray(cached.tiles)) {
-      // Hide loader immediately - we have cached content
-      if (pageLoader) {
-        pageLoader.style.display = 'none';
-      }
+  // 1. Try to use cache if version matches
+  const cached = loadHomepageCache(CACHE_VERSION);
+  if (cached && Array.isArray(cached.tiles)) {
+    renderFromTiles(container, cached.tiles);
 
-      renderFromTiles(container, cached.tiles);
-
-      return;
-    }
-
-    // 2. No valid cache → rebuild fresh (show loader)
-
-    // Load rows from the Google Sheet
-    const rowsData = await loadHomepageRows();
-
-    const liveTilesResults = await Promise.all(
-      rowsData.map(async (row) => {
-        try {
-          const images = await fetchImagesForHomepage(row.tag);
-          if (!images.length) return null;
-
-          const chosen = chooseFeaturedImage(images);
-          if (!chosen) return null;
-
-          const publicId = chosen.public_id;
-          const niceTitle = humanizePublicId(publicId);
-
-          const thumbWidth = 1400;
-          const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth, chosen.updated_at);
-
-          // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
-          const prettyTag = row.tag.trim()
-            .replace(/-/g, "%2D")
-            .replace(/\s+/g, "-");
-
-          return {
-            row: {
-              tag: row.tag,
-              label: row.label
-            },
-            chosen: {
-              public_id: publicId,
-              niceTitle: niceTitle,
-              thumbWidth: thumbWidth,
-              thumbUrl: thumbUrl,
-              linkHref: `/tag/#${prettyTag}`
-            }
-          };
-        } catch (err) {
-          console.error(`Failed to fetch images for tag "${row.tag}":`, err);
-          return null;
-        }
-      })
-    );
-
-    const liveTiles = liveTilesResults.filter(Boolean);
-
-    // 3. Save to cache along with version
-    saveHomepageCache(CACHE_VERSION, liveTiles);
-
-    // 4. Render
-    renderFromTiles(container, liveTiles);
-  } catch (error) {
-    console.error('Error loading homepage:', error);
-  } finally {
-    // Always hide loader when done (success or error)
-    if (pageLoader) {
-      pageLoader.classList.add('hidden');
-    }
+    // Load recently added artworks (not cached)
+    const recentImages = await fetchRecentlyAdded();
+    renderRecentlyAdded(container, recentImages);
+    return;
   }
+
+  // 2. No valid cache → rebuild fresh
+
+  // Load rows from the Google Sheet
+  const rowsData = await loadHomepageRows();
+
+  const liveTilesResults = await Promise.all(
+    rowsData.map(async (row) => {
+      try {
+        const images = await fetchImagesForHomepage(row.tag);
+        if (!images.length) return null;
+
+        const chosen = chooseFeaturedImage(row, images);
+        if (!chosen) return null;
+
+        const publicId = chosen.public_id;
+        const niceTitle = humanizePublicId(publicId);
+
+        const thumbWidth = 1400;
+        const thumbUrl = getThumbnailUrlWithCrop(publicId, thumbWidth);
+
+        // Convert spaces to dashes for pretty URLs, but encode hyphens as %2D
+        const prettyTag = row.tag.trim()
+          .replace(/-/g, "%2D")
+          .replace(/\s+/g, "-");
+
+        return {
+          row: {
+            tag: row.tag,
+            label: row.label
+          },
+          chosen: {
+            public_id: publicId,
+            niceTitle: niceTitle,
+            thumbWidth: thumbWidth,
+            thumbUrl: thumbUrl,
+            linkHref: `/tag/#${prettyTag}`
+          }
+        };
+      } catch (err) {
+        console.error(`Failed to fetch images for tag "${row.tag}":`, err);
+        return null;
+      }
+    })
+  );
+
+  const liveTiles = liveTilesResults.filter(Boolean);
+
+  // 3. Save to cache along with version
+  saveHomepageCache(CACHE_VERSION, liveTiles);
+
+  // 4. Render
+  renderFromTiles(container, liveTiles);
+
+  // 5. Load recently added artworks
+  const recentImages = await fetchRecentlyAdded();
+  renderRecentlyAdded(container, recentImages);
 })();
