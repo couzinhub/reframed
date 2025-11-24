@@ -5,12 +5,8 @@ function getSlugFromHash() {
   // Get the raw hash without #
   let raw = window.location.hash.replace(/^#/, "").trim();
 
-  // Just decode it - the niceName is stored as-is
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return raw;
-  }
+  // Convert underscores back to spaces
+  return raw.replace(/_/g, ' ');
 }
 
 // Local copy of humanizePublicId in case it's not loaded yet
@@ -128,7 +124,7 @@ function renderArtworkDetail(artwork, publicId) {
   document.title = pageTitle;
   document.getElementById('pageTitle').textContent = pageTitle;
 
-  const pageUrl = `https://reframed.gallery/artwork/#${encodeURIComponent(publicId)}`;
+  const pageUrl = `https://reframed.gallery/artwork/#${niceName.replace(/\s/g, '_')}`;
   document.getElementById('pageCanonical').setAttribute('href', pageUrl);
   document.getElementById('ogUrl').setAttribute('content', pageUrl);
   document.getElementById('twitterUrl').setAttribute('content', pageUrl);

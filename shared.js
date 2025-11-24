@@ -213,8 +213,8 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   // Create info/detail icon
   const infoIcon = document.createElement("a");
-  // Create clean URL slug: just encode the niceName as-is
-  const cleanSlug = encodeURIComponent(niceName);
+  // Create clean URL slug: replace spaces with underscores
+  const cleanSlug = niceName.replace(/\s/g, '_');
   infoIcon.href = `/artwork/#${cleanSlug}`;
   infoIcon.className = "info-icon";
   infoIcon.setAttribute("aria-label", "View artwork details");
