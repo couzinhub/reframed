@@ -3,11 +3,15 @@
 
 :root {
   color-scheme: dark;
-  --topbar-height: 70px;
+  --sidebar-width: 250px;
   --color-bg: rgb(12, 27, 68);
   --color-txt: #f0f0f0;
   --color-sidebar: #081330;
   --color-spot: #56CCFF;
+<<<<<<< HEAD
+=======
+  --page-maxwidth: 1400px;
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
 
   /* SVG Icons */
   --icon-plus-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>');
@@ -17,14 +21,17 @@
 
 body {
   margin: 0;
-  padding-top: var(--topbar-height);
+  margin-left: var(--sidebar-width);
   font-family: 'Lexend', sans-serif;
   font-optical-sizing: auto;
   background-color: var(--color-bg);
   color: var(--color-txt);
+<<<<<<< HEAD
   padding:  100px;
+=======
+  padding: 50px;
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
   display: block;
-  overflow-y: scroll;
 }
 
 .hidden { display: none; }
@@ -74,14 +81,26 @@ body {
   margin: 0;
 }
 
-h1 {
+.home h1, h1 {
   text-align: center;
+<<<<<<< HEAD
   font-size: 32px;
+=======
+  font-size: 40px;
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
   margin-bottom: 1rem;
+  max-width: 1200px;
   font-weight: 200;
   letter-spacing: 2px;
   line-height: 140%;
+<<<<<<< HEAD
   margin: 60px auto 30px;
+=======
+  margin: 0 auto 20px;
+}
+.home h1{
+    margin: 0 auto 40px;
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
 }
 
 h2 {
@@ -109,10 +128,11 @@ p {
   align-items: center;
   justify-content: center;
   gap: 20px;
-  margin: 0 0 12px;
+  margin: 0 0 50px;
   flex-wrap: wrap;
 }
 
+<<<<<<< HEAD
 /* Browse tabs */
 .browse-tabs {
   display: flex;
@@ -173,6 +193,8 @@ p {
   display: none;
 }
 
+=======
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
 /* Alphabet Navigation */
 .alphabet-nav {
   display: flex;
@@ -249,28 +271,39 @@ p {
 }
 
 
-/* Top Navigation Bar
+/* Layout
 -----------------------------*/
 
-.top-bar {
+aside {
+  height: 100%;
+  width: var(--sidebar-width);
   position: fixed;
+  z-index: 2;
   top: 0;
   left: 0;
-  right: 0;
-  height: var(--topbar-height);
   background-color: var(--color-sidebar);
+<<<<<<< HEAD
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 50px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+=======
+  overflow-x: hidden;
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
 }
 
-.logo-link {
-  flex-shrink: 0;
+
+/* Aside 
+-----------------------------*/
+
+aside #logo {
+  width: 190px;
+  margin: 65px 30px 40px;
 }
 
+<<<<<<< HEAD
 .top-logo {
   height: 35px;
   width: auto;
@@ -282,17 +315,26 @@ p {
   display: flex;
   gap: 40px;
   margin: 0;
+=======
+aside ul {
+  list-style: none;
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
   padding: 0;
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
 }
+<<<<<<< HEAD
 
 .nav-menu li a {
+=======
+aside ul a {
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
   display: block;
   text-decoration: none;
   color: var(--color-txt);
   font-size: 16px;
+<<<<<<< HEAD
   font-weight: 500;
   padding: 10px 20px;
   border-radius: 6px;
@@ -312,24 +354,71 @@ p {
 
 .tip-button-container {
   flex-shrink: 0;
+=======
+  font-weight: 600;
+  padding: 16px 30px;
+  margin: 12px 0;
+}
+aside ul a:hover {
+  background-color: #000;
+}
+aside ul .current a {
+  background-color: var(--color-spot);
+  color: var(--color-bg);
+}
+aside .button {
+  text-align: center;
+  padding: 20px 0;
+  margin: 10px 30px;
+  width: 190px;
+}
+aside .tip .btn-container a {
+  width: 166px;
+}
+aside .own-art {
+  background-color: #72563D;
+  background-image: url(img/own-art.png);
+  background-size: 100%;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  padding: 0;
+  border-radius: 10px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+aside .own-art a {
+  color: var(--color-txt);
+  text-decoration: none;
+  display: block;
+  padding: 120px 40px 10px;
+  font-size: 14px;
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
 }
 
 /* Ko-fi Button */
 .kofi-button {
+<<<<<<< HEAD
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
+=======
+  display: inline-block;
+  padding: 4px 12px;
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
   background-color: #00488c;
   color: #fff;
   text-decoration: none;
   border-radius: 7px;
   font-size: 14px;
+  line-height: 36px;
   box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+  text-align: center;
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
-.kofi-button:hover {
+/* Shared hover effect for Ko-fi button and own-art */
+.kofi-button:hover,
+aside .own-art:hover {
   box-shadow: white 0 0 0 2px;
   transform: scale(1.03);
 }
@@ -346,9 +435,16 @@ p {
 }
 
 .kofi-button img {
-  height: 18px;
-  width: auto;
+  height: 15px;
+  width: 22px;
+  vertical-align: middle;
+  margin-right: 5px;
+  margin-bottom: 3px;
   border: none;
+}
+
+.kofi-button span {
+  vertical-align: middle;
 }
 
 /* Home
@@ -357,16 +453,20 @@ p {
 #homeView {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  align-items: anchor-center;
+  gap: 30px;
   padding: 30px 0;
   font-family: "Lexend", system-ui, sans-serif;
+<<<<<<< HEAD
   width: 100%;
+=======
+>>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
 }
 
 /* Recently Added Section */
 .recently-added-section {
   width: 100%;
+  max-width: 1300px;
   margin: 0 auto 30px;
 }
 
@@ -379,6 +479,12 @@ p {
   color: var(--color-txt);
 }
 
+.recently-added-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 40px;
+  padding: 0 0px;
+}
 
 .load-more-btn {
   display: block;
@@ -405,6 +511,7 @@ p {
   flex-direction: row;
   justify-content: center;
   width: 100%;
+  max-width: var(--page-maxwidth);
   gap: 30px;
 }
 
@@ -483,13 +590,14 @@ p {
   flex-direction: column;
   gap: 30px;
   width: 100%;
+  max-width: var(--page-maxwidth);
   margin: 0 auto;
 }
 
 .tile.full-width {
   width: 100%;
   height: auto;
-  aspect-ratio: 16 /9;
+  aspect-ratio: 16 / 9;
 }
 
 .tile.full-width img {
@@ -497,15 +605,23 @@ p {
   background: #000;
 }
 
-/* Featured row (side by side tiles) */
-.featured-row {
+/* Primary tile (first one) */
+.tile.full-width.primary {
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+/* Secondary row (2nd and 3rd tiles) */
+.secondary-row {
   display: flex;
   gap: 30px;
   width: 100%;
+  justify-content: center;
 }
 
-.tile.full-width.featured {
+.tile.full-width.secondary {
   flex: 1;
+  max-width: 635px;
 }
 
 /* make <img> behave like a background cover */
@@ -554,50 +670,21 @@ p {
 }
 
 
-/* Content
+/* Content 
 -----------------------------*/
 
-/* Unified grid system */
-.grid {
+#artistsGrid, #collectionsGrid, .tag-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  gap: 10px;
+}
+
+.tag-grid {
   gap: 30px;
-  width: 100%;
 }
 
-/* Vertical orientation: narrower columns */
-.vertical .grid {
+.vertical .tag-grid {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-}
-
-/* Page container */
-#browse {
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* Grouped results styling */
-.grouped-results {
-  display: block;
-}
-
-.artist-group {
-  margin-bottom: 60px;
-}
-
-.artist-group-header {
-  width: 100%;
-  text-align: center;
-  font-size: 1.8rem;
-  font-weight: 300;
-  letter-spacing: 0.2rem;
-  margin: 0 0 30px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(86, 204, 255, 0.3);
-  color: var(--color-spot);
-  position: relative;
-  background: transparent;
-  backdrop-filter: none;
 }
 
 .card {
@@ -924,9 +1011,9 @@ p {
 -----------------------------*/
 
 .faq-page {
+  max-width: 900px;
   margin: 0 auto;
   padding: 20px 0;
-  max-width: 800px;
 }
 
 .faq-section {
@@ -973,9 +1060,9 @@ p {
 -----------------------------*/
 
 .contact-page {
+  max-width: 600px;
   margin: 0 auto;
   padding: 20px 0;
-  max-width: 800px;
 }
 
 .contact-page .intro {
@@ -1112,7 +1199,7 @@ p {
 
 .toast {
   position: fixed;
-  top: calc(var(--topbar-height) + 20px);
+  top: 30px;
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(15, 17, 24, 0.95);
@@ -1127,6 +1214,7 @@ p {
   transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
   text-align: center;
 }
 
@@ -1144,6 +1232,66 @@ p {
   color: #fff;
 }
 
+/* Mobile Top Bar & Hamburger Menu
+-----------------------------*/
+
+.mobile-top-bar {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: var(--color-sidebar);
+  z-index: 99;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.mobile-top-bar .hamburger-menu {
+  position: absolute;
+  left: 20px;
+}
+
+.mobile-logo {
+  height: 28px;
+  width: auto;
+}
+
+.hamburger-menu {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 4;
+}
+
+.hamburger-menu span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background-color: var(--color-txt);
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Hamburger animation when menu is open */
+.hamburger-menu.active span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger-menu.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-menu.active span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
 
 /* Tablet and narrow desktop adjustments
 -----------------------------*/
@@ -1212,9 +1360,14 @@ p {
   }
 
   /* Homepage tiles - stack vertically on smaller screens */
-  .featured-row {
+  .secondary-row {
     flex-direction: column;
     gap: 20px;
+  }
+
+  .tile.full-width.primary,
+  .tile.full-width.secondary {
+    max-width: 100%;
   }
 }
 
@@ -1222,13 +1375,14 @@ p {
 -----------------------------*/
 
 @media (min-width: 769px) and (max-width: 1450px) {
-  /* Unified grid for tablets - 2 columns */
-  .grid {
+  /* Tag grid and recently added grid for tablets - unified 2 columns */
+  .tag-grid,
+  .recently-added-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 30px;
   }
 
-  .vertical .grid {
+  .vertical .tag-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 30px;
   }
@@ -1239,40 +1393,49 @@ p {
 
 @media (max-width: 768px) {
   body {
-    padding: calc(var(--topbar-height) + 10px) 30px 30px;
+    margin-left: 0;
+    padding: 80px 30px 30px;
   }
 
-  .top-bar {
-    padding: 0 20px;
+  .mobile-top-bar {
+    display: flex;
   }
 
-  .nav-menu {
-    position: static;
-    transform: none;
-    gap: 20px;
-    font-size: 14px;
+  aside {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
   }
 
-  .nav-menu li a {
-    padding: 8px 12px;
-    font-size: 14px;
+  aside.active {
+    transform: translateX(0);
   }
 
-  .top-logo {
-    height: 28px;
-  }
-
-  .kofi-button {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-
-  .kofi-button img {
-    height: 15px;
-  }
-
-  .kofi-button span {
+  aside #logo {
     display: none;
+  }
+
+  aside ul {
+    padding-top: 50px;
+  }
+
+  /* Overlay when menu is open */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+  }
+
+  body.menu-open::before {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   /* Homepage mobile layout */
@@ -1310,13 +1473,19 @@ p {
     padding: 60px 0 20px;
   }
 
-  /* Unified grid for mobile - 1 column */
-  .grid {
+  /* Artist and Collections grid mobile */
+  #artistsGrid, #collectionsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tag grid and recently added grid mobile - unified styling */
+  .tag-grid,
+  .recently-added-grid {
     grid-template-columns: 1fr !important;
     gap: 20px !important;
   }
 
-  .vertical .grid {
+  .vertical .tag-grid {
     grid-template-columns: 1fr !important;
     gap: 20px !important;
   }
@@ -1415,7 +1584,9 @@ p {
 
   /* Toast on mobile */
   .toast {
-    top: calc(var(--topbar-height) + 10px);
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
     max-width: calc(100% - 40px);
     font-size: 13px;
     padding: 10px 20px;
@@ -1427,7 +1598,7 @@ p {
 /* Floating Downloads Button */
 #downloadsButton {
   position: fixed;
-  top: calc(var(--topbar-height) + 20px);
+  top: 30px;
   right: -300px; /* Hidden by default */
   z-index: 100;
   background: var(--color-sidebar);
@@ -1449,7 +1620,7 @@ p {
 /* Show button when it has items - desktop (above mobile) */
 @media (min-width: 769px) {
   #downloadsButton.has-items {
-    right: 50px;
+    right: 30px;
   }
 
   #downloadsButton:hover {
@@ -1548,6 +1719,7 @@ p {
   background: var(--color-sidebar);
   border: 2px solid var(--color-spot);
   border-radius: 12px;
+  max-width: 900px;
   width: 100%;
   max-height: 90vh;
   display: flex;
@@ -1908,6 +2080,7 @@ body.modal-open {
 /* Search Page Styles
 -----------------------------*/
 .search-container {
+  max-width: 700px;
   margin: 0 auto 40px;
   position: relative;
 }
@@ -1962,6 +2135,7 @@ body.modal-open {
 
 @media (max-width: 768px) {
   .search-container {
+    max-width: 100%;
     margin: 0 auto 30px;
   }
 
