@@ -607,38 +607,6 @@ aside .own-art:hover {
   text-underline-offset: 2px;
 }
 
-/* Zoom icon */
-.zoom-icon {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease, background 0.2s ease;
-  z-index: 10;
-  padding: 0;
-}
-
-.zoom-icon svg {
-  fill: white;
-}
-
-.card:hover .zoom-icon {
-  opacity: 1;
-}
-
-.zoom-icon:hover {
-  background: rgba(0, 0, 0, 0.8);
-}
-
 /* Info icon (for detail page link) */
 .info-icon {
   position: absolute;
@@ -673,95 +641,6 @@ aside .own-art:hover {
 
 .info-icon:hover {
   background: rgba(0, 0, 0, 0.8);
-}
-
-/* Zoom overlay */
-.zoom-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  cursor: pointer;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.zoom-overlay img {
-  max-width: 90vw;
-  max-height: 90vh;
-  object-fit: contain;
-  animation: zoomIn 0.3s ease;
-}
-
-@keyframes zoomIn {
-  from {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.zoom-loading {
-  color: white;
-  font-size: 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.zoom-percentage {
-  font-size: 20px;
-  font-weight: 600;
-  color: white;
-}
-
-.zoom-message {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  max-width: 90%;
-  text-align: center;
-  z-index: 10001;
-  pointer-events: none;
 }
 
 .card.artist,

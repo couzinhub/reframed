@@ -185,19 +185,6 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   imgEl.src = getThumbnailUrl(publicId, thumbWidth);
   imgEl.alt = niceName;
 
-  // Create zoom icon
-  const zoomIcon = document.createElement("button");
-  zoomIcon.className = "zoom-icon";
-  zoomIcon.setAttribute("aria-label", "Preview artwork");
-  zoomIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-    <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/>
-  </svg>`;
-
-  zoomIcon.addEventListener('click', (e) => {
-    e.stopPropagation();
-    showZoomOverlay(publicId, niceName, width, height);
-  });
-
   // Create info/detail icon
   const infoIcon = document.createElement("a");
   // Create clean URL slug: just encode the niceName as-is
@@ -256,128 +243,10 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   }
 
   card.appendChild(imgEl);
-  card.appendChild(zoomIcon);
   card.appendChild(infoIcon);
   card.appendChild(caption);
 
   return card;
-}
-
-// ============ ZOOM OVERLAY ============
-function showZoomOverlay(publicId, niceName, width, height) {
-  // Remove existing overlay if any
-  const existingOverlay = document.getElementById('zoomOverlay');
-  if (existingOverlay) {
-    existingOverlay.remove();
-  }
-
-  // Create overlay
-  const overlay = document.createElement('div');
-  overlay.id = 'zoomOverlay';
-  overlay.className = 'zoom-overlay';
-
-  // Add loading state with spinner and percentage
-  overlay.innerHTML = `
-    <div class="zoom-loading">
-      <div class="spinner"></div>
-      <div class="zoom-percentage">0%</div>
-    </div>
-  `;
-
-  const percentageEl = overlay.querySelector('.zoom-percentage');
-  const imageUrl = getImageUrl(publicId);
-
-  // Fetch image with progress tracking
-  fetch(imageUrl)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      const contentLength = response.headers.get('content-length');
-
-      if (!contentLength) {
-        // If content-length is not available, fall back to simple loading
-        return response.blob().then(blob => {
-          percentageEl.textContent = '100%';
-          return blob;
-        });
-      }
-
-      const total = parseInt(contentLength, 10);
-      let loaded = 0;
-
-      const reader = response.body.getReader();
-      const chunks = [];
-
-      return new ReadableStream({
-        start(controller) {
-          function push() {
-            reader.read().then(({ done, value }) => {
-              if (done) {
-                controller.close();
-                return;
-              }
-
-              loaded += value.length;
-              const percentage = Math.round((loaded / total) * 100);
-              percentageEl.textContent = `${percentage}%`;
-
-              chunks.push(value);
-              controller.enqueue(value);
-              push();
-            }).catch(error => {
-              console.error('Stream reading error:', error);
-              controller.error(error);
-            });
-          }
-          push();
-        }
-      });
-    })
-    .then(stream => new Response(stream))
-    .then(response => response.blob())
-    .then(blob => {
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(blob);
-      img.alt = niceName;
-      img.style.maxWidth = '90vw';
-      img.style.maxHeight = '90vh';
-      img.style.objectFit = 'contain';
-
-      img.onload = () => {
-        overlay.innerHTML = '';
-
-        // Create message banner
-        const message = document.createElement('div');
-        message.className = 'zoom-message';
-        message.textContent = 'This preview is half the size of the original, add to download to get the full version';
-
-        overlay.appendChild(message);
-        overlay.appendChild(img);
-        URL.revokeObjectURL(img.src);
-      };
-    })
-    .catch(error => {
-      console.error('Error loading image:', error);
-      overlay.innerHTML = '<div class="zoom-loading">Error loading image</div>';
-    });
-
-  // Close on click
-  overlay.addEventListener('click', () => {
-    overlay.remove();
-  });
-
-  // Close on escape key
-  const handleEscape = (e) => {
-    if (e.key === 'Escape') {
-      overlay.remove();
-      document.removeEventListener('keydown', handleEscape);
-    }
-  };
-  document.addEventListener('keydown', handleEscape);
-
-  document.body.appendChild(overlay);
 }
 
 // Generic Cache Helpers
