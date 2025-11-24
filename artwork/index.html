@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title id="pageTitle">Artwork - Reframed</title>
+  <meta id="pageDescription" name="description" content="View artwork details and download for your Frame TV.">
+  <meta id="pageKeywords" name="keywords" content="Frame TV art, Samsung Frame TV, digital art gallery">
+
+  <!-- Canonical URL (will be updated dynamically) -->
+  <link id="pageCanonical" rel="canonical" href="https://reframed.gallery/artwork/">
+
+  <!-- Open Graph / Facebook (will be updated dynamically) -->
+  <meta id="ogType" property="og:type" content="website">
+  <meta id="ogUrl" property="og:url" content="https://reframed.gallery/artwork/">
+  <meta id="ogTitle" property="og:title" content="Artwork - Reframed">
+  <meta id="ogDescription" property="og:description" content="View artwork details and download for your Frame TV.">
+  <meta id="ogImage" property="og:image" content="https://reframed.gallery/img/og-image.jpg">
+
+  <!-- Twitter (will be updated dynamically) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta id="twitterUrl" name="twitter:url" content="https://reframed.gallery/artwork/">
+  <meta id="twitterTitle" name="twitter:title" content="Artwork - Reframed">
+  <meta id="twitterDescription" name="twitter:description" content="View artwork details and download for your Frame TV.">
+  <meta name="twitter:image" content="https://reframed.gallery/img/og-image.jpg">
+
+  <link rel="icon" href="/img/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+
+  <!-- shared site styles -->
+  <link rel="stylesheet" href="/css.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-14360H9J7X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-14360H9J7X');
+  </script>
+
+  <style>
+    body {
+      padding: 0;
+    }
+    .artwork-detail-container {
+      margin: 60px auto;
+      max-width: 1400px;
+      padding: 0 40px 40px;
+    }
+
+    .artwork-detail-header {
+      margin-bottom: 2rem;
+    }
+
+    .artwork-detail-title {
+      text-align: left;
+      font-size: 40px;
+      font-weight: 200;
+      margin-bottom: 0.5rem;
+      max-width: none;
+    }
+
+    .artwork-image-container {
+      margin: 0 0 80px;
+      padding: 20px;
+      background-color: var(--color-sidebar)
+    }
+
+    .artwork-image-container img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      height: auto;
+      display: block;
+    }
+
+    .artwork-meta {
+      margin-bottom: 12px;
+    }
+    .file-size-info {
+      display: inline-block;
+      margin-right: 12px;
+      font-weight: 200;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-secondary);
+    }
+
+    .error-state {
+      text-align: left;
+      padding: 4rem 2rem;
+      color: var(--text-secondary);
+    }
+
+    .wikipedia-content {
+      max-width: 960px;
+    }
+
+    .wikipedia-content h2 {
+      text-align: left;
+      padding: 0;
+      margin: 0 0 24px 0;
+      font-size: 32px;
+      font-weight: 300;
+    }
+
+    .wikipedia-content #wikipediaContent p {
+      font-size: 24px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    @media (max-width: 768px) {
+      .artwork-detail-container {
+        margin-top: 100px;
+        padding: 0 20px 20px;
+      }
+      .artwork-image-container {
+        margin: 0 0 40px;
+      }
+      .artwork-detail-title {
+        font-size: 32px;
+      }
+      .wikipedia-content #wikipediaContent p {
+        font-size: 20px;
+      }
+    }
+
+  </style>
+</head>
+<body class="artwork-detail">
+
+  <main id="artworkDetailView" class="artwork-detail-container">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading artwork...</p>
+    </div>
+  </main>
+
+  <script src="../config.js"></script>
+  <script src="../shared.js"></script>
+  <script>initializeNavigation('artwork');</script>
+  <script src="artwork.js"></script>
+  <script src="../downloads.js"></script>
+</body>
+</html>

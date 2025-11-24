@@ -639,6 +639,42 @@ aside .own-art:hover {
   background: rgba(0, 0, 0, 0.8);
 }
 
+/* Info icon (for detail page link) */
+.info-icon {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  z-index: 10;
+  padding: 0;
+  text-decoration: none;
+}
+
+.info-icon svg {
+  fill: white;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.card:hover .info-icon {
+  opacity: 1;
+}
+
+.info-icon:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
 /* Zoom overlay */
 .zoom-overlay {
   position: fixed;
