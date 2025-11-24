@@ -120,31 +120,50 @@ p {
 
 /* Browse tabs */
 .browse-tabs {
+  position: sticky;
+  top: var(--topbar-height);
   display: flex;
-  gap: 12px;
-  margin: 20px 0;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 40px;
+  margin: 0 -40px;
+  background-color: var(--color-bg);
+  z-index: 90;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .tab-button {
   padding: 8px 16px;
   background-color: transparent;
   color: var(--color-txt);
-  border: 1px solid var(--color-txt);
+  border: 1.5px solid var(--color-txt);
+  border-radius: 6px;
   font-family: 'Lexend', sans-serif;
-  font-size: 16px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .tab-button:hover {
   background-color: var(--color-txt);
   color: var(--color-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .tab-button.active {
   background-color: var(--color-spot);
   color: var(--color-bg);
   border-color: var(--color-spot);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tab-button.active:hover {
+  transform: translateY(-2px);
 }
 
 /* Carousel */
@@ -361,7 +380,7 @@ p {
   text-decoration: none;
   color: var(--color-txt);
   font-weight: 500;
-  padding: 8px ;
+  padding: 8px 16px;
   transition: all 0.2s ease;
   border-radius: 8px;
 }
@@ -379,15 +398,16 @@ p {
 /* Ko-fi Button */
 .kofi-button {
   display: inline-flex;
-  height: 24px;
+  height: 36px;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
+  padding: 0 16px;
   background-color: #00488c;
   color: #fff;
   text-decoration: none;
-  border-radius: 7px;
+  border-radius: 8px;
   font-size: 14px;
+  font-weight: 500;
   box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
   transition: transform 150ms ease, box-shadow 150ms ease;
   position: absolute;
@@ -1301,7 +1321,7 @@ p {
 
 @media (max-width: 1100px) {
   body {
-    padding: 30px 20px;
+    padding: calc(var(--topbar-height) + 30px) 20px 30px;
   }
 
   .home h1,
@@ -1402,14 +1422,15 @@ p {
   }
 
   .nav-menu {
-    position: static;
+    position: absolute;
+    right: 140px;
     transform: none;
-    gap: 20px;
+    gap: 8px;
     font-size: 14px;
   }
 
   .nav-menu li a {
-    padding: 8px 12px;
+    padding: 8px 16px;
     font-size: 14px;
   }
 
@@ -1483,12 +1504,57 @@ p {
     height: auto;
   }
 
+  /* Browse tabs mobile */
+  .browse-tabs {
+    padding: 15px 20px;
+    margin: 0 -30px;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .browse-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-button {
+    padding: 10px 18px;
+    font-size: 14px;
+    border-width: 1.5px;
+    flex-shrink: 0;
+  }
+
+  .tab-button:hover {
+    transform: none;
+  }
+
+  .tab-button.active:hover {
+    transform: none;
+  }
+
   /* Homepage title */
   .home h1,
   .recently-added-title {
     font-size: 24px;
     letter-spacing: 0.5px;
     margin-bottom: 30px;
+    margin-top: 20px;
+  }
+
+  /* Carousel mobile adjustments */
+  .carousel {
+    min-height: auto;
+  }
+
+  .carousel-wrapper {
+    margin: 20px 0 10px;
+  }
+
+  .carousel-dots {
+    margin-top: 16px;
   }
 
   /* Tag header row on mobile */
@@ -1566,6 +1632,28 @@ p {
 
   .contact-page {
     padding: 10px;
+  }
+
+  /* Navigation adjustments for small screens */
+  .top-bar {
+    padding: 0 15px;
+  }
+
+  .logo-link {
+    left: 15px;
+  }
+
+  .nav-menu {
+    gap: 6px;
+  }
+
+  .nav-menu li a {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .kofi-button {
+    right: 15px;
   }
 
   /* Toast on mobile */

@@ -700,8 +700,6 @@ function initializeNavigation(currentPage) {
   const imgPath = isSubdirectory ? '/img/reframed.svg' : 'img/reframed.svg';
   const homePath = '/';
   const browsePath = isSubdirectory ? '/browse.html' : 'browse.html';
-  const faqPath = isSubdirectory ? '/faq.html' : 'faq.html';
-  const contactPath = isSubdirectory ? '/contact.html' : 'contact.html';
 
   // Insert top navigation bar
   const topBar = `
@@ -712,8 +710,6 @@ function initializeNavigation(currentPage) {
       <ul class="nav-menu">
         <li class="menu-item home ${currentPage === 'home' ? 'active' : ''}"><a href="${homePath}">Home</a></li>
         <li class="menu-item browse ${currentPage === 'browse' ? 'active' : ''}"><a href="${browsePath}">Browse</a></li>
-        <li class="menu-item faq ${currentPage === 'faq' ? 'active' : ''}"><a href="${faqPath}">FAQ</a></li>
-        <li class="menu-item contact ${currentPage === 'contact' ? 'active' : ''}"><a href="${contactPath}">Contact</a></li>
       </ul>
       <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button">
         <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
