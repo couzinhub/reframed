@@ -28,7 +28,7 @@ function saveDownloadsQueue(queue) {
   }
 }
 
-function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landscape', updatedAt) {
+function addToDownloads(publicId, niceName, url, aspectRatio = 'landscape', updatedAt) {
   const queue = loadDownloadsQueue();
 
   // Check if already in queue
@@ -39,7 +39,7 @@ function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landsc
   queue.push({
     publicId,
     niceName,
-    cloudinaryUrl,
+    url,
     aspectRatio,
     updatedAt,
     addedAt: Date.now()
@@ -440,7 +440,7 @@ async function startSequentialDownload() {
     }
 
     try {
-      await downloadArtwork(nextItem.cloudinaryUrl, nextItem.niceName);
+      await downloadArtwork(nextItem.url, nextItem.niceName);
       successCount++;
 
       // Mark as completed

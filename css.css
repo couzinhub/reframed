@@ -9,7 +9,7 @@
   --color-sidebar: #081330;
   --color-spot: #56CCFF;
 
-  --side-padding: 140px;
+  --side-padding: 60px;
 
   /* SVG Icons */
   --icon-plus-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>');
@@ -80,12 +80,12 @@ body {
 
 h1 {
   text-align: center;
-  font-size: 44px;
+  font-size: 32px;
   margin-bottom: 1rem;
   font-weight: 200;
   letter-spacing: 2px;
   line-height: 140%;
-  margin: 60px auto 40px;
+  margin: 0px auto;
 }
 
 h2 {
@@ -120,37 +120,113 @@ p {
 /* Browse tabs */
 .browse-tabs {
   display: flex;
-  justify-content: center;
   gap: 12px;
-  margin: 0 auto ;
-  width: fit-content;
-  padding:12px 0 1px;
-  flex-wrap: wrap;
-  position: sticky;
-  top: 6px;
-  z-index: 100;
-  transition: all 0.3s ease;
+  margin: 20px 0;
 }
 
 .tab-button {
-  padding: 4px 12px;
+  padding: 8px 16px;
   background-color: transparent;
   color: var(--color-txt);
-  border: none;
+  border: 1px solid var(--color-txt);
   font-family: 'Lexend', sans-serif;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
-  letter-spacing: 0.5px;
 }
 
 .tab-button:hover {
-  color: var(--color-spot);
+  background-color: var(--color-txt);
+  color: var(--color-bg);
 }
 
 .tab-button.active {
   background-color: var(--color-spot);
   color: var(--color-bg);
+  border-color: var(--color-spot);
+}
+
+/* Carousel */
+.carousel-wrapper {
+  margin: 20px 0;
+  width: 100%;
+}
+
+.carousel {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 400px;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+  width: 100%;
+  height: 100%;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-slide .tile {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.carousel-dot {
+  position: relative;
+  flex: 1;
+  max-width: 100px;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.carousel-dot:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.carousel-dot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background-color: var(--color-spot);
+  transition: width 0.3s ease;
+}
+
+.carousel-dot.active::before {
+  animation: progressBar 8s linear forwards;
+}
+
+@keyframes progressBar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
 }
 
 /* Search input container */
@@ -250,15 +326,17 @@ p {
   right: 0;
   height: var(--topbar-height);
   background-color: var(--color-sidebar);
-  z-index: 10;
+  z-index: 100;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding:  0 40px;
 }
 
 .logo-link {
   flex-shrink: 0;
+  position: absolute;
+  left: 40px;
 }
 
 .top-logo {
@@ -287,25 +365,14 @@ p {
   border-radius: 8px;
 }
 
-.nav-menu .menu-item a::before {
-  content: '';
-  width: 24px;
-  height: 24px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.nav-menu li:has(a[href*="faq"]) a::before {
-  background-image: var(--icon-faq);
-}
-
-.nav-menu li:has(a[href*="contact"]) a::before {
-  background-image: var(--icon-contact);
-}
 
 .nav-menu .menu-item a:hover {
   background-color: black;
+}
+
+.nav-menu .menu-item.active a {
+  background-color: var(--color-spot);
+  color: var(--color-bg);
 }
 
 /* Ko-fi Button */
@@ -314,7 +381,7 @@ p {
   height: 24px;
   align-items: center;
   gap: 8px;
-  margin-left: 12px;
+  padding: 0 12px;
   background-color: #00488c;
   color: #fff;
   text-decoration: none;
@@ -322,6 +389,8 @@ p {
   font-size: 14px;
   box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
   transition: transform 150ms ease, box-shadow 150ms ease;
+  position: absolute;
+  right: 40px;
 }
 
 .kofi-button:hover {
@@ -401,6 +470,26 @@ p {
   color: var(--color-bg);
 }
 
+.view-more-button {
+  display: inline-block;
+  padding: 16px 48px;
+  font-size: 18px;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  color: var(--color-bg);
+  background: var(--color-spot);
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.view-more-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(86, 204, 255, 0.4);
+}
+
 .row {
   display: flex;
   flex-direction: row;
@@ -457,7 +546,11 @@ p {
 }
 
 /* Shared hover effect for tiles and cards */
-.tile:hover,
+.carousel-slide .tile:hover {
+  /* No hover effect in carousel */
+}
+
+.tile:not(.carousel-slide .tile):hover,
 .card.artist:hover,
 .card:hover img,
 .card.mobile-active img {
@@ -585,23 +678,74 @@ p {
   display: block;
 }
 
-.artist-group {
-  margin-bottom: 60px;
+.artist-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
 }
 
-.artist-group-header {
-  width: 100%;
-  text-align: center;
-  font-size: 1.8rem;
-  font-weight: 300;
-  letter-spacing: 0.2rem;
-  margin: 0 0 30px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(86, 204, 255, 0.3);
-  color: var(--color-spot);
+.artist-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 30px;
+  text-decoration: none;
+  color: var(--color-txt);
+  border-bottom: 1px solid rgba(86, 204, 255, 0.1);
+  transition: background-color 0.2s ease;
+  min-height: 120px;
+}
+
+.artist-row:hover {
+  background-color: rgba(86, 204, 255, 0.05);
+}
+
+.artist-name {
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.05rem;
+  flex: 0 0 auto;
+  padding-right: 30px;
+}
+
+.artist-thumbnails {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.artist-thumb {
+  width: 200px;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.artist-thumb.half-visible {
+  width: 100px;
   position: relative;
-  background: transparent;
-  backdrop-filter: none;
+}
+
+.artist-thumb.half-visible::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to right, transparent, var(--color-bg));
+  pointer-events: none;
+}
+
+.artist-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .card {
@@ -1252,6 +1396,10 @@ p {
     padding: 0 20px;
   }
 
+  .logo-link {
+    left: 20px;
+  }
+
   .nav-menu {
     position: static;
     transform: none;
@@ -1271,6 +1419,7 @@ p {
   .kofi-button {
     padding: 6px 12px;
     font-size: 12px;
+    right: 20px;
   }
 
   .kofi-button img {
