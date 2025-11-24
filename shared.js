@@ -379,36 +379,13 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
       if (daysSinceUpdate <= 12) {
         // Check if image has more than 1 version
         if (versionCount && versionCount > 1) {
-          console.log(`[RIBBON] Adding ribbon for ${publicId}:`, {
-            hoursSinceCreation,
-            daysSinceUpdate,
-            versionCount
-          });
           const ribbon = document.createElement("div");
           ribbon.className = "new-version-ribbon";
           ribbon.textContent = "New version";
           card.appendChild(ribbon);
-        } else {
-          console.log(`[RIBBON] No ribbon for ${publicId} - versionCount check failed:`, {
-            versionCount,
-            versionCountType: typeof versionCount
-          });
         }
-      } else {
-        console.log(`[RIBBON] No ribbon for ${publicId} - too old:`, {
-          daysSinceUpdate
-        });
       }
-    } else {
-      console.log(`[RIBBON] No ribbon for ${publicId} - not updated enough:`, {
-        hoursSinceCreation
-      });
     }
-  } else {
-    console.log(`[RIBBON] No ribbon for ${publicId} - missing dates:`, {
-      updatedAt,
-      createdAt
-    });
   }
 
   card.appendChild(imgEl);
@@ -722,25 +699,47 @@ function initializeNavigation(currentPage) {
   const isSubdirectory = window.location.pathname.includes('/tag/');
   const imgPath = isSubdirectory ? '/img/reframed.svg' : 'img/reframed.svg';
 
-  // Insert top navigation bar
-  const topBar = `
-    <nav class="top-bar">
-      <a href="/" class="logo-link">
-        <img src="${imgPath}" alt="Reframed Logo" class="top-logo">
+  // Insert mobile top bar
+  const mobileTopBar = `
+    <div class="mobile-top-bar">
+      <button class="hamburger-menu" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <a href="/">
+        <img src="${imgPath}" alt="Reframed Logo" class="mobile-logo">
       </a>
-      <ul class="nav-menu">
-        <li class="menu-item faq"><a href="/faq.html"></a></li>
-        <li class="menu-item contact"><a href="/contact.html"></a></li>
-        <li class="tip-button-container"></li>
+    </div>
+  `;
+
+  // Insert sidebar
+  const aside = `
+    <aside>
+      <a href="/">
+        <img id="logo" src="${imgPath}" alt="Reframed Logo">
+      </a>
+      <ul>
+        <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
+        <li class="${currentPage === 'search' ? 'current' : ''}"><a href="/search.html">Search</a></li>
+        <li class="${currentPage === 'artists' ? 'current' : ''}"><a href="/artists.html">Artists</a></li>
+        <li class="${currentPage === 'collections' ? 'current' : ''}"><a href="/collections.html">Collections</a></li>
+        <li class="${currentPage === 'tag' && window.location.hash === '#Vertical-artworks' ? 'current' : ''}"><a href="/tag/#Vertical-artworks">Vertical artworks</a></li>
+        <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
+        <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
       </ul>
-    </nav>
+      <div class="button tip"></div>
+      <div class="button own-art">
+        <a class="contact" href="/contact.html">Get your own art reframed</a>
+      </div>
+    </aside>
   `;
 
   // Insert into page
-  document.body.insertAdjacentHTML('afterbegin', topBar);
+  document.body.insertAdjacentHTML('afterbegin', mobileTopBar + aside);
 
   // Add Ko-fi button styled like the original widget
-  const tipContainer = document.querySelector('.tip-button-container');
+  const tipContainer = document.querySelector('.button.tip');
   if (tipContainer) {
     tipContainer.innerHTML = `
       <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button">
@@ -748,6 +747,60 @@ function initializeNavigation(currentPage) {
         <span>Thank me with a tip</span>
       </a>
     `;
+  }
+
+  // Update tag menu items if on tag page with hash
+  if (currentPage === 'tag') {
+    const updateTagMenuItems = () => {
+      const asideElement = document.querySelector('aside');
+      if (!asideElement) return;
+
+      // Update Vertical artworks menu item
+      const verticalItem = asideElement.querySelector('a[href="/tag/#Vertical-artworks"]')?.parentElement;
+      if (verticalItem) {
+        if (window.location.hash === '#Vertical-artworks') {
+          verticalItem.classList.add('current');
+        } else {
+          verticalItem.classList.remove('current');
+        }
+      }
+    };
+
+    // Update immediately and on hash change
+    setTimeout(updateTagMenuItems, 0);
+    window.addEventListener('hashchange', updateTagMenuItems);
+  }
+
+  // Initialize mobile menu functionality
+  const hamburgerMenu = document.querySelector('.hamburger-menu');
+  const asideElement = document.querySelector('aside');
+
+  if (hamburgerMenu && asideElement) {
+    hamburgerMenu.addEventListener('click', () => {
+      hamburgerMenu.classList.toggle('active');
+      asideElement.classList.toggle('active');
+      document.body.classList.toggle('menu-open');
+    });
+
+    // Close menu when clicking overlay
+    document.body.addEventListener('click', (e) => {
+      if (document.body.classList.contains('menu-open') &&
+          !asideElement.contains(e.target) &&
+          !hamburgerMenu.contains(e.target)) {
+        hamburgerMenu.classList.remove('active');
+        asideElement.classList.remove('active');
+        document.body.classList.remove('menu-open');
+      }
+    });
+
+    // Close menu when clicking a link in the sidebar
+    asideElement.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        hamburgerMenu.classList.remove('active');
+        asideElement.classList.remove('active');
+        document.body.classList.remove('menu-open');
+      });
+    });
   }
 }
 
