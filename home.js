@@ -174,7 +174,6 @@ function renderGroupsInto(container, tiles) {
   const tilesContainer = document.createElement("div");
   tilesContainer.className = "homepage-tiles";
 
-<<<<<<< HEAD
   // Show first two tiles side by side
   if (tiles.length > 0) {
     const featuredRow = document.createElement("div");
@@ -189,25 +188,6 @@ function renderGroupsInto(container, tiles) {
     }
 
     tilesContainer.appendChild(featuredRow);
-=======
-  // First tile gets special treatment
-  if (tiles.length > 0) {
-    tiles[0].el.classList.add("primary");
-    tilesContainer.appendChild(tiles[0].el);
-  }
-
-  // Remaining tiles go in a row container
-  if (tiles.length > 1) {
-    const rowContainer = document.createElement("div");
-    rowContainer.className = "secondary-row";
-
-    for (let i = 1; i < tiles.length; i++) {
-      tiles[i].el.classList.add("secondary");
-      rowContainer.appendChild(tiles[i].el);
-    }
-
-    tilesContainer.appendChild(rowContainer);
->>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
   }
 
   container.appendChild(tilesContainer);
@@ -232,167 +212,52 @@ function renderFromTiles(container, tilesData) {
   renderGroupsInto(container, tilesArray);
 }
 
-// ============ RECENTLY ADDED SECTION ============
+// ============ BROWSE SECTION (TABS + FUNCTIONALITY) ============
 
-const RECENTLY_ADDED_CACHE_KEY = "reframed_recently_added_v1";
+function renderBrowseSection(container) {
+  const section = document.createElement("section");
+  section.id = "browse";
 
-function loadRecentlyAddedCache() {
-  try {
-    const raw = localStorage.getItem(RECENTLY_ADDED_CACHE_KEY);
-    if (!raw) return null;
+  const tabs = document.createElement("div");
+  tabs.className = "browse-tabs";
+  tabs.innerHTML = `
+    <button class="tab-button active" data-tab="new">New</button>
+    <button class="tab-button" data-tab="collections">Collections</button>
+    <button class="tab-button" data-tab="artists">Artists</button>
+    <button class="tab-button" data-tab="vertical">Vertical</button>
+    <button class="tab-button tab-search" data-tab="search"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg></button>
+  `;
+  section.appendChild(tabs);
 
-    const parsed = JSON.parse(raw);
-    if (!parsed.savedAt || !parsed.items) return null;
+  const searchInputContainer = document.createElement("div");
+  searchInputContainer.className = "search-input-container hidden";
+  searchInputContainer.innerHTML = `
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search by artwork or artist name..."
+      autocomplete="off"
+    />
+    <button id="clearSearch" aria-label="Clear search">&times;</button>
+  `;
+  section.appendChild(searchInputContainer);
 
-    // Check TTL (use same as main cache)
-    const age = Date.now() - parsed.savedAt;
-    if (age > CACHE_TTL_MS) return null;
-
-    return parsed.items;
-  } catch {
-    return null;
-  }
-}
-
-function saveRecentlyAddedCache(items) {
-  try {
-    localStorage.setItem(RECENTLY_ADDED_CACHE_KEY, JSON.stringify({
-      savedAt: Date.now(),
-      items: items
-    }));
-  } catch {
-    // Ignore quota errors
-  }
-}
-
-async function fetchRecentlyAdded() {
-  try {
-    // Check cache first
-    const cached = loadRecentlyAddedCache();
-    if (cached) {
-      return cached;
-    }
-
-    // Fetch all files from ImageKit
-    const allFiles = await fetchAllImageKitFiles();
-
-    // Sort by most recent activity (upload or update), newest first
-    const sorted = allFiles
-      .sort((a, b) => {
-        // Get the most recent date for each file (either created or updated)
-        const aDate = [a.createdAt, a.updatedAt].filter(Boolean).sort().reverse()[0] || "";
-        const bDate = [b.createdAt, b.updatedAt].filter(Boolean).sort().reverse()[0] || "";
-        return bDate.localeCompare(aDate);
-      });
-
-    // Take only the first 50 items and transform to expected format
-    const recentItems = sorted.slice(0, 50).map(file => ({
-      public_id: file.filePath.substring(1), // Remove leading slash
-      file_id: file.fileId,
-      width: file.width,
-      height: file.height,
-      created_at: file.createdAt,
-      updated_at: file.updatedAt,
-      tags: file.tags || []
-    }));
-
-    // Filter items that need version count check (updated > 1 hour after creation AND updated within last 12 days)
-    const itemsNeedingVersionCheck = recentItems.filter(item => {
-      if (!item.updated_at || !item.created_at) return false;
-
-      const updatedDate = new Date(item.updated_at);
-      const createdDate = new Date(item.created_at);
-
-      const hoursSinceCreation = (updatedDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
-      const daysSinceUpdate = (Date.now() - updatedDate.getTime()) / (1000 * 60 * 60 * 24);
-
-      return hoursSinceCreation > 1 && daysSinceUpdate <= 12;
-    });
-
-    // Fetch version counts only for items that need it
-    const versionCounts = await Promise.all(
-      itemsNeedingVersionCheck.map(item => fetchFileVersionCount(item.file_id))
-    );
-
-    // Map version counts back to items
-    const versionCountMap = new Map();
-    itemsNeedingVersionCheck.forEach((item, index) => {
-      versionCountMap.set(item.file_id, versionCounts[index]);
-    });
-
-    // Add version_count to all items
-    const finalItems = recentItems.map(item => ({
-      ...item,
-      version_count: versionCountMap.get(item.file_id) || 1
-    }));
-
-    // Save to cache
-    saveRecentlyAddedCache(finalItems);
-
-    return finalItems;
-  } catch (err) {
-    console.error('Error fetching recently uploaded:', err);
-    return [];
-  }
-}
-
-function renderRecentlyAdded(container, images) {
-  if (!images || images.length === 0) return;
-
-  const section = document.createElement("div");
-  section.className = "recently-added-section";
-
-  const title = document.createElement("h3");
-  title.className = "recently-added-title";
-  title.textContent = "Recently added";
-  section.appendChild(title);
+  const tagHeaderRow = document.createElement("div");
+  tagHeaderRow.className = "tag-header-row";
+  const searchStatus = document.createElement("p");
+  searchStatus.id = "searchStatus";
+  searchStatus.className = "tag-status";
+  tagHeaderRow.appendChild(searchStatus);
+  section.appendChild(tagHeaderRow);
 
   const grid = document.createElement("div");
-  grid.className = "recently-added-grid";
-
-  let currentIndex = 0;
-  const itemsPerLoad = 10;
-
-  function loadMore() {
-    const endIndex = Math.min(currentIndex + itemsPerLoad, images.length);
-    const batch = images.slice(currentIndex, endIndex);
-
-    batch.forEach(img => {
-      const publicId = img.public_id;
-      const niceName = humanizePublicId(publicId);
-      const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height, img.updated_at, img.created_at, img.file_id, img.version_count);
-      grid.appendChild(card);
-    });
-
-    currentIndex = endIndex;
-
-    // Hide load more button if all items are loaded
-    if (currentIndex >= images.length) {
-      loadMoreBtn.style.display = "none";
-    }
-  }
-
-  // Load initial batch
-  loadMore();
-
+  grid.id = "searchGrid";
+  grid.className = "grid";
   section.appendChild(grid);
 
-  // Create load more button
-  const loadMoreBtn = document.createElement("button");
-  loadMoreBtn.className = "load-more-btn";
-  loadMoreBtn.textContent = "Load more";
-  loadMoreBtn.onclick = loadMore;
-
-  // Hide button if all items are already loaded
-  if (currentIndex >= images.length) {
-    loadMoreBtn.style.display = "none";
-  }
-
-  section.appendChild(loadMoreBtn);
   container.appendChild(section);
 }
 
-<<<<<<< HEAD
 // ============ BROWSE FUNCTIONALITY ============
 
 // ---------- SEARCH CACHE ----------
@@ -1312,9 +1177,6 @@ function setupTabsScrollBehavior() {
 }
 
 // ============ MAIN HOMEPAGE BOOTSTRAP ============
-=======
-// ============ MAIN BOOTSTRAP ============
->>>>>>> parent of 291f884 (Merge pull request #2 from couzinhub/main)
 
 (async function initHomepage() {
   const container = document.getElementById("homeView");
@@ -1331,9 +1193,11 @@ function setupTabsScrollBehavior() {
 
       renderFromTiles(container, cached.tiles);
 
-      // Load recently added artworks (not cached)
-      const recentImages = await fetchRecentlyAdded();
-      renderRecentlyAdded(container, recentImages);
+      // Render browse section
+      renderBrowseSection(container);
+
+      // Initialize browse functionality
+      initBrowse();
 
       return;
     }
@@ -1391,9 +1255,11 @@ function setupTabsScrollBehavior() {
     // 4. Render
     renderFromTiles(container, liveTiles);
 
-    // 5. Load recently added artworks
-    const recentImages = await fetchRecentlyAdded();
-    renderRecentlyAdded(container, recentImages);
+    // 5. Render browse section
+    renderBrowseSection(container);
+
+    // 6. Initialize browse functionality
+    initBrowse();
   } catch (error) {
     console.error('Error loading homepage:', error);
   } finally {
