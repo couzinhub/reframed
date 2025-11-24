@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Browse Artworks - Reframed | Free Frame TV Art Gallery</title>
+  <meta name="description" content="Browse through our free collection of classic paintings and photography optimized for Samsung Frame TV. Search by artist, collection, or orientation.">
+  <meta name="keywords" content="Frame TV art gallery, browse Frame TV art, Samsung Frame TV artwork, free art collection, classic paintings">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://reframed.gallery/browse.html">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://reframed.gallery/browse.html">
+  <meta property="og:title" content="Browse Artworks - Reframed">
+  <meta property="og:description" content="Browse through our free collection of classic paintings and photography optimized for Samsung Frame TV.">
+  <meta property="og:image" content="https://reframed.gallery/img/og-image.jpg">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://reframed.gallery/browse.html">
+  <meta name="twitter:title" content="Browse Artworks - Reframed">
+  <meta name="twitter:description" content="Browse through our free collection of classic paintings and photography optimized for Samsung Frame TV.">
+  <meta name="twitter:image" content="https://reframed.gallery/img/og-image.jpg">
+
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-14360H9J7X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-14360H9J7X');
+  </script>
+</head>
+<body>
+
+  <main id="browseView"></main>
+
+  <!-- Downloads Button -->
+  <button id="downloadsButton" aria-label="View downloads queue">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="7 10 12 15 17 10"></polyline>
+      <line x1="12" y1="15" x2="12" y2="3"></line>
+    </svg>
+    <span>Downloads</span>
+    <span id="downloadsBadge"></span>
+  </button>
+
+  <!-- Downloads Modal -->
+  <div id="downloadsModal">
+    <div class="downloads-modal-content">
+      <div class="downloads-modal-header">
+        <h2>Downloads (<span id="downloadsCount">0</span>)</h2>
+        <button id="closeDownloadsModal" aria-label="Close">&times;</button>
+      </div>
+      <div class="downloads-modal-body">
+        <div id="downloadsEmpty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <p>No artworks selected</p>
+        </div>
+        <div id="downloadsGrid"></div>
+      </div>
+      <div class="downloads-modal-footer">
+        <button id="clearAllDownloads">Clear All</button>
+        <span id="downloadProgress"></span>
+        <button id="downloadAllBtn">Download All</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="shared.js"></script>
+  <script>initializeNavigation('browse');</script>
+  <script src="browse.js"></script>
+  <script src="downloads.js"></script>
+
+</body>
+</html>

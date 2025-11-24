@@ -379,36 +379,13 @@ function createArtworkCard(publicId, niceName, tags, width, height, updatedAt, c
       if (daysSinceUpdate <= 12) {
         // Check if image has more than 1 version
         if (versionCount && versionCount > 1) {
-          console.log(`[RIBBON] Adding ribbon for ${publicId}:`, {
-            hoursSinceCreation,
-            daysSinceUpdate,
-            versionCount
-          });
           const ribbon = document.createElement("div");
           ribbon.className = "new-version-ribbon";
           ribbon.textContent = "New version";
           card.appendChild(ribbon);
-        } else {
-          console.log(`[RIBBON] No ribbon for ${publicId} - versionCount check failed:`, {
-            versionCount,
-            versionCountType: typeof versionCount
-          });
         }
-      } else {
-        console.log(`[RIBBON] No ribbon for ${publicId} - too old:`, {
-          daysSinceUpdate
-        });
       }
-    } else {
-      console.log(`[RIBBON] No ribbon for ${publicId} - not updated enough:`, {
-        hoursSinceCreation
-      });
     }
-  } else {
-    console.log(`[RIBBON] No ribbon for ${publicId} - missing dates:`, {
-      updatedAt,
-      createdAt
-    });
   }
 
   card.appendChild(imgEl);
@@ -721,6 +698,10 @@ function initializeNavigation(currentPage) {
   // Determine if we're in a subdirectory - use absolute paths for tag pages
   const isSubdirectory = window.location.pathname.includes('/tag/');
   const imgPath = isSubdirectory ? '/img/reframed.svg' : 'img/reframed.svg';
+  const homePath = '/';
+  const browsePath = isSubdirectory ? '/browse.html' : 'browse.html';
+  const faqPath = isSubdirectory ? '/faq.html' : 'faq.html';
+  const contactPath = isSubdirectory ? '/contact.html' : 'contact.html';
 
   // Insert top navigation bar
   const topBar = `
@@ -729,27 +710,20 @@ function initializeNavigation(currentPage) {
         <img src="${imgPath}" alt="Reframed Logo" class="top-logo">
       </a>
       <ul class="nav-menu">
-        <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
-        <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
-        <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
+        <li class="menu-item home ${currentPage === 'home' ? 'active' : ''}"><a href="${homePath}">Home</a></li>
+        <li class="menu-item browse ${currentPage === 'browse' ? 'active' : ''}"><a href="${browsePath}">Browse</a></li>
+        <li class="menu-item faq ${currentPage === 'faq' ? 'active' : ''}"><a href="${faqPath}">FAQ</a></li>
+        <li class="menu-item contact ${currentPage === 'contact' ? 'active' : ''}"><a href="${contactPath}">Contact</a></li>
       </ul>
-      <div class="tip-button-container"></div>
+      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button">
+        <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
+        <span>Thank me with a tip</span>
+      </a>
     </nav>
   `;
 
   // Insert into page
   document.body.insertAdjacentHTML('afterbegin', topBar);
-
-  // Add Ko-fi button styled like the original widget
-  const tipContainer = document.querySelector('.tip-button-container');
-  if (tipContainer) {
-    tipContainer.innerHTML = `
-      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button">
-        <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
-        <span>Thank me with a tip</span>
-      </a>
-    `;
-  }
 }
 
 
