@@ -635,7 +635,8 @@ aside .own-art:hover {
   left: 8px;
 }
 
-.card:hover .info-icon {
+.card:hover .info-icon,
+.card.mobile-active .info-icon {
   opacity: 1;
 }
 

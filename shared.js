@@ -157,14 +157,40 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   const imageUrl = getImageUrl(publicId);
 
+  // Track if this is a touch device
+  let isTouchDevice = false;
+
+  // Detect touch on first touch event
+  card.addEventListener('touchstart', () => {
+    isTouchDevice = true;
+  }, { once: true, passive: true });
+
   // Add click handler to toggle downloads queue
   card.addEventListener('click', (e) => {
-    // Don't toggle if clicking on artist link
-    if (e.target.classList.contains('artist-link-inline')) {
+    // Don't toggle if clicking on artist link or info icon
+    if (e.target.classList.contains('artist-link-inline') ||
+        e.target.closest('.info-icon')) {
       return;
     }
 
     e.preventDefault();
+
+    // On touch devices, first tap shows hover state, second tap toggles download
+    if (isTouchDevice) {
+      if (!card.classList.contains('mobile-active')) {
+        // First tap - show hover state
+        card.classList.add('mobile-active');
+
+        // Remove mobile-active from other cards
+        document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
+          if (otherCard !== card) {
+            otherCard.classList.remove('mobile-active');
+          }
+        });
+        return;
+      }
+      // Second tap - proceed with download toggle (falls through)
+    }
 
     if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
       if (window.isInDownloads(publicId)) {
@@ -248,6 +274,15 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   return card;
 }
+
+// Remove mobile-active state when tapping outside of cards
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.card')) {
+    document.querySelectorAll('.card.mobile-active').forEach(card => {
+      card.classList.remove('mobile-active');
+    });
+  }
+}, true);
 
 // Generic Cache Helpers
 function loadFromCache(cacheKey, ttlMs) {
