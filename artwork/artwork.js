@@ -109,84 +109,12 @@ function getOrientation(width, height) {
   return 'Square';
 }
 
-// Fetch AI-generated content about artwork or artist using Google Gemini
-async function fetchAIContent(searchTerm, type) {
-  try {
-    // Use Google's Gemini API (free tier available)
-    const GEMINI_API_KEY = 'AIzaSyBeQKdR9fI1J9anEtoy2EmuQhlgywt8zXI';
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    const prompt = type === 'artwork'
-      ? `Write one to two paragraphs about the artwork "${searchTerm}". Focus on the meaning behind the artwork. Write in a simple and honest tone suitable for anyone.`
-      : `Briefly mention the upgringing of the author of "${searchTerm}"`;
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    console.log('Gemini response:', data);
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-      return null;
-    }
-
-    return {
-      title: searchTerm,
-      summary: text,
-      source: 'AI-generated content'
-    };
-  } catch (error) {
-    console.error('Error fetching AI content:', error);
-    return null;
+// Get description from ImageKit custom field
+function getDescriptionFromCustomField(artwork) {
+  // Check if customMetadata exists and has a description field
+  if (artwork.customMetadata && artwork.customMetadata.description) {
+    return artwork.customMetadata.description;
   }
-}
-
-// Try to fetch information about the artwork or artist
-async function fetchArtworkContext(niceName, tags) {
-  const artistName = extractArtistFromTitle(niceName);
-
-  // Try to get info about the artwork first (if title is long enough)
-  const artworkTitle = niceName.includes(' - ') ? niceName.split(' - ')[1]?.trim() : null;
-
-  if (artworkTitle && artworkTitle.length > 3) {
-    const artworkInfo = await fetchAIContent(niceName, 'artwork');
-    if (artworkInfo && artworkInfo.summary.length > 100) {
-      return {
-        type: 'artwork',
-        ...artworkInfo
-      };
-    }
-  }
-
-  // If artwork info not found or not substantial, try artist info
-  if (artistName) {
-    const artistInfo = await fetchAIContent(artistName, 'artist');
-    if (artistInfo) {
-      return {
-        type: 'artist',
-        ...artistInfo
-      };
-    }
-  }
-
   return null;
 }
 
@@ -260,30 +188,31 @@ function renderArtworkDetail(artwork, publicId) {
 
       <div class="artwork-detail-header"><h1 class="artwork-detail-title">${niceName}</h1></div>
 
-      <div id="wikipediaSection" class="wikipedia-content" style="display: none;">
-        <h2 id="wikipediaTitle">Loading...</h2>
-        <div id="wikipediaContent"></div>
+      <div id="descriptionSection" class="description-content" style="display: none;">
+        <h2 id="descriptionTitle"></h2>
+        <div id="descriptionContent"></div>
       </div>
   </div>
   `;
 
-  // Fetch and display AI-generated information asynchronously
-  fetchArtworkContext(niceName, artwork.tags).then(aiInfo => {
-    const aiSection = document.getElementById('wikipediaSection');
-    const aiTitle = document.getElementById('wikipediaTitle');
-    const aiContent = document.getElementById('wikipediaContent');
+  // Display description from ImageKit custom field
+  const artworkDescription = getDescriptionFromCustomField(artwork);
+  if (artworkDescription) {
+    const descSection = document.getElementById('descriptionSection');
+    const descTitle = document.getElementById('descriptionTitle');
+    const descContent = document.getElementById('descriptionContent');
 
-    if (aiInfo && aiSection && aiTitle && aiContent) {
-      aiSection.style.display = 'block';
-      aiTitle.textContent = aiInfo.type === 'artwork' ? '' : 'About the Artist';
+    if (descSection && descTitle && descContent) {
+      descSection.style.display = 'block';
+      descTitle.textContent = '';
 
       // Split into paragraphs for better readability
-      const paragraphs = aiInfo.summary.split('\n').filter(p => p.trim().length > 0);
+      const paragraphs = artworkDescription.split('\n').filter(p => p.trim().length > 0);
       const formattedContent = paragraphs.map(p => `<p>${p}</p>`).join('');
 
-      aiContent.innerHTML = formattedContent;
+      descContent.innerHTML = formattedContent;
     }
-  });
+  }
 
   // Add event listener for toggle download button
   const toggleBtn = document.getElementById('toggleDownloadBtn');
