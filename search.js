@@ -2,7 +2,7 @@
 // shared.js provides: fetchAllImageKitFiles, humanizePublicId, getImageUrl, getThumbnailUrl
 
 // ---------- SEARCH CACHE ----------
-const SEARCH_CACHE_KEY = "reframed_search_cache_v1";
+const SEARCH_CACHE_KEY = "reframed_search_cache_v2";
 let ALL_ARTWORKS = null;
 
 // ---------- LOCALSTORAGE CACHE ----------
@@ -52,14 +52,15 @@ async function fetchAllArtworks() {
   // Fetch from ImageKit
   const files = await fetchAllImageKitFiles();
 
-  // Transform to artwork objects with searchable names and tags
+  // Transform to artwork objects with searchable names, tags, and descriptions
   const artworks = files.map(file => ({
     public_id: file.filePath.substring(1), // Remove leading slash
     width: file.width,
     height: file.height,
     created_at: file.createdAt,
     tags: file.tags || [],
-    searchName: humanizePublicId(file.filePath.substring(1)).toLowerCase()
+    searchName: humanizePublicId(file.filePath.substring(1)).toLowerCase(),
+    description: (file.customMetadata && file.customMetadata.description) ? file.customMetadata.description.toLowerCase() : ''
   }));
 
   // Sort newest first
@@ -80,8 +81,11 @@ function searchArtworks(query, artworks) {
   const searchTerms = query.toLowerCase().trim().split(/\s+/);
 
   return artworks.filter(artwork => {
-    // All search terms must be found in the artwork name
-    return searchTerms.every(term => artwork.searchName.includes(term));
+    // All search terms must be found in either the artwork name or description
+    return searchTerms.every(term =>
+      artwork.searchName.includes(term) ||
+      (artwork.description && artwork.description.includes(term))
+    );
   });
 }
 
