@@ -212,10 +212,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   imgEl.alt = niceName;
 
   // Create info/detail icon
-  const infoIcon = document.createElement("a");
-  // Create clean URL slug: replace spaces with underscores
-  const cleanSlug = niceName.replace(/\s/g, '_');
-  infoIcon.href = `/artwork/#${cleanSlug}`;
+  const infoIcon = document.createElement("button");
   infoIcon.className = "info-icon";
   infoIcon.setAttribute("aria-label", "View artwork details");
   infoIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
@@ -224,6 +221,13 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   infoIcon.addEventListener('click', (e) => {
     e.stopPropagation();
+    e.preventDefault();
+
+    // Open the artwork modal if the function is available
+    if (typeof openArtworkModal === 'function') {
+      const orientation = (height > width) ? 'portrait' : 'landscape';
+      openArtworkModal(publicId, niceName, orientation);
+    }
   });
 
   const caption = document.createElement("div");

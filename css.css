@@ -1726,6 +1726,344 @@ body.modal-open {
   }
 }
 
+/* Artwork Detail Modal
+-----------------------------*/
+.artwork-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 10000;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.artwork-modal.show {
+  opacity: 1;
+}
+
+.artwork-modal-scroll-spacer {
+  height: 300px;
+  width: 100%;
+}
+
+.artwork-modal-close {
+  position: fixed;
+  top: 30px;
+  right: 40px;
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: var(--color-txt);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.artwork-modal-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: var(--color-spot);
+  transform: scale(1.05);
+}
+
+.artwork-modal-image-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 100px 40px 100px;
+  box-sizing: border-box;
+  z-index: 1;
+  pointer-events: none;
+  transition: padding 0.1s ease-out;
+}
+
+.artwork-modal-image-container img {
+  max-width: 100%;
+  max-height: 60vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.4s ease, transform 0.3s ease;
+  will-change: transform, opacity;
+}
+
+.artwork-modal-image-container img.loaded {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.artwork-modal-image-container img.closing {
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.artwork-modal-content {
+  position: relative;
+  z-index: 2;
+  margin-top: 60vh;
+  min-height: 100vh;
+  opacity: 0;
+  transform: translateY(50px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.artwork-modal-content.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.artwork-modal-info {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px;
+  cursor: default;
+}
+
+.artwork-modal-title {
+  font-size: 42px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  margin: 0 0 12px;
+  color: var(--color-txt);
+  text-align: center;
+}
+
+.artwork-modal-subtitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.artwork-modal-artist {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'Lexend', sans-serif;
+  transition: color 0.2s ease;
+}
+
+.artwork-modal-artist:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.artwork-modal-separator {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.artwork-modal-file-size {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.artwork-modal-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 50px;
+}
+
+.btn-modal-action {
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-modal-primary {
+  background: var(--color-spot);
+  color: var(--color-bg);
+}
+
+.btn-modal-primary:hover {
+  background: #45b8e8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(86, 204, 255, 0.4);
+}
+
+.btn-modal-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-txt);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-modal-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.artwork-modal-description {
+  margin-top: 50px;
+}
+
+.artwork-modal-description-text {
+  font-size: 24px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: left;
+}
+
+.artwork-modal-description-text p {
+  margin: 0 0 20px;
+  text-align: left;
+  font-size: 24px;
+}
+
+.artwork-modal-description-text p:last-child {
+  margin-bottom: 0;
+}
+
+.artwork-modal-loading,
+.artwork-modal-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--color-txt);
+  padding: 40px;
+}
+
+.artwork-modal-loading .spinner {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 30px;
+  border-width: 3px;
+}
+
+.artwork-modal-loading p {
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.artwork-modal-error p {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.btn-close-modal {
+  padding: 12px 28px;
+  background: var(--color-spot);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-close-modal:hover {
+  background: #45b8e8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(86, 204, 255, 0.4);
+}
+
+/* Mobile adjustments for artwork modal */
+@media (max-width: 768px) {
+  .artwork-modal-close {
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .artwork-modal-close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .artwork-modal-image-container {
+    padding: 80px 20px 20px;
+    min-height: 70vh;
+  }
+
+  .artwork-modal-content {
+    margin-top: 0;
+  }
+
+  .artwork-modal-info {
+    padding: 30px 20px;
+  }
+
+  .artwork-modal-title {
+    font-size: 28px;
+    letter-spacing: 1px;
+  }
+
+  .artwork-modal-subtitle {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .artwork-modal-artist,
+  .artwork-modal-file-size {
+    font-size: 16px;
+  }
+
+  .artwork-modal-separator {
+    display: none;
+  }
+
+  .artwork-modal-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-modal-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .artwork-modal-description-text {
+    font-size: 18px;
+  }
+
+  .artwork-modal-description-text p {
+    font-size: 18px;
+  }
+}
+
 /* Search Page Styles
 -----------------------------*/
 .search-container {
