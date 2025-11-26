@@ -198,15 +198,7 @@ function getLastName(name) {
 function getAlphabetSection(name) {
   const lastName = getLastName(name);
   const firstChar = lastName[0].toUpperCase();
-  if (firstChar >= 'A' && firstChar <= 'B') return 'A-B';
-  if (firstChar >= 'C' && firstChar <= 'D') return 'C-D';
-  if (firstChar >= 'E' && firstChar <= 'F') return 'E-F';
-  if (firstChar >= 'G' && firstChar <= 'I') return 'G-I';
-  if (firstChar >= 'J' && firstChar <= 'L') return 'J-L';
-  if (firstChar >= 'M' && firstChar <= 'P') return 'M-P';
-  if (firstChar >= 'Q' && firstChar <= 'T') return 'Q-T';
-  if (firstChar >= 'U' && firstChar <= 'Z') return 'U-Z';
-  return 'A-B'; // default for non-alphabetic
+  return firstChar;
 }
 
 function renderArtistsGrid(artistsList) {
@@ -220,27 +212,23 @@ function renderArtistsGrid(artistsList) {
     return lastNameA.localeCompare(lastNameB);
   });
 
-  // Group by alphabet sections
-  const sections = {
-    'A-B': [],
-    'C-D': [],
-    'E-F': [],
-    'G-I': [],
-    'J-L': [],
-    'M-P': [],
-    'Q-T': [],
-    'U-Z': []
-  };
+  // Group by individual letters
+  const sections = {};
+  for (let i = 65; i <= 90; i++) {
+    sections[String.fromCharCode(i)] = [];
+  }
 
   for (const artist of sortedArtists) {
     const section = getAlphabetSection(artist.label);
-    sections[section].push(artist);
+    if (sections[section]) {
+      sections[section].push(artist);
+    }
   }
 
   const frag = document.createDocumentFragment();
 
   // Render each section
-  for (const [sectionName, artists] of Object.entries(sections)) {
+  for (const [letter, artists] of Object.entries(sections)) {
     if (artists.length === 0) continue;
 
     // Add artist cards, assigning section ID to the first one
@@ -249,7 +237,7 @@ function renderArtistsGrid(artistsList) {
 
       // Assign section ID to first card in each section for navigation
       if (index === 0) {
-        card.id = `section-${sectionName}`;
+        card.id = `section-${letter}`;
       }
 
       frag.appendChild(card);
@@ -336,24 +324,28 @@ function setupLazyThumbObserver() {
 
 // ---------- ALPHABET NAVIGATION ----------
 function setupAlphabetNavigation() {
-  const links = document.querySelectorAll('.alphabet-link');
-  const sectionElements = Array.from(links).map(link => {
-    const targetId = link.getAttribute('href').substring(1);
-    return document.getElementById(targetId);
-  }).filter(el => el !== null);
+  const markers = document.querySelectorAll('.alphabet-marker');
+  const scrollbar = document.querySelector('.alphabet-scrollbar');
 
-  // Handle click navigation
-  links.forEach(link => {
-    link.addEventListener('click', (e) => {
+  markers.forEach(marker => {
+    marker.addEventListener('click', (e) => {
       e.preventDefault();
-      const targetId = link.getAttribute('href').substring(1); // Remove #
-      const targetElement = document.getElementById(targetId);
+      const letter = marker.textContent.trim();
+      let targetId = `section-${letter}`;
+      let targetElement = document.getElementById(targetId);
+
+      // If the letter doesn't exist, find the previous letter that does
+      if (!targetElement) {
+        const letterCode = letter.charCodeAt(0);
+        for (let i = letterCode - 1; i >= 65; i--) {
+          const prevLetter = String.fromCharCode(i);
+          targetElement = document.getElementById(`section-${prevLetter}`);
+          if (targetElement) break;
+        }
+      }
 
       if (targetElement) {
-        // Scroll to the first card in the section with offset
-        const yOffset = -120; // Offset for fixed headers/navigation
-        const y = targetElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
+        const y = targetElement.getBoundingClientRect().top + window.pageYOffset - 100;
         window.scrollTo({
           top: y,
           behavior: 'smooth'
@@ -362,40 +354,71 @@ function setupAlphabetNavigation() {
     });
   });
 
-  // Track which section is currently in view
-  const observer = new IntersectionObserver((entries) => {
-    // Find the section that's most visible
-    let maxRatio = 0;
-    let mostVisibleSection = null;
+  // Mobile scroll visibility logic
+  let scrollTimeout;
+  let lastScrollY = window.scrollY;
+  let scrollVelocity = 0;
+  const VELOCITY_THRESHOLD = 80;
 
-    entries.forEach(entry => {
-      if (entry.intersectionRatio > maxRatio) {
-        maxRatio = entry.intersectionRatio;
-        mostVisibleSection = entry.target;
+  const handleScroll = () => {
+    const currentScrollY = window.scrollY;
+    scrollVelocity = Math.abs(currentScrollY - lastScrollY);
+    lastScrollY = currentScrollY;
+
+    // Show scrollbar if scrolling fast on mobile
+    if (window.innerWidth <= 768 && scrollVelocity > VELOCITY_THRESHOLD) {
+      scrollbar.classList.add('visible');
+
+      // Clear existing timeout
+      clearTimeout(scrollTimeout);
+
+      // Hide after 3 seconds of no scrolling
+      scrollTimeout = setTimeout(() => {
+        scrollbar.classList.remove('visible');
+      }, 3000);
+    }
+  };
+
+  // Track active section based on scroll position
+  const updateActiveMarker = () => {
+    const scrollPos = window.scrollY + 150;
+    let activeSection = null;
+
+    // Find all section elements
+    const sections = [];
+    markers.forEach(marker => {
+      const letter = marker.textContent.trim();
+      const element = document.getElementById(`section-${letter}`);
+      if (element) {
+        sections.push({ letter, element, marker });
       }
     });
 
-    // Update active state if we have a clearly visible section
-    if (mostVisibleSection && maxRatio > 0) {
-      const sectionId = mostVisibleSection.id;
+    // Find which section we're currently in
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      const nextSection = sections[i + 1];
+      const sectionTop = section.element.offsetTop;
+      const sectionBottom = nextSection ? nextSection.element.offsetTop : document.body.scrollHeight;
 
-      // Remove active class from all links
-      links.forEach(link => link.classList.remove('active'));
-
-      // Add active class to the corresponding link
-      const activeLink = document.querySelector(`.alphabet-link[href="#${sectionId}"]`);
-      if (activeLink) {
-        activeLink.classList.add('active');
+      if (scrollPos >= sectionTop && scrollPos < sectionBottom) {
+        activeSection = section;
+        break;
       }
     }
-  }, {
-    root: null,
-    rootMargin: '-150px 0px -50% 0px', // Trigger when section is near the top
-    threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-  });
 
-  // Observe all section elements
-  sectionElements.forEach(section => observer.observe(section));
+    // Update marker states
+    markers.forEach(m => m.classList.remove('active'));
+    if (activeSection) {
+      activeSection.marker.classList.add('active');
+    }
+
+    // Handle mobile visibility
+    handleScroll();
+  };
+
+  window.addEventListener('scroll', updateActiveMarker, { passive: true });
+  updateActiveMarker();
 }
 
 // ---------- MAIN INIT ----------
