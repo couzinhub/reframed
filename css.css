@@ -76,46 +76,65 @@ p {
   flex-wrap: wrap;
 }
 
-/* Alphabet Navigation */
-.alphabet-nav {
+/* Alphabet Scrollbar */
+.alphabet-scrollbar {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin: -20px -20px 40px;
-  flex-wrap: wrap;
-  position: sticky;
-  top: 0;
-  background: var(--color-bg);
-  padding: 20px 12px;
-  z-index: 10;
-  backdrop-filter: blur(12px);
-  background: rgba(12, 27, 68, 0.95);
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
 }
 
-.alphabet-link {
-  display: inline-block;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 32px;
-  color: var(--color-txt);
+.alphabet-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 1px;
   transition: all 0.2s ease;
 }
 
-.alphabet-link:hover {
-  background: rgba(86, 204, 255, 0.1);
-  border-color: var(--color-spot);
+.alphabet-marker:hover {
   color: var(--color-spot);
+  transform: scale(1.2);
 }
 
-.alphabet-link.active {
-  background: var(--color-spot);
-  border-color: var(--color-spot);
-  color: var(--color-bg);
+.alphabet-marker.active {
+  color: var(--color-spot);
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .alphabet-scrollbar {
+    right: -20px;
+    padding: 12px 8px;
+    background: rgba(12, 27, 68, 0.5);
+    backdrop-filter: blur(8px);
+    border-radius: 12px 0 0 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: right 0.3s ease, opacity 0.3s ease;
+    gap: 6px;
+  }
+
+  .alphabet-scrollbar.visible {
+    right: 0;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .alphabet-marker {
+    width: 20px;
+    height: 18px;
+    font-size: 10px;
+  }
 }
 
 .tag-status {
@@ -492,7 +511,7 @@ aside .own-art:hover {
 
 #artistsGrid, #collectionsGrid, .tag-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 10px;
 }
 
@@ -967,9 +986,6 @@ aside .own-art:hover {
 -----------------------------*/
 
 @media (max-width: 1100px) {
-  body {
-    padding: 30px 20px;
-  }
 
   .home h1,
   .recently-added-title {
@@ -1165,6 +1181,9 @@ aside .own-art:hover {
     max-width: 100%;
     height: auto;
   }
+  .card.artist {
+    margin-right: 0;
+  }
 
   /* Artwork caption mobile adjustments */
   .artwork-title {
@@ -1178,6 +1197,15 @@ aside .own-art:hover {
 
   .artist-line {
     display: none;
+  }
+
+  .artist-name,
+  .card.artist:hover .artist-name {
+    font-size: 18px;
+  }
+
+  .download-button {
+    font-size: 14px;
   }
 
   .caption-text {
@@ -1264,7 +1292,7 @@ aside .own-art:hover {
     padding: 4px;
   }
   .card.artist {
-    margin: 0;
+    margin: 0 0 10px;
     padding: 0;
   }
 
