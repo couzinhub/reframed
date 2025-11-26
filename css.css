@@ -1,6 +1,10 @@
 /* Base styles
 -----------------------------*/
 
+html {
+  scrollbar-gutter: stable;
+}
+
 :root {
   color-scheme: dark;
   --sidebar-width: 250px;
@@ -528,28 +532,53 @@ aside .own-art:hover {
   box-shadow: inset 0px 0 1px 1px rgba(0, 0, 0, .7);
 }
 
-.artwork::after {
-  content: "Download";
-  display: block;
-  background: rgba(0, 0, 0, .7) var(--icon-plus-white) no-repeat center 10px;
-  background-size: 24px 24px;
+/* Download button - centered */
+.download-button {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  min-width: fit-content;
-  white-space: nowrap;
-  border-radius: 8px;
+  width: 120px;
+  border-radius: 12px;
   color: var(--color-txt);
   text-align: center;
-  padding: 36px 12px 8px;
+  padding: 40px 20px 12px;
+  display: block;
+  background: rgba(0, 0, 0, 0.8);
+  border: none;
+  cursor: pointer;
   opacity: 0;
-  transition: opacity 150ms ease;
-
+  transition: opacity 0.2s ease, background 0.2s ease;
+  z-index: 10;
+  pointer-events: none;
+  font-family: 'Lexend', sans-serif;
+  font-size: 16px;
 }
-.artwork:hover::after,
-.artwork.mobile-active::after {
+
+.download-button svg {
+  fill: white;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.card:hover .download-button,
+.card.mobile-active .download-button {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.download-button:hover {
+  background: rgba(0, 0, 0, 1);
+}
+
+.download-button.in-downloads {
+  background: black;
+}
+
+.download-button.in-downloads:hover {
+  background: rgba(0, 0, 0, 0.9);
 }
 
 /* Download spinner overlay */
@@ -581,17 +610,27 @@ aside .own-art:hover {
 
 .artwork-title {
   position: absolute;
-  bottom: 2px;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 2px;
-  padding: 0.4rem;
+  bottom: 6px;
+  left: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  padding: 12px;
+  padding-left: 60px;
   text-align: left;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.2s ease, background 0.2s ease;
   pointer-events: none;
   color: var(--color-txt);
+  border: none;
+  cursor: pointer;
+  font-family: 'Lexend', sans-serif;
+  font-size: 16px;
+  width: calc(100% - 8px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  outline: none;
 }
 
 .card:hover .artwork-title,
@@ -600,48 +639,31 @@ aside .own-art:hover {
   pointer-events: auto;
 }
 
-.card a.artist-link-inline {
-  display: inline;
-  color: var(--color-txt);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.artwork-title:hover {
+  background: rgba(0, 0, 0, 1);
 }
 
-/* Info icon (for detail page link) */
-.info-icon {
+.caption-info-icon {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  left: 20px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease, background 0.2s ease;
-  z-index: 10;
-  padding: 0;
-  text-decoration: none;
 }
 
-.info-icon svg {
+.caption-info-icon svg {
   fill: white;
-  position: absolute;
-  top: 8px;
-  left: 8px;
 }
 
-.card:hover .info-icon,
-.card.mobile-active .info-icon {
-  opacity: 1;
+.caption-text {
+  flex: 1;
+  text-align: left;
 }
 
-.info-icon:hover {
-  background: rgba(0, 0, 0, 0.8);
+.artist-line {
+  font-size: 14px;
+  opacity: 0.7;
+  font-weight: 300;
+  letter-spacing: .5px;
 }
 
 .card.artist,
@@ -1144,6 +1166,26 @@ aside .own-art:hover {
     height: auto;
   }
 
+  /* Artwork caption mobile adjustments */
+  .artwork-title {
+    font-size: 16px;
+    padding: 8px;
+    padding-left: 44px;
+  }
+  .caption-info-icon {
+    left: 12px;
+  } 
+
+  .artist-line {
+    display: none;
+  }
+
+  .caption-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   /* Homepage title */
   .home h1,
   .recently-added-title {
@@ -1333,16 +1375,6 @@ aside .own-art:hover {
   background-size: 20px 20px;
 }
 
-.artwork.in-downloads::after {
-  content: "Added to Downloads";
-  background-image: var(--icon-checkmark-white);
-}
-
-/* Change hover text for items not in downloads */
-.artwork:not(.in-downloads)::after {
-  content: "Add to Downloads";
-}
-
 /* Downloads Modal */
 #downloadsModal {
   display: none;
@@ -1356,6 +1388,13 @@ aside .own-art:hover {
   z-index: 1000;
   padding: 20px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#downloadsModal::-webkit-scrollbar {
+  display: none;
 }
 
 #downloadsModal.show {
@@ -1640,6 +1679,7 @@ aside .own-art:hover {
 /* Prevent body scroll when modal is open */
 body.modal-open {
   overflow: hidden;
+  background-color: #000;
 }
 
 /* Mobile adjustments for downloads */
@@ -1740,6 +1780,13 @@ body.modal-open {
   overscroll-behavior: contain;
   opacity: 0;
   transition: opacity 0.3s ease;
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.artwork-modal::-webkit-scrollbar {
+  display: none;
 }
 
 .artwork-modal.show {
@@ -1754,7 +1801,7 @@ body.modal-open {
 .artwork-modal-close {
   position: fixed;
   top: 30px;
-  right: 40px;
+  right: 15px;
   width: 48px;
   height: 48px;
   background: rgba(0, 0, 0, 0.6);
@@ -1910,8 +1957,6 @@ body.modal-open {
 
 .btn-modal-primary:hover {
   background: #45b8e8;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(86, 204, 255, 0.4);
 }
 
 .btn-modal-secondary {

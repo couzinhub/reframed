@@ -89,6 +89,7 @@ async function openArtworkModal(publicId, niceName, orientation) {
   const artistName = extractArtistFromTitle(niceName);
   let artworkTitle = niceName;
   let artistInfo = '';
+  let artistTagUrl = '';
 
   if (artistName) {
     // Split "Artist - Title" into separate parts
@@ -96,6 +97,11 @@ async function openArtworkModal(publicId, niceName, orientation) {
     if (titleParts.length > 1) {
       artworkTitle = titleParts.slice(1).join(' - ').trim();
       artistInfo = artistName;
+      // Create tag URL for artist
+      const prettyTag = artistName.trim()
+        .replace(/-/g, "%2D")
+        .replace(/\s+/g, "-");
+      artistTagUrl = `/tag/#${prettyTag}`;
     }
   }
 
@@ -119,7 +125,7 @@ async function openArtworkModal(publicId, niceName, orientation) {
       <div class="artwork-modal-info">
         <h1 class="artwork-modal-title">${artworkTitle}</h1>
         <div class="artwork-modal-subtitle">
-          ${artistInfo ? `<button class="artwork-modal-artist" data-artist="${artistInfo}">${artistInfo}</button>` : ''}
+          ${artistInfo ? `<a href="${artistTagUrl}" class="artwork-modal-artist" id="artistLink">${artistInfo}</a>` : ''}
           ${artistInfo && artwork.size ? '<span class="artwork-modal-separator"> • </span>' : ''}
           ${artwork.size ? `<span class="artwork-modal-file-size">${formatFileSize(artwork.size)}</span>` : ''}
         </div>
@@ -216,7 +222,7 @@ async function openArtworkModal(publicId, niceName, orientation) {
         downloadBtn.classList.add('btn-modal-secondary');
       } else {
         window.addToDownloads(publicId, niceName, imageUrl, orientation || 'landscape');
-        downloadBtn.textContent = 'Remove from Downloads';
+        downloadBtn.textContent = 'Added to Downloads';
         downloadBtn.classList.remove('btn-modal-secondary');
         downloadBtn.classList.add('btn-modal-primary');
       }
@@ -250,16 +256,11 @@ async function openArtworkModal(publicId, niceName, orientation) {
     }
   });
 
-  // Artist name click handler
-  const artistBtn = modal.querySelector('.artwork-modal-artist');
-  if (artistBtn) {
-    artistBtn.addEventListener('click', () => {
-      const artist = artistBtn.dataset.artist;
-      if (artist) {
-        closeArtworkModal();
-        // Navigate to artists page with the artist
-        window.location.href = `/artists.html#${encodeURIComponent(artist)}`;
-      }
+  // Artist link handler - close modal when clicked
+  const artistLink = modal.querySelector('#artistLink');
+  if (artistLink) {
+    artistLink.addEventListener('click', () => {
+      closeArtworkModal();
     });
   }
 }

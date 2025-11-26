@@ -165,11 +165,11 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     isTouchDevice = true;
   }, { once: true, passive: true });
 
-  // Add click handler to toggle downloads queue
+  // Make card clickable to toggle downloads
   card.addEventListener('click', (e) => {
-    // Don't toggle if clicking on artist link or info icon
-    if (e.target.classList.contains('artist-link-inline') ||
-        e.target.closest('.info-icon')) {
+    // Don't toggle if clicking on caption or download button
+    if (e.target.closest('.artwork-title') ||
+        e.target.closest('.download-button')) {
       return;
     }
 
@@ -192,36 +192,140 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
       // Second tap - proceed with download toggle (falls through)
     }
 
+    // Toggle downloads
     if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
       if (window.isInDownloads(publicId)) {
         window.removeFromDownloads(publicId);
       } else {
         window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape');
       }
+      // Update button state after toggling
+      updateDownloadButton();
     }
   });
-
-  // Set initial state if in downloads
-  if (typeof window.isInDownloads === 'function' && window.isInDownloads(publicId)) {
-    card.classList.add('in-downloads');
-  }
 
   const imgEl = document.createElement("img");
   imgEl.loading = "lazy";
   imgEl.src = getThumbnailUrl(publicId, thumbWidth);
   imgEl.alt = niceName;
 
-  // Create info/detail icon
-  const infoIcon = document.createElement("button");
-  infoIcon.className = "info-icon";
-  infoIcon.setAttribute("aria-label", "View artwork details");
+  // Create download button
+  const downloadButton = document.createElement("button");
+  downloadButton.className = "download-button";
+  downloadButton.setAttribute("aria-label", "Add to downloads");
+
+  // Function to update button state
+  const updateDownloadButton = () => {
+    const inDownloads = typeof window.isInDownloads === 'function' && window.isInDownloads(publicId);
+
+    if (inDownloads) {
+      downloadButton.classList.add('in-downloads');
+      downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+        <path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/>
+      </svg>
+      <div>Added to Downloads</div>`;
+      downloadButton.setAttribute("aria-label", "Remove from downloads");
+    } else {
+      downloadButton.classList.remove('in-downloads');
+      downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+      </svg>
+      <div>Add to Downloads</div>`;
+      downloadButton.setAttribute("aria-label", "Add to downloads");
+    }
+  };
+
+  // Set initial state
+  updateDownloadButton();
+
+  downloadButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    // On touch devices, first tap activates card, second tap toggles download
+    if (isTouchDevice && !card.classList.contains('mobile-active')) {
+      // First tap - activate this card and deactivate others
+      card.classList.add('mobile-active');
+      document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
+        if (otherCard !== card) {
+          otherCard.classList.remove('mobile-active');
+        }
+      });
+      return;
+    }
+
+    if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
+      if (window.isInDownloads(publicId)) {
+        window.removeFromDownloads(publicId);
+      } else {
+        window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape');
+      }
+      // Update button state after toggling
+      updateDownloadButton();
+    }
+  });
+
+  const caption = document.createElement("button");
+  caption.className = "artwork-title";
+  caption.setAttribute("aria-label", "View artwork details");
+
+  // Add info icon to caption
+  const infoIcon = document.createElement("span");
+  infoIcon.className = "caption-info-icon";
   infoIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
     <path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/>
   </svg>`;
 
-  infoIcon.addEventListener('click', (e) => {
+  // Check if title contains artist name (format: "Artist - Title")
+  const artistName = extractArtistFromTitle(niceName);
+  const artworkTitle = artistName ? niceName.substring(artistName.length).replace(/^\s*-\s*/, '') : niceName;
+
+  // Create caption content container
+  const captionText = document.createElement("span");
+  captionText.className = "caption-text";
+
+  if (artistName && artworkTitle) {
+    // Format as "[artwork]\nby [artist]"
+    // Truncate artwork title to 90 characters
+    const truncatedTitle = artworkTitle.length > 90
+      ? artworkTitle.substring(0, 90) + '...'
+      : artworkTitle;
+
+    captionText.appendChild(document.createTextNode(truncatedTitle));
+    captionText.appendChild(document.createElement('br'));
+
+    const artistLine = document.createElement('span');
+    artistLine.className = 'artist-line';
+    artistLine.textContent = 'by ' + artistName;
+    captionText.appendChild(artistLine);
+  } else {
+    // No artist in title, just show title
+    // Truncate to 90 characters
+    const truncatedTitle = niceName.length > 90
+      ? niceName.substring(0, 90) + '...'
+      : niceName;
+    captionText.textContent = truncatedTitle;
+  }
+
+  caption.appendChild(infoIcon);
+  caption.appendChild(captionText);
+
+  // Make caption clickable to open modal
+  caption.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
+
+    // On touch devices, first tap activates card, second tap opens modal
+    if (isTouchDevice && !card.classList.contains('mobile-active')) {
+      // First tap - activate this card and deactivate others
+      card.classList.add('mobile-active');
+      document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
+        if (otherCard !== card) {
+          otherCard.classList.remove('mobile-active');
+        }
+      });
+      return;
+    }
 
     // Open the artwork modal if the function is available
     if (typeof openArtworkModal === 'function') {
@@ -230,50 +334,8 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     }
   });
 
-  const caption = document.createElement("div");
-  caption.className = "artwork-title";
-
-  // Check if title contains artist name (format: "Artist - Title")
-  const artistName = extractArtistFromTitle(niceName);
-
-  if (artistName && tags && tags.length > 0) {
-    // Find matching tag (case-insensitive)
-    const matchingTag = tags.find(tag =>
-      !tag.toLowerCase().startsWith('collection - ') &&
-      tag.toLowerCase() === artistName.toLowerCase()
-    );
-
-    if (matchingTag) {
-      // Create clickable artist name
-      const prettyTag = matchingTag.trim()
-        .replace(/-/g, "%2D")
-        .replace(/\s+/g, "-");
-
-      const artistLink = document.createElement("a");
-      artistLink.href = `/tag/#${prettyTag}`;
-      artistLink.className = "artist-link-inline";
-      artistLink.textContent = artistName;
-
-      // Prevent click from toggling download
-      artistLink.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-
-      // Add artist link and the rest of the title (including " - " separator)
-      const remainingText = niceName.substring(artistName.length);
-      caption.appendChild(artistLink);
-      caption.appendChild(document.createTextNode(remainingText));
-    } else {
-      // No matching tag, just show title
-      caption.textContent = niceName;
-    }
-  } else {
-    // No artist in title or no tags, just show title
-    caption.textContent = niceName;
-  }
-
   card.appendChild(imgEl);
-  card.appendChild(infoIcon);
+  card.appendChild(downloadButton);
   card.appendChild(caption);
 
   return card;
