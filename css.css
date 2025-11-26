@@ -1972,7 +1972,7 @@ body.modal-open {
 }
 
 .artwork-modal-description {
-  margin-top: 50px;
+  margin: 50px auto 120px;
 }
 
 .artwork-modal-description-text {
