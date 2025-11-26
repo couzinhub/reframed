@@ -111,6 +111,11 @@ async function openArtworkModal(publicId, niceName, orientation) {
   const isInDownloads = typeof window.isInDownloads === 'function' && window.isInDownloads(publicId);
 
   modal.innerHTML = `
+    <div class="artwork-modal-loading">
+      <div class="spinner"></div>
+      <p>Loading artwork...</p>
+    </div>
+
     <button class="artwork-modal-close" aria-label="Close">
       <svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor">
         <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
@@ -153,8 +158,14 @@ async function openArtworkModal(publicId, niceName, orientation) {
   // Add image load handler for animations
   const artworkImage = modal.querySelector('.artwork-modal-image');
   const contentDiv = modal.querySelector('.artwork-modal-content');
+  const loadingDiv = modal.querySelector('.artwork-modal-loading');
 
   artworkImage.addEventListener('load', () => {
+    // Hide spinner
+    if (loadingDiv) {
+      loadingDiv.remove();
+    }
+
     // Add loaded class to trigger zoom animation
     artworkImage.classList.add('loaded');
 
@@ -218,13 +229,9 @@ async function openArtworkModal(publicId, niceName, orientation) {
       if (window.isInDownloads(publicId)) {
         window.removeFromDownloads(publicId);
         downloadBtn.textContent = 'Add to Downloads';
-        downloadBtn.classList.remove('btn-modal-primary');
-        downloadBtn.classList.add('btn-modal-secondary');
       } else {
         window.addToDownloads(publicId, niceName, imageUrl, orientation || 'landscape');
         downloadBtn.textContent = 'Added to Downloads';
-        downloadBtn.classList.remove('btn-modal-secondary');
-        downloadBtn.classList.add('btn-modal-primary');
       }
     }
   });
@@ -269,6 +276,9 @@ async function openArtworkModal(publicId, niceName, orientation) {
 function closeArtworkModal() {
   if (!currentArtworkModal) return;
 
+  // Remove modal-open class immediately to restore blue background
+  document.body.classList.remove('modal-open');
+
   // Trigger zoom-out animation on image
   const artworkImage = currentArtworkModal.querySelector('.artwork-modal-image');
   if (artworkImage) {
@@ -285,7 +295,6 @@ function closeArtworkModal() {
       currentArtworkModal.parentNode.removeChild(currentArtworkModal);
     }
     currentArtworkModal = null;
-    document.body.classList.remove('modal-open');
   }, 300);
 }
 

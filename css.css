@@ -535,7 +535,7 @@ aside .own-art:hover {
 /* Download button - centered */
 .download-button {
   position: absolute;
-  top: 50%;
+  top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 120px;
@@ -1168,7 +1168,7 @@ aside .own-art:hover {
 
   /* Artwork caption mobile adjustments */
   .artwork-title {
-    font-size: 16px;
+    font-size: 14px;
     padding: 8px;
     padding-left: 44px;
   }
@@ -1288,8 +1288,9 @@ aside .own-art:hover {
 /* Floating Downloads Button */
 #downloadsButton {
   position: fixed;
-  top: 30px;
-  right: -300px; /* Hidden by default */
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(200px); /* Hidden by default */
   z-index: 100;
   background: var(--color-sidebar);
   border: 2px solid var(--color-spot);
@@ -1303,19 +1304,19 @@ aside .own-art:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: right 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* Show button when it has items - desktop (above mobile) */
 @media (min-width: 769px) {
   #downloadsButton.has-items {
-    right: 30px;
+    transform: translateX(-50%) translateY(0);
   }
 
   #downloadsButton:hover {
     border-color: var(--color-txt);
-    transform: translateY(-2px);
+    transform: translateX(-50%) translateY(-2px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
   }
 }
@@ -1356,23 +1357,30 @@ aside .own-art:hover {
   position: relative;
 }
 
-/* Checkmark circle badge - shared styles */
-.artwork.in-downloads::before {
-  content: '';
+/* Checkmark circle badge - clickable button */
+.in-downloads-checkmark {
   position: absolute;
   top: 10px;
   right: 10px;
   width: 32px;
   height: 32px;
-  background: var(--color-spot);
+  background: rgba(0, 0, 0, 0.85);
   border-radius: 50%;
-  border: 2px solid black;
-  z-index: 5;
+  border: 2px solid var(--color-spot);
+  z-index: 15;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  background-image: var(--icon-checkmark-black);
+  background-image: var(--icon-checkmark-white);
   background-repeat: no-repeat;
   background-position: center;
   background-size: 20px 20px;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.in-downloads-checkmark:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 /* Downloads Modal */
@@ -1968,7 +1976,6 @@ body.modal-open {
 .btn-modal-secondary:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
 }
 
 .artwork-modal-description {

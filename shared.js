@@ -160,47 +160,53 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   // Track if this is a touch device
   let isTouchDevice = false;
 
-  // Detect touch on first touch event
-  card.addEventListener('touchstart', () => {
-    isTouchDevice = true;
-  }, { once: true, passive: true });
+  // Track touch for scroll detection
+  let touchStartY = 0;
+  let touchMoved = false;
+  let justActivated = false;
 
-  // Make card clickable to toggle downloads
-  card.addEventListener('click', (e) => {
-    // Don't toggle if clicking on caption or download button
-    if (e.target.closest('.artwork-title') ||
-        e.target.closest('.download-button')) {
+  // Detect touch on first touch event and show hover state
+  card.addEventListener('touchstart', (e) => {
+    isTouchDevice = true;
+    touchStartY = e.touches[0].clientY;
+    touchMoved = false;
+
+    // Don't show hover state if touching the buttons directly
+    if (e.target.closest('.artwork-title') || e.target.closest('.download-button')) {
+      return;
+    }
+  }, { passive: true });
+
+  card.addEventListener('touchmove', (e) => {
+    const touchY = e.touches[0].clientY;
+    if (Math.abs(touchY - touchStartY) > 10) {
+      touchMoved = true;
+    }
+  }, { passive: true });
+
+  card.addEventListener('touchend', (e) => {
+    // Don't show hover state if touching the buttons directly
+    if (e.target.closest('.artwork-title') || e.target.closest('.download-button')) {
       return;
     }
 
-    e.preventDefault();
+    // Only activate if it wasn't a scroll
+    if (!touchMoved && !card.classList.contains('mobile-active')) {
+      e.preventDefault(); // Prevent click from firing
+      justActivated = true;
+      card.classList.add('mobile-active');
 
-    // On touch devices, first tap shows hover state, second tap toggles download
-    if (isTouchDevice) {
-      if (!card.classList.contains('mobile-active')) {
-        // First tap - show hover state
-        card.classList.add('mobile-active');
+      // Remove mobile-active from other cards
+      document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
+        if (otherCard !== card) {
+          otherCard.classList.remove('mobile-active');
+        }
+      });
 
-        // Remove mobile-active from other cards
-        document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
-          if (otherCard !== card) {
-            otherCard.classList.remove('mobile-active');
-          }
-        });
-        return;
-      }
-      // Second tap - proceed with download toggle (falls through)
-    }
-
-    // Toggle downloads
-    if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
-      if (window.isInDownloads(publicId)) {
-        window.removeFromDownloads(publicId);
-      } else {
-        window.addToDownloads(publicId, niceName, imageUrl, isPortrait ? 'portrait' : 'landscape');
-      }
-      // Update button state after toggling
-      updateDownloadButton();
+      // Reset flag after a short delay
+      setTimeout(() => {
+        justActivated = false;
+      }, 100);
     }
   });
 
@@ -208,6 +214,29 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   imgEl.loading = "lazy";
   imgEl.src = getThumbnailUrl(publicId, thumbWidth);
   imgEl.alt = niceName;
+
+  // Create checkmark badge for in-downloads state
+  const checkmarkBadge = document.createElement("button");
+  checkmarkBadge.className = "in-downloads-checkmark";
+  checkmarkBadge.setAttribute("aria-label", "Remove from downloads");
+  checkmarkBadge.style.display = "none";
+
+  // Function to update checkmark visibility
+  const updateCheckmarkVisibility = () => {
+    const inDownloads = typeof window.isInDownloads === 'function' && window.isInDownloads(publicId);
+    checkmarkBadge.style.display = inDownloads ? 'block' : 'none';
+  };
+
+  checkmarkBadge.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (typeof window.removeFromDownloads === 'function') {
+      window.removeFromDownloads(publicId);
+      updateDownloadButton();
+      updateCheckmarkVisibility();
+    }
+  });
 
   // Create download button
   const downloadButton = document.createElement("button");
@@ -237,20 +266,14 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   // Set initial state
   updateDownloadButton();
+  updateCheckmarkVisibility();
 
   downloadButton.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
 
-    // On touch devices, first tap activates card, second tap toggles download
+    // On touch devices, only work if card is already active
     if (isTouchDevice && !card.classList.contains('mobile-active')) {
-      // First tap - activate this card and deactivate others
-      card.classList.add('mobile-active');
-      document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
-        if (otherCard !== card) {
-          otherCard.classList.remove('mobile-active');
-        }
-      });
       return;
     }
 
@@ -262,6 +285,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
       }
       // Update button state after toggling
       updateDownloadButton();
+      updateCheckmarkVisibility();
     }
   });
 
@@ -315,15 +339,8 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     e.stopPropagation();
     e.preventDefault();
 
-    // On touch devices, first tap activates card, second tap opens modal
+    // On touch devices, only work if card is already active
     if (isTouchDevice && !card.classList.contains('mobile-active')) {
-      // First tap - activate this card and deactivate others
-      card.classList.add('mobile-active');
-      document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
-        if (otherCard !== card) {
-          otherCard.classList.remove('mobile-active');
-        }
-      });
       return;
     }
 
@@ -337,6 +354,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   card.appendChild(imgEl);
   card.appendChild(downloadButton);
   card.appendChild(caption);
+  card.appendChild(checkmarkBadge);
 
   return card;
 }
