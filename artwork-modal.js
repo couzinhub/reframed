@@ -105,19 +105,17 @@ async function openArtworkModal(publicId, niceName, orientation) {
   const isInDownloads = typeof window.isInDownloads === 'function' && window.isInDownloads(publicId);
 
   modal.innerHTML = `
-    <div class="artwork-modal-scroll-spacer"></div>
-
     <button class="artwork-modal-close" aria-label="Close">
       <svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor">
         <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
       </svg>
     </button>
 
-    <div class="artwork-modal-image-container">
-      <img src="${thumbnailUrl}" alt="${niceName}" loading="eager" class="artwork-modal-image">
-    </div>
-
     <div class="artwork-modal-content">
+      <div class="artwork-modal-image-container">
+        <img src="${thumbnailUrl}" alt="${niceName}" loading="eager" class="artwork-modal-image">
+      </div>
+
       <div class="artwork-modal-info">
         <h1 class="artwork-modal-title">${artworkTitle}</h1>
         <div class="artwork-modal-subtitle">
@@ -146,9 +144,6 @@ async function openArtworkModal(publicId, niceName, orientation) {
     </div>
   `;
 
-  // Set initial scroll position to spacer height (200px)
-  modal.scrollTop = 200;
-
   // Add image load handler for animations
   const artworkImage = modal.querySelector('.artwork-modal-image');
   const contentDiv = modal.querySelector('.artwork-modal-content');
@@ -163,74 +158,29 @@ async function openArtworkModal(publicId, niceName, orientation) {
     }, 300);
   });
 
-  // Add scroll handler with 2 locked sizes (default and zoomed)
-  let currentSize = 'default'; // 'zoomed' or 'default'
-
+  // Add scroll handler for background effect when scrolling down
   const handleScroll = () => {
-    const scrollY = modal.scrollTop - 200; // Offset by spacer height (now 320px)
-    const image = modal.querySelector('.artwork-modal-image');
-    const content = modal.querySelector('.artwork-modal-content');
+    const scrollY = contentDiv.scrollTop;
+    const info = contentDiv.querySelector('.artwork-modal-info');
 
-    if (!image || !content) return;
+    if (!info) return;
 
-    // Determine which size state we should be in with hysteresis
-    // Different thresholds for entering and exiting zoomed state
-    let targetSize;
-    if (currentSize === 'default') {
-      // Need to scroll up past -100 to enter zoomed state
-      if (scrollY < -100) {
-        targetSize = 'zoomed';
-      } else {
-        targetSize = 'default';
-      }
-    } else {
-      // Need to scroll down past -50 to exit zoomed state
-      if (scrollY > -50) {
-        targetSize = 'default';
-      } else {
-        targetSize = 'zoomed';
-      }
-    }
-
-    // Only update if size changed
-    if (targetSize !== currentSize) {
-      currentSize = targetSize;
-      applyZoomState(image, content, currentSize);
-    }
-
-    // Gradual background based on scroll position (not thresholded)
+    // Gradual background based on scroll position (only when scrolling down)
     const maxScrollDown = 500;
     if (scrollY > 0) {
       const scrollProgress = Math.min(scrollY / maxScrollDown, 1);
       const bgOpacity = 0.6 * scrollProgress;
-      content.style.background = `rgba(0, 0, 0, ${bgOpacity})`;
-      content.style.backdropFilter = scrollProgress > 0.1 ? 'blur(6px)' : 'none';
+      info.style.background = `rgba(0, 0, 0, ${bgOpacity})`;
+      info.style.backdropFilter = scrollProgress > 0.1 ? 'blur(6px)' : 'none';
     } else {
-      content.style.background = 'transparent';
-      content.style.backdropFilter = 'none';
+      info.style.background = 'transparent';
+      info.style.backdropFilter = 'none';
     }
   };
 
-  // Function to apply zoom state
-  const applyZoomState = (image, content, size) => {
-    if (size === 'zoomed') {
-      // Full screen zoom - scale from top and hide content
-      image.style.transform = 'scale(1.2)';
-      image.style.transformOrigin = 'top center';
-      content.style.opacity = '0';
-      content.style.pointerEvents = 'none';
-    } else {
-      // Default/loading size
-      image.style.transform = 'scale(1)';
-      image.style.transformOrigin = 'top center';
-      content.style.opacity = '1';
-      content.style.pointerEvents = 'auto';
-    }
-  };
-
-  modal.addEventListener('scroll', handleScroll);
+  contentDiv.addEventListener('scroll', handleScroll);
   // Store the handler for cleanup
-  modal.dataset.scrollHandler = 'attached';
+  contentDiv.dataset.scrollHandler = 'attached';
 
   // Add event listeners
   const closeBtn = modal.querySelector('.artwork-modal-close');

@@ -1777,15 +1777,11 @@ body.modal-open {
 }
 
 .artwork-modal-image-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
   width: 100%;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 100px 40px 100px;
+  padding: 40px;
   box-sizing: border-box;
   z-index: 1;
   pointer-events: none;
@@ -1820,7 +1816,6 @@ body.modal-open {
 .artwork-modal-content {
   position: relative;
   z-index: 2;
-  margin-top: 60vh;
   min-height: 100vh;
   opacity: 0;
   transform: translateY(50px);
@@ -1861,6 +1856,7 @@ body.modal-open {
 
 .artwork-modal-artist {
   font-size: 18px;
+  text-decoration: underline;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 400;
   background: none;
@@ -2015,7 +2011,6 @@ body.modal-open {
 
   .artwork-modal-image-container {
     padding: 80px 20px 20px;
-    min-height: 70vh;
   }
 
   .artwork-modal-content {
