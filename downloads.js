@@ -28,7 +28,7 @@ function saveDownloadsQueue(queue) {
   }
 }
 
-function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landscape') {
+function addToDownloads(publicId, niceName, imageUrl, aspectRatio = 'landscape') {
   const queue = loadDownloadsQueue();
 
   // Check if already in queue
@@ -39,7 +39,7 @@ function addToDownloads(publicId, niceName, cloudinaryUrl, aspectRatio = 'landsc
   queue.push({
     publicId,
     niceName,
-    cloudinaryUrl,
+    imageUrl,
     aspectRatio,
     addedAt: Date.now()
   });
@@ -439,7 +439,7 @@ async function startSequentialDownload() {
     }
 
     try {
-      await downloadArtwork(nextItem.cloudinaryUrl, nextItem.niceName);
+      await downloadArtwork(nextItem.imageUrl, nextItem.niceName);
       successCount++;
 
       // Mark as completed
@@ -510,7 +510,13 @@ async function startSequentialDownload() {
 async function downloadArtwork(url, filename) {
   return new Promise(async (resolve, reject) => {
     try {
-      const response = await fetch(url);
+      // Ensure we download the original file by adding tr=orig-true parameter
+      // This tells ImageKit to serve the original file without any transformations
+      const urlObj = new URL(url);
+      urlObj.searchParams.set('tr', 'orig-true');
+      const originalUrl = urlObj.toString();
+
+      const response = await fetch(originalUrl);
       if (!response.ok) throw new Error('Network response was not ok');
 
       const blob = await response.blob();

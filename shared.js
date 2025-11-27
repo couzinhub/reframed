@@ -61,7 +61,7 @@ async function fetchAllImageKitFiles() {
 
 // Get full-size image URL
 function getImageUrl(publicId) {
-  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=f-auto,q-auto`;
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}`;
 }
 
 // Get thumbnail URL with specified width

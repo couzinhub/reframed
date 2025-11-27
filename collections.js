@@ -6,7 +6,7 @@
 let COLLECTIONS_CACHE = null;
 let COLLECTIONS_SCROLL_Y = 0;
 
-// cache for each tag's Cloudinary listing (thumb fetch)
+// cache for each tag's ImageKit listing (thumb fetch)
 const TAG_IMAGES_CACHE = {};
 const TAG_TTL_MS = (window.DEBUG ? 2 : 20) * 60 * 1000;
 
@@ -117,7 +117,7 @@ async function fetchImagesForCollection(tagName) {
     };
   }
 
-  // Use shared helper function from shared.js (works with both Cloudinary and ImageKit)
+  // Use shared helper function from shared.js
   const items = await fetchImagesForTag(tagName);
 
   // newest first

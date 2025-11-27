@@ -57,7 +57,7 @@ async function loadHomepageRows() {
 
 // ============ IMAGE FETCH / IMAGE PICK ============
 async function fetchImagesForHomepage(tagName) {
-  // Use shared helper function (works with both Cloudinary and ImageKit)
+  // Use shared helper function
   let items = await fetchImagesForTag(tagName);
 
   // newest first
