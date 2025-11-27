@@ -66,12 +66,16 @@ function getImageUrl(publicId) {
 
 // Get thumbnail URL with specified width
 function getThumbnailUrl(publicId, width) {
-  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},q-auto,f-auto`;
+  // Add cache version to ensure latest images are fetched when cache is invalidated
+  const version = typeof CACHE_VERSION !== 'undefined' ? CACHE_VERSION : Date.now();
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},q-auto,f-auto&v=${version}`;
 }
 
 // Get thumbnail URL with crop/fill (for card thumbnails)
 function getThumbnailUrlWithCrop(publicId, width) {
-  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},h-${width},c-at_max,q-auto,f-auto`;
+  // Add cache version to ensure latest images are fetched when cache is invalidated
+  const version = typeof CACHE_VERSION !== 'undefined' ? CACHE_VERSION : Date.now();
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},h-${width},c-at_max,q-auto,f-auto&v=${version}`;
 }
 
 // CSV Parser - parses CSV text into rows
