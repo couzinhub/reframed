@@ -18,6 +18,7 @@ html {
   --icon-plus-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>');
   --icon-checkmark-black: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23000"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
   --icon-checkmark-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
+  --icon-info: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M280-280h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80Zm-80 480q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>');
 }
 
 body {
@@ -609,7 +610,7 @@ aside .own-art:hover {
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s ease, background 0.2s ease;
-  z-index: 10;
+  z-index: 0;
   pointer-events: none;
   font-family: 'Lexend', sans-serif;
   font-size: 16px;
@@ -706,12 +707,13 @@ aside .own-art:hover {
 .caption-info-icon {
   position: absolute;
   left: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
-}
-
-.caption-info-icon svg {
-  fill: white;
+  background-image: var(--icon-info);
+  background-size: contain;
+  background-repeat: no-repeat;
 }
 
 .caption-text {
@@ -2199,18 +2201,22 @@ body.modal-open {
 /* Search Page Styles
 -----------------------------*/
 .search-container {
-  max-width: 700px;
-  margin: 0 auto 40px;
-  position: relative;
+  max-width: 800px;
+  margin: -60px auto 50px;
+  position: sticky;
+  top: 100px;
+  z-index: 1;
 }
 
 #searchInput {
   width: 100%;
   padding: 16px 50px 16px 20px;
   font-size: 18px;
+  font-weight: 300;
+  letter-spacing: .7px;
   font-family: 'Lexend', sans-serif;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, .85);
+  border: 0;
   border-radius: 50px;
   color: var(--color-txt);
   outline: none;
@@ -2219,12 +2225,11 @@ body.modal-open {
 }
 
 #searchInput:focus {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: var(--color-spot);
+  background: black;
 }
 
 #searchInput::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 #clearSearch {
@@ -2235,8 +2240,8 @@ body.modal-open {
   width: 36px;
   height: 36px;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-txt);
+  background: var(--color-spot);
+  color: black;
   border-radius: 50%;
   font-size: 24px;
   cursor: pointer;
@@ -2246,10 +2251,6 @@ body.modal-open {
   transition: background 0.2s ease;
   line-height: 1;
   padding: 0;
-}
-
-#clearSearch:hover {
-  background: rgba(255, 255, 255, 0.2);
 }
 
 @media (max-width: 768px) {
