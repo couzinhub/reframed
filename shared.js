@@ -1,3 +1,9 @@
+// ============ GOOGLE ANALYTICS ============
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-14360H9J7X');
+
 // ============ IMAGE CDN HELPERS (ImageKit) ============
 
 // Fetch images for a tag from ImageKit

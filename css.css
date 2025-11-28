@@ -78,15 +78,17 @@ p {
 
 /* Tabs */
 
+#browseTabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
 .tabs {
   display: block;
   list-style: none;
   width: 100%;
   text-align: center;
-  margin: 60px 0 60px -32px;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  margin: 30px 0 60px -32px;
   padding: 20px 32px 20px;
   background: rgba(12, 27, 68, .8);
   backdrop-filter: blur(12px);
@@ -425,7 +427,7 @@ aside .own-art:hover {
   color: inherit;
   background: #0f1118;
   border: 1px solid #1f2333;
-  border-radius: 16px;
+  border-radius: 28px;
   overflow: hidden;
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
@@ -509,8 +511,7 @@ aside .own-art:hover {
 }
 
 /* label overlay */
-.tile .title,
-.artist-name {
+.tile .title {
   position: absolute;
   left: 0;
   bottom: 0;
@@ -527,14 +528,16 @@ aside .own-art:hover {
   text-shadow: 0px 2px 3px rgba(0,0,0,0.5);
 }
 .artist-name {
-
-  font-size: 22px;
-  padding: 100px 0 20px;
-  transition: font-size 150ms ease, padding 150ms ease;
-}
-.card.artist:hover .artist-name{
-  font-size: 24px;
-  padding: 100px 0 24px;
+  font-size: 18px;
+  letter-spacing: .5px;
+  background: rgba(0, 0, 0, 0.8);
+  width: fit-content;
+  margin: 0 auto;
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 8px 16px;
+  border-radius: 24px;
 }
 .art-count {
   display: inline-block;
@@ -921,6 +924,22 @@ aside .own-art:hover {
   to { transform: rotate(360deg); }
 }
 
+.loading-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  width: 100%;
+  grid-column: 1 / -1;
+}
+
+.spinner.large {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+  margin: 0;
+}
+
 /* Toast Notification
 -----------------------------*/
 
@@ -1154,7 +1173,7 @@ aside .own-art:hover {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
-    z-index: 1;
+    z-index: 2;
   }
 
   body.menu-open::before {

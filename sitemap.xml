@@ -8,9 +8,16 @@
     <priority>1.0</priority>
   </url>
 
-  <!-- Collections Page -->
+  <!-- Recently added Page -->
   <url>
-    <loc>https://reframed.gallery/collections.html</loc>
+    <loc>https://reframed.gallery/browse-recent.html</loc>
+    <lastmod>2025-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+    <!-- Collections Page -->
+  <url>
+    <loc>https://reframed.gallery/browse-collections.html</loc>
     <lastmod>2025-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -18,7 +25,23 @@
 
   <!-- Artists Page -->
   <url>
-    <loc>https://reframed.gallery/artists.html</loc>
+    <loc>https://reframed.gallery/browse-artists.html</loc>
+    <lastmod>2025-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Vertical Artworks Page -->
+  <url>
+    <loc>https://reframed.gallery/browse-vertical.html</loc>
+    <lastmod>2025-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Search Page -->
+  <url>
+    <loc>https://reframed.gallery/browse-search.html</loc>
     <lastmod>2025-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

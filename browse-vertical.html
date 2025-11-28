@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reframed - Free Art for Samsung Frame TV | Classic Paintings & Photography</title>
+  <title>Reframed | Browse | Vertical Artworks</title>
   <meta name="description" content="Discover works by famous artists optimized for Samsung Frame TV. Browse paintings from Van Gogh, Monet, Klimt, and contemporary photographers - all perfectly reframed for digital display.">
   <meta name="keywords" content="famous artists, Van Gogh Frame TV, classic painters, art photography, digital art gallery, artist collections">
 
@@ -31,28 +31,14 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css.css">
-  <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-14360H9J7X"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-14360H9J7X');
-  </script>
 </head>
-<body class="browsePage">
+<body class="browsePage vertical">
 
   <main id="appView">
     <section id="verticalPage">
       <h1>Browse</h1>
-      <ul class="tabs">
-        <li><a href="/browse-recent.html">Recently added</a></li>
-        <li><a href="/browse-collections.html">Collections</a></li>
-        <li><a href="/browse-artists.html">Artists</a></li>
-        <li class="current"><a href="/browse-vertical.html">Vertical artworks</a></li>
-        <li><a href="/browse-search.html">Search</a></li>
-      </ul>
+      <div id="browseTabs"></div>
       <div id="recentGrid"></div>
     </section>
   </main>
@@ -62,6 +48,10 @@
   <script>initializeNavigation('browse');</script>
   <script src="artwork-modal.js"></script>
   <script src="browse.js"></script>
+  <script>
+    document.getElementById('browseTabs').appendChild(renderBrowseTabs('vertical'));
+    initVerticalPage();
+  </script>
   <script src="downloads.js"></script>
 </body>
 </html>
