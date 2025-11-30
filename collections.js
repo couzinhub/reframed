@@ -1,14 +1,11 @@
-// assumes config.js and shared.js are loaded first
+// assumes config.js, shared.js, and browse.js are loaded first
 // config.js provides: CLOUD_NAME, COLLECTIONS_CSV_URL
 // shared.js provides: parseCSV, humanizePublicId, loadFromCache, saveToCache, showToast, mobile menu functionality
+// browse.js provides: TAG_IMAGES_CACHE, TAG_TTL_MS
 
 // ---------- lightweight in-tab cache ----------
 let COLLECTIONS_CACHE = null;
 let COLLECTIONS_SCROLL_Y = 0;
-
-// cache for each tag's ImageKit listing (thumb fetch)
-const TAG_IMAGES_CACHE = {};
-const TAG_TTL_MS = (window.DEBUG ? 2 : 20) * 60 * 1000;
 
 // Track which images have been used as thumbnails to avoid duplicates
 const USED_THUMBNAILS = new Set();
@@ -350,7 +347,10 @@ function setupLazyThumbObserver() {
 
 // ---------- MAIN INIT ----------
 (async function initCollectionsPage() {
-  const status = document.getElementById("collectionsStatus");
+  const grid = document.getElementById("collectionsGrid");
+
+  // Only run on collections page
+  if (!grid) return;
 
   // If we've already got data in this tab, reuse it and restore scroll
   if (COLLECTIONS_CACHE && Array.isArray(COLLECTIONS_CACHE)) {
@@ -359,7 +359,6 @@ function setupLazyThumbObserver() {
     renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
     window.scrollTo(0, COLLECTIONS_SCROLL_Y);
-    status.textContent = `${COLLECTIONS_CACHE.length} collections`;
     return;
   }
 
@@ -371,11 +370,10 @@ function setupLazyThumbObserver() {
     window.COLLECTION_ROWS = COLLECTIONS_CACHE.map(c => c.row);
     renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
-    status.textContent = `${COLLECTIONS_CACHE.length} collections`;
     return;
   }
 
-  status.innerHTML = 'Loading<span class="spinner"></span>';
+  showLoadingState(grid);
 
   try {
     const rows = await loadCollectionRows();
@@ -392,9 +390,8 @@ function setupLazyThumbObserver() {
     renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
 
-    status.textContent = `${COLLECTIONS_CACHE.length} collections`;
   } catch (err) {
     console.error(err);
-    status.textContent = "Error loading collections: " + err.message;
+    grid.innerHTML = '<div class="error-message">Error loading collections. Please try again later.</div>';
   }
 })();

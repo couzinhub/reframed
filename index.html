@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reframed - Free Art for Samsung Frame TV | Classic Paintings & Photography</title>
+  <title>Reframed | A free collection of paintings and photography modified to fit the Samsung Frame TV</title>
   <meta name="description" content="Discover hundreds of free, high-quality paintings and photography optimized for Samsung Frame TV. Browse curated collections of classic art, modern photography, and more - all perfectly reframed for your Frame TV.">
   <meta name="keywords" content="Samsung Frame TV art, free Frame TV art, Frame TV paintings, Frame TV photography, digital art download, classic paintings, Samsung art mode">
 
@@ -72,6 +72,11 @@
 </head>
 <body class="home">
 
+  <div id="updateBanner" class="update-banner">
+    <p>The site was recently updated. There might be bugs, sorry if you run into one.</p>
+    <button class="close-banner" aria-label="Close banner">×</button>
+  </div>
+
   <h1 id="mainTitle" class="homepage-title">A free collection of paintings and photography modified to fit the Samsung Frame TV.</h1>
 
   <main id="homeView"></main>
@@ -82,6 +87,20 @@
   <script src="artwork-modal.js"></script>
   <script src="home.js"></script>
   <script src="downloads.js"></script>
+  <script>
+    // Banner dismiss logic
+    const banner = document.getElementById('updateBanner');
+    const closeBtn = banner?.querySelector('.close-banner');
+
+    if (localStorage.getItem('bannerDismissed') === 'true') {
+      banner?.remove();
+    }
+
+    closeBtn?.addEventListener('click', () => {
+      localStorage.setItem('bannerDismissed', 'true');
+      banner?.remove();
+    });
+  </script>
 
 </body>
 </html>

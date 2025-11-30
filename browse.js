@@ -1,6 +1,102 @@
 // assumes config.js and shared.js are loaded first
 // shared.js provides: fetchImagesForTag, fetchAllImageKitFiles, humanizePublicId, showToast, mobile menu functionality
 
+// ---------- COMMON LOADING STATE ----------
+function showLoadingState(gridElement) {
+  gridElement.innerHTML = '<div class="loading-spinner-container"><span class="spinner large"></span></div>';
+}
+
+// ---------- BROWSE TABS ----------
+function renderBrowseTabs(currentPage) {
+  const tabs = [
+    { id: 'recent', label: 'Recently added', href: '/browse-recent.html' },
+    { id: 'collections', label: 'Collections', href: '/browse-collections.html' },
+    { id: 'artists', label: 'Artists', href: '/browse-artists.html' },
+    { id: 'vertical', label: 'Vertical artworks', href: '/browse-vertical.html' },
+    { id: 'search', label: 'Search', href: '/browse-search.html' }
+  ];
+
+  const ul = document.createElement('ul');
+  ul.className = 'tabs';
+
+  // Render all tabs in order
+  tabs.forEach(tab => {
+    const li = document.createElement('li');
+    if (tab.id === currentPage) {
+      li.className = 'current';
+    }
+
+    const a = document.createElement('a');
+    a.href = tab.href;
+    a.textContent = tab.label;
+
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+
+  // Add mobile dropdown toggle functionality
+  setupMobileTabsToggle(ul);
+
+  return ul;
+}
+
+function setupMobileTabsToggle(tabsElement) {
+  const currentTab = tabsElement.querySelector('li.current');
+  if (!currentTab) return;
+
+  const currentLink = currentTab.querySelector('a');
+  let dropdownContainer = null;
+
+  function reorganizeForMobile() {
+    if (window.innerWidth <= 768 && !dropdownContainer) {
+      // Create dropdown and add all tabs (including current) in order
+      const allTabs = Array.from(tabsElement.querySelectorAll('li'));
+      dropdownContainer = document.createElement('div');
+      dropdownContainer.className = 'tabs-dropdown';
+
+      allTabs.forEach(tab => {
+        if (tab.classList.contains('current')) {
+          // Clone current tab for dropdown
+          const clone = tab.cloneNode(true);
+          clone.classList.remove('current');
+          clone.classList.add('current-in-dropdown');
+          dropdownContainer.appendChild(clone);
+        } else {
+          // Move non-current tabs
+          dropdownContainer.appendChild(tab);
+        }
+      });
+
+      tabsElement.appendChild(dropdownContainer);
+    } else if (window.innerWidth > 768 && dropdownContainer) {
+      // Restore original structure for desktop
+      const tabs = Array.from(dropdownContainer.querySelectorAll('li:not(.current-in-dropdown)'));
+      tabs.forEach(tab => {
+        tabsElement.appendChild(tab);
+      });
+      dropdownContainer.remove();
+      dropdownContainer = null;
+    }
+  }
+
+  reorganizeForMobile();
+  window.addEventListener('resize', reorganizeForMobile);
+
+  currentLink.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768) {
+      e.preventDefault();
+      tabsElement.classList.toggle('open');
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && !tabsElement.contains(e.target)) {
+      tabsElement.classList.remove('open');
+    }
+  });
+}
+
 // ---------- lightweight in-tab cache ----------
 let ARTISTS_CACHE = null; // [{ tag, label, chosenImage, imageCount }, ...]
 let ARTISTS_SCROLL_Y = 0;
@@ -421,9 +517,322 @@ function setupAlphabetNavigation() {
   updateActiveMarker();
 }
 
+// ---------- RECENTLY UPDATED PAGE ----------
+const RECENT_CACHE_KEY = "reframed_recent_cache_v1";
+let recentCurrentIndex = 0;
+const ITEMS_PER_LOAD = 30;
+let allRecentArtworks = [];
+let isLoadingRecent = false;
+let hasMoreRecentItems = true;
+
+function loadRecentFromCache() {
+  try {
+    const raw = localStorage.getItem(RECENT_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+
+    if (!parsed.savedAt || !Array.isArray(parsed.artworks)) {
+      return null;
+    }
+
+    const age = Date.now() - parsed.savedAt;
+    if (age > TAG_TTL_MS) {
+      return null;
+    }
+
+    return parsed.artworks;
+  } catch {
+    return null;
+  }
+}
+
+function saveRecentToCache(artworks) {
+  try {
+    localStorage.setItem(
+      RECENT_CACHE_KEY,
+      JSON.stringify({
+        savedAt: Date.now(),
+        artworks: artworks
+      })
+    );
+  } catch {
+    // ignore quota errors
+  }
+}
+
+async function fetchRecentlyUpdated() {
+  const files = await fetchAllImageKitFiles();
+
+  // Filter out thumbnails and sort by createdAt (most recent first)
+  const artworks = files
+    .filter(file => {
+      // Exclude files tagged as "thumbnail"
+      const tags = file.tags || [];
+      return !tags.some(tag => tag.toLowerCase() === 'thumbnail');
+    })
+    .map(file => ({
+      public_id: file.filePath.substring(1), // Remove leading slash
+      width: file.width,
+      height: file.height,
+      created_at: file.createdAt,
+      updated_at: file.updatedAt,
+      tags: file.tags || []
+    }))
+    .sort((a, b) => {
+      // Sort by createdAt, most recent first
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      return dateB - dateA;
+    });
+
+  return artworks;
+}
+
+function loadMoreRecentArtworks() {
+  if (isLoadingRecent || !hasMoreRecentItems) return;
+
+  isLoadingRecent = true;
+  const grid = document.getElementById("recentGrid");
+
+  const endIndex = Math.min(recentCurrentIndex + ITEMS_PER_LOAD, allRecentArtworks.length);
+  const batch = allRecentArtworks.slice(recentCurrentIndex, endIndex);
+
+  batch.forEach(img => {
+    const publicId = img.public_id;
+    const niceName = humanizePublicId(publicId);
+    const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
+    grid.appendChild(card);
+  });
+
+  recentCurrentIndex = endIndex;
+
+  if (recentCurrentIndex >= allRecentArtworks.length) {
+    hasMoreRecentItems = false;
+  }
+
+  isLoadingRecent = false;
+}
+
+function setupRecentInfiniteScroll() {
+  const grid = document.getElementById("recentGrid");
+
+  // Create a sentinel element at the bottom of the grid
+  const sentinel = document.createElement("div");
+  sentinel.id = "scroll-sentinel";
+  sentinel.style.height = "1px";
+  grid.parentElement.appendChild(sentinel);
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && hasMoreRecentItems && !isLoadingRecent) {
+          loadMoreRecentArtworks();
+        }
+      });
+    },
+    {
+      root: null,
+      rootMargin: "400px", // Start loading before user reaches the bottom
+      threshold: 0
+    }
+  );
+
+  observer.observe(sentinel);
+}
+
+async function initRecentPage() {
+  const grid = document.getElementById("recentGrid");
+
+  showLoadingState(grid);
+
+  try {
+    // Try cache first
+    const cachedArtworks = loadRecentFromCache();
+
+    if (cachedArtworks && Array.isArray(cachedArtworks)) {
+      allRecentArtworks = cachedArtworks;
+    } else {
+      // Fetch fresh data
+      allRecentArtworks = await fetchRecentlyUpdated();
+
+      // Save to cache
+      saveRecentToCache(allRecentArtworks);
+    }
+
+    // Clear loading message
+    grid.innerHTML = '';
+
+    // Add grid class for styling
+    grid.className = 'tag-grid';
+
+    // Load first batch
+    loadMoreRecentArtworks();
+
+    // Set up infinite scroll
+    setupRecentInfiniteScroll();
+
+  } catch (err) {
+    console.error('Error loading recently updated artworks:', err);
+    grid.innerHTML = '<div class="error-message">Error loading artworks. Please try again later.</div>';
+  }
+}
+
+// ---------- VERTICAL ARTWORKS PAGE ----------
+const VERTICAL_CACHE_KEY = "reframed_vertical_cache_v1";
+let verticalCurrentIndex = 0;
+let allVerticalArtworks = [];
+let isLoadingVertical = false;
+let hasMoreVerticalItems = true;
+
+function loadVerticalFromCache() {
+  try {
+    const raw = localStorage.getItem(VERTICAL_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+
+    if (!parsed.savedAt || !Array.isArray(parsed.artworks)) {
+      return null;
+    }
+
+    const age = Date.now() - parsed.savedAt;
+    if (age > TAG_TTL_MS) {
+      return null;
+    }
+
+    return parsed.artworks;
+  } catch {
+    return null;
+  }
+}
+
+function saveVerticalToCache(artworks) {
+  try {
+    localStorage.setItem(
+      VERTICAL_CACHE_KEY,
+      JSON.stringify({
+        savedAt: Date.now(),
+        artworks: artworks
+      })
+    );
+  } catch {
+    // ignore quota errors
+  }
+}
+
+async function fetchVerticalArtworks() {
+  const files = await fetchAllImageKitFiles();
+
+  // Filter portrait artworks and sort by created date
+  const artworks = files
+    .filter(file => {
+      const tags = file.tags || [];
+      if (tags.some(tag => tag.toLowerCase() === 'thumbnail')) return false;
+
+      // Check if portrait (height > width)
+      return file.height && file.width && file.height > file.width;
+    })
+    .map(file => ({
+      public_id: file.filePath.substring(1),
+      width: file.width,
+      height: file.height,
+      created_at: file.createdAt,
+      updated_at: file.updatedAt,
+      tags: file.tags || []
+    }))
+    .sort((a, b) => {
+      // Sort by createdAt, most recent first
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      return dateB - dateA;
+    });
+
+  return artworks;
+}
+
+function loadMoreVerticalArtworks() {
+  if (isLoadingVertical || !hasMoreVerticalItems) return;
+
+  isLoadingVertical = true;
+  const grid = document.getElementById("recentGrid");
+
+  const endIndex = Math.min(verticalCurrentIndex + ITEMS_PER_LOAD, allVerticalArtworks.length);
+  const batch = allVerticalArtworks.slice(verticalCurrentIndex, endIndex);
+
+  batch.forEach(img => {
+    const publicId = img.public_id;
+    const niceName = humanizePublicId(publicId);
+    const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
+    grid.appendChild(card);
+  });
+
+  verticalCurrentIndex = endIndex;
+
+  if (verticalCurrentIndex >= allVerticalArtworks.length) {
+    hasMoreVerticalItems = false;
+  }
+
+  isLoadingVertical = false;
+}
+
+function setupVerticalInfiniteScroll() {
+  const grid = document.getElementById("recentGrid");
+
+  const sentinel = document.createElement("div");
+  sentinel.id = "scroll-sentinel-vertical";
+  sentinel.style.height = "1px";
+  grid.parentElement.appendChild(sentinel);
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && hasMoreVerticalItems && !isLoadingVertical) {
+          loadMoreVerticalArtworks();
+        }
+      });
+    },
+    {
+      root: null,
+      rootMargin: "400px",
+      threshold: 0
+    }
+  );
+
+  observer.observe(sentinel);
+}
+
+async function initVerticalPage() {
+  const grid = document.getElementById("recentGrid");
+
+  showLoadingState(grid);
+
+  try {
+    const cachedArtworks = loadVerticalFromCache();
+
+    if (cachedArtworks && Array.isArray(cachedArtworks)) {
+      allVerticalArtworks = cachedArtworks;
+    } else {
+      allVerticalArtworks = await fetchVerticalArtworks();
+      saveVerticalToCache(allVerticalArtworks);
+    }
+
+    grid.innerHTML = '';
+    grid.className = 'tag-grid';
+
+    loadMoreVerticalArtworks();
+    setupVerticalInfiniteScroll();
+
+  } catch (err) {
+    console.error('Error loading vertical artworks:', err);
+    grid.innerHTML = '<div class="error-message">Error loading artworks. Please try again later.</div>';
+  }
+}
+
 // ---------- MAIN INIT ----------
 (async function initArtistsPage() {
-  const status = document.getElementById("artistsStatus");
+  const grid = document.getElementById("artistsGrid");
+
+  // Only run on artists page
+  if (!grid) return;
 
   // If we've already got data in this tab, reuse it and restore scroll
   if (ARTISTS_CACHE && Array.isArray(ARTISTS_CACHE)) {
@@ -431,7 +840,6 @@ function setupAlphabetNavigation() {
     setupLazyThumbObserver();
     setupAlphabetNavigation();
     window.scrollTo(0, ARTISTS_SCROLL_Y);
-    status.textContent = `${ARTISTS_CACHE.length} artists`;
     return;
   }
 
@@ -442,11 +850,10 @@ function setupAlphabetNavigation() {
     renderArtistsGrid(ARTISTS_CACHE);
     setupLazyThumbObserver();
     setupAlphabetNavigation();
-    status.textContent = `${ARTISTS_CACHE.length} artists`;
     return;
   }
 
-  status.innerHTML = 'Loading<span class="spinner"></span>';
+  showLoadingState(grid);
 
   try {
     const tags = await loadTagsFromImageKit();
@@ -465,9 +872,8 @@ function setupAlphabetNavigation() {
     setupLazyThumbObserver();
     setupAlphabetNavigation();
 
-    status.textContent = `${ARTISTS_CACHE.length} artists`;
   } catch (err) {
     console.error(err);
-    status.textContent = "Error loading tags: " + err.message;
+    grid.innerHTML = '<div class="error-message">Error loading artists. Please try again later.</div>';
   }
 })();

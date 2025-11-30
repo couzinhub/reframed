@@ -72,6 +72,103 @@ async function fetchAllArtworks() {
   return artworks;
 }
 
+// ---------- FUZZY MATCH HELPER ----------
+function fuzzyMatch(str, pattern) {
+  // Simple fuzzy matching: checks if all characters in pattern appear in str in order
+  // Allows for characters in between (e.g., "vgh" matches "van gogh")
+  let patternIdx = 0;
+  let strIdx = 0;
+
+  while (strIdx < str.length && patternIdx < pattern.length) {
+    if (str[strIdx] === pattern[patternIdx]) {
+      patternIdx++;
+    }
+    strIdx++;
+  }
+
+  return patternIdx === pattern.length;
+}
+
+function getLevenshteinDistance(a, b) {
+  // Calculate edit distance between two strings
+  const matrix = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
+function fuzzyScore(text, term) {
+  // Returns a score for how well the term matches the text
+  // Higher score = better match
+
+  // Exact match gets highest score
+  if (text.includes(term)) {
+    return 100;
+  }
+
+  // Check fuzzy match (all characters in order)
+  if (fuzzyMatch(text, term)) {
+    return 50;
+  }
+
+  // Check word boundaries - see if term matches start of any word
+  const words = text.split(/\s+/);
+  let bestScore = 0;
+
+  for (const word of words) {
+    if (word.startsWith(term)) {
+      return 75;
+    }
+
+    // Fuzzy match on individual words
+    if (fuzzyMatch(word, term)) {
+      bestScore = Math.max(bestScore, 40);
+      continue;
+    }
+
+    // Check edit distance for typo tolerance
+    const distance = getLevenshteinDistance(term, word);
+    const maxLen = Math.max(term.length, word.length);
+    const similarity = 1 - (distance / maxLen);
+
+    // Lower threshold to 60% for better typo tolerance
+    // Words like "moan" vs "mona" have 50% similarity but same length should get bonus
+    if (similarity >= 0.5) {
+      // Give bonus if same length (likely just transposed/swapped letters)
+      const lengthBonus = term.length === word.length ? 0.15 : 0;
+      const adjustedSimilarity = Math.min(1, similarity + lengthBonus);
+
+      if (adjustedSimilarity >= 0.6) {
+        const score = Math.floor(adjustedSimilarity * 70);
+        bestScore = Math.max(bestScore, score);
+      }
+    }
+  }
+
+  return bestScore;
+}
+
 // ---------- SEARCH FUNCTION ----------
 function searchArtworks(query, artworks) {
   if (!query || query.trim() === "") {
@@ -80,28 +177,73 @@ function searchArtworks(query, artworks) {
 
   const searchTerms = query.toLowerCase().trim().split(/\s+/);
 
-  return artworks.filter(artwork => {
-    // All search terms must be found in either the artwork name or description
-    return searchTerms.every(term =>
-      artwork.searchName.includes(term) ||
-      (artwork.description && artwork.description.includes(term))
-    );
+  // Score each artwork and filter those with scores above threshold
+  const scored = artworks.map(artwork => {
+    // Calculate total score across all search terms
+    let totalScore = 0;
+    let matchCount = 0;
+    let hasNameMatch = false;
+
+    for (const term of searchTerms) {
+      const nameScore = fuzzyScore(artwork.searchName, term);
+      const descScore = fuzzyScore(artwork.description || '', term);
+
+      // Check if term matches any artist tag
+      let artistScore = 0;
+      for (const tag of artwork.tags) {
+        const tagScore = fuzzyScore(tag.toLowerCase(), term);
+        if (tagScore > 0) {
+          artistScore = Math.max(artistScore, tagScore);
+        }
+      }
+
+      // Track if we have any matches in the name
+      if (nameScore > 0) {
+        hasNameMatch = true;
+      }
+
+      const maxScore = Math.max(nameScore, artistScore, descScore);
+
+      if (maxScore > 0) {
+        matchCount++;
+        // Boost score significantly if match is in the name (5x) or artist tag (5x)
+        if (nameScore > 0) {
+          totalScore += nameScore * 5;
+        } else if (artistScore > 0) {
+          totalScore += artistScore * 5;
+        } else {
+          totalScore += descScore;
+        }
+      }
+    }
+
+    // All terms must have at least some match
+    if (matchCount < searchTerms.length) {
+      return { artwork, score: 0 };
+    }
+
+    // Additional boost if all terms match in the name
+    const finalScore = hasNameMatch ? totalScore * 1.5 : totalScore;
+
+    return { artwork, score: finalScore / searchTerms.length };
   });
+
+  // Filter results with score > 0 and sort by score (highest first)
+  return scored
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.artwork);
 }
 
 // ---------- RENDER RESULTS ----------
 function renderSearchResults(artworks) {
   const gridEl = document.getElementById("searchGrid");
-  const statusEl = document.getElementById("searchStatus");
 
   gridEl.innerHTML = "";
 
   if (!artworks || artworks.length === 0) {
-    statusEl.textContent = "No artworks found";
     return;
   }
-
-  statusEl.textContent = `${artworks.length} artwork${artworks.length === 1 ? "" : "s"}`;
 
   const frag = document.createDocumentFragment();
 
@@ -115,18 +257,35 @@ function renderSearchResults(artworks) {
   gridEl.appendChild(frag);
 }
 
+// ---------- RANDOM ARTWORKS ----------
+function getRandomArtworks(artworks, count = 30) {
+  const shuffled = [...artworks].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+function showRandomArtworks() {
+  const randomArtworks = getRandomArtworks(ALL_ARTWORKS, 24);
+  renderSearchResults(randomArtworks);
+}
+
 // ---------- INIT SEARCH PAGE ----------
 (async function initSearchPage() {
   const searchInput = document.getElementById("searchInput");
   const clearButton = document.getElementById("clearSearch");
-  const statusEl = document.getElementById("searchStatus");
+  const gridEl = document.getElementById("searchGrid");
+
+  // Set up transition on grid
+  gridEl.style.transition = "opacity 200ms ease-in-out";
 
   // Load all artworks
-  statusEl.innerHTML = 'Loading artworks<span class="spinner"></span>';
-
   try {
     ALL_ARTWORKS = await fetchAllArtworks();
-    statusEl.textContent = `${ALL_ARTWORKS.length} artworks available`;
+
+    // Update placeholder with count
+    searchInput.placeholder = `Search through ${ALL_ARTWORKS.length} artworks available`;
+
+    // Show 30 random artworks on initial load
+    showRandomArtworks();
 
     // Handle search input with debouncing
     let searchTimeout;
@@ -138,13 +297,23 @@ function renderSearchResults(artworks) {
       // Show/hide clear button
       if (query) {
         clearButton.style.display = "block";
+        // Fade grid immediately when typing starts
+        gridEl.style.opacity = "0.3";
       } else {
         clearButton.style.display = "none";
+        gridEl.style.opacity = "1";
       }
 
       searchTimeout = setTimeout(() => {
-        const results = searchArtworks(query, ALL_ARTWORKS);
-        renderSearchResults(results);
+        if (query.trim()) {
+          const results = searchArtworks(query, ALL_ARTWORKS);
+          renderSearchResults(results);
+          // Restore opacity after results render
+          gridEl.style.opacity = "1";
+        } else {
+          showRandomArtworks();
+          gridEl.style.opacity = "1";
+        }
       }, 300); // 300ms debounce
     });
 
@@ -152,8 +321,7 @@ function renderSearchResults(artworks) {
     clearButton.addEventListener("click", () => {
       searchInput.value = "";
       clearButton.style.display = "none";
-      document.getElementById("searchGrid").innerHTML = "";
-      statusEl.textContent = `${ALL_ARTWORKS.length} artworks available`;
+      showRandomArtworks();
     });
 
     // Focus on search input
@@ -161,6 +329,5 @@ function renderSearchResults(artworks) {
 
   } catch (err) {
     console.error(err);
-    statusEl.textContent = "Error loading artworks: " + err.message;
   }
 })();
