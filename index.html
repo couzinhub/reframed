@@ -72,6 +72,11 @@
 </head>
 <body class="home">
 
+  <div id="updateBanner" class="update-banner">
+    <p>The site was recently updated. There might be bugs, sorry if you run into one.</p>
+    <button class="close-banner" aria-label="Close banner">×</button>
+  </div>
+
   <h1 id="mainTitle" class="homepage-title">A free collection of paintings and photography modified to fit the Samsung Frame TV.</h1>
 
   <main id="homeView"></main>
@@ -82,6 +87,20 @@
   <script src="artwork-modal.js"></script>
   <script src="home.js"></script>
   <script src="downloads.js"></script>
+  <script>
+    // Banner dismiss logic
+    const banner = document.getElementById('updateBanner');
+    const closeBtn = banner?.querySelector('.close-banner');
+
+    if (localStorage.getItem('bannerDismissed') === 'true') {
+      banner?.remove();
+    }
+
+    closeBtn?.addEventListener('click', () => {
+      localStorage.setItem('bannerDismissed', 'true');
+      banner?.remove();
+    });
+  </script>
 
 </body>
 </html>

@@ -19,6 +19,7 @@ function renderBrowseTabs(currentPage) {
   const ul = document.createElement('ul');
   ul.className = 'tabs';
 
+  // Render all tabs in order
   tabs.forEach(tab => {
     const li = document.createElement('li');
     if (tab.id === currentPage) {
@@ -33,7 +34,67 @@ function renderBrowseTabs(currentPage) {
     ul.appendChild(li);
   });
 
+  // Add mobile dropdown toggle functionality
+  setupMobileTabsToggle(ul);
+
   return ul;
+}
+
+function setupMobileTabsToggle(tabsElement) {
+  const currentTab = tabsElement.querySelector('li.current');
+  if (!currentTab) return;
+
+  const currentLink = currentTab.querySelector('a');
+  let dropdownContainer = null;
+
+  function reorganizeForMobile() {
+    if (window.innerWidth <= 768 && !dropdownContainer) {
+      // Create dropdown and add all tabs (including current) in order
+      const allTabs = Array.from(tabsElement.querySelectorAll('li'));
+      dropdownContainer = document.createElement('div');
+      dropdownContainer.className = 'tabs-dropdown';
+
+      allTabs.forEach(tab => {
+        if (tab.classList.contains('current')) {
+          // Clone current tab for dropdown
+          const clone = tab.cloneNode(true);
+          clone.classList.remove('current');
+          clone.classList.add('current-in-dropdown');
+          dropdownContainer.appendChild(clone);
+        } else {
+          // Move non-current tabs
+          dropdownContainer.appendChild(tab);
+        }
+      });
+
+      tabsElement.appendChild(dropdownContainer);
+    } else if (window.innerWidth > 768 && dropdownContainer) {
+      // Restore original structure for desktop
+      const tabs = Array.from(dropdownContainer.querySelectorAll('li:not(.current-in-dropdown)'));
+      tabs.forEach(tab => {
+        tabsElement.appendChild(tab);
+      });
+      dropdownContainer.remove();
+      dropdownContainer = null;
+    }
+  }
+
+  reorganizeForMobile();
+  window.addEventListener('resize', reorganizeForMobile);
+
+  currentLink.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768) {
+      e.preventDefault();
+      tabsElement.classList.toggle('open');
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && !tabsElement.contains(e.target)) {
+      tabsElement.classList.remove('open');
+    }
+  });
 }
 
 // ---------- lightweight in-tab cache ----------

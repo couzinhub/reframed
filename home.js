@@ -257,44 +257,26 @@ function renderRecentlyAdded(container, images) {
   grid.className = "recently-added-grid";
 
   let currentIndex = 0;
-  const itemsPerLoad = 10;
+  // Show only 12 items
+  const maxItems = 12;
+  const batch = images.slice(0, maxItems);
 
-  function loadMore() {
-    const endIndex = Math.min(currentIndex + itemsPerLoad, images.length);
-    const batch = images.slice(currentIndex, endIndex);
-
-    batch.forEach(img => {
-      const publicId = img.public_id;
-      const niceName = humanizePublicId(publicId);
-      const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
-      grid.appendChild(card);
-    });
-
-    currentIndex = endIndex;
-
-    // Hide load more button if all items are loaded
-    if (currentIndex >= images.length) {
-      loadMoreBtn.style.display = "none";
-    }
-  }
-
-  // Load initial batch
-  loadMore();
+  batch.forEach(img => {
+    const publicId = img.public_id;
+    const niceName = humanizePublicId(publicId);
+    const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
+    grid.appendChild(card);
+  });
 
   section.appendChild(grid);
 
-  // Create load more button
-  const loadMoreBtn = document.createElement("button");
-  loadMoreBtn.className = "load-more-btn";
-  loadMoreBtn.textContent = "Load more";
-  loadMoreBtn.onclick = loadMore;
+  // Create View more link
+  const viewMoreLink = document.createElement("a");
+  viewMoreLink.className = "load-more-btn";
+  viewMoreLink.href = "/browse-recent.html";
+  viewMoreLink.textContent = "View more";
 
-  // Hide button if all items are already loaded
-  if (currentIndex >= images.length) {
-    loadMoreBtn.style.display = "none";
-  }
-
-  section.appendChild(loadMoreBtn);
+  section.appendChild(viewMoreLink);
   container.appendChild(section);
 }
 

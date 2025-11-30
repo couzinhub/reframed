@@ -233,7 +233,11 @@ function renderTagGallery(tagName, images) {
   const tagGridEl = document.getElementById("tagGrid");
 
   // Get the display label from collections data, or fallback to tag name
-  const displayName = getLabelForTag(tagName);
+  let displayName = getLabelForTag(tagName);
+  // Remove "Collection - " prefix if present
+  if (displayName.startsWith("Collection - ")) {
+    displayName = displayName.substring(13); // Remove "Collection - " (13 characters)
+  }
   tagTitleEl.textContent = displayName;
 
   // Update SEO meta tags
@@ -276,7 +280,11 @@ async function loadAndRenderTagPage() {
   // Load collection rows to get labels if not already loaded
   await loadCollectionRowsIfNeeded();
 
-  const displayName = getLabelForTag(tagName);
+  let displayName = getLabelForTag(tagName);
+  // Remove "Collection - " prefix if present
+  if (displayName.startsWith("Collection - ")) {
+    displayName = displayName.substring(13); // Remove "Collection - " (13 characters)
+  }
   tagTitleEl.textContent = displayName;
   document.title = displayName + " – Reframed";
 
