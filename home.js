@@ -6,7 +6,7 @@
 // ============ HOMEPAGE ROWS (SHEET PARSE) ============
 //
 // First row of HOMEPAGE_CSV_URL is assumed to be:
-// "Tag","Label"
+// "Tag","Label","Thumbnail"
 
 async function loadHomepageRows() {
   const res = await fetch(HOMEPAGE_CSV_URL, { cache: "default" });
@@ -40,15 +40,17 @@ async function loadHomepageRows() {
   for (let r = 1; r < rows.length; r++) {
     const rowArr = rows[r];
 
-    const tagVal   = pick(rowArr, "tag");
-    const labelVal = pick(rowArr, "label");
+    const tagVal       = pick(rowArr, "tag");
+    const labelVal     = pick(rowArr, "label");
+    const thumbnailVal = pick(rowArr, "thumbnail");
 
     if (!tagVal) continue;
     if (tagVal.toLowerCase().startsWith("-- ignore")) break;
 
     out.push({
       tag: tagVal,
-      label: labelVal || tagVal
+      label: labelVal || tagVal,
+      thumbnail: thumbnailVal || ""
     });
   }
 
@@ -69,20 +71,27 @@ async function fetchImagesForHomepage(tagName) {
 }
 
 function chooseFeaturedImage(row, images) {
-  console.log('chooseFeaturedImage called for tag:', row.tag);
-  console.log('Total images:', images.length);
+  // First priority: custom thumbnail specified in the sheet
+  if (row.thumbnail) {
+    // Try to match by filename (e.g., "Walter Moras - Autumnal Woodland - reframed.jpg")
+    const customImage = images.find(img => {
+      const filename = img.public_id.split('/').pop(); // Get just the filename
+      return filename === row.thumbnail;
+    });
 
-  // First, always check for "thumbnail" tagged image (for both collections and artists)
+    if (customImage) {
+      return customImage;
+    }
+  }
+
+  // Second priority: check for "thumbnail" tagged image (for both collections and artists)
   const thumbnailImage = images.find(img =>
     img.tags && img.tags.some(tag => tag.toLowerCase() === 'thumbnail')
   );
 
   if (thumbnailImage) {
-    console.log('Found thumbnail image:', thumbnailImage.public_id);
     return thumbnailImage;
   }
-
-  console.log('No thumbnail image found, using auto-select');
 
   // Filter out portrait images (height > width)
   const landscapeOrSquare = images.filter(img => img.width >= img.height);
@@ -90,9 +99,7 @@ function chooseFeaturedImage(row, images) {
   // Use filtered list if available, otherwise fall back to all images
   const finalList = landscapeOrSquare.length > 0 ? landscapeOrSquare : images;
 
-  const selected = finalList.length > 0 ? finalList[0] : null;
-  console.log('Auto-selected image:', selected ? selected.public_id : 'none');
-  return selected;
+  return finalList.length > 0 ? finalList[0] : null;
 }
 
 // ============ HOMEPAGE CACHE WITH VERSION CHECK ============
