@@ -84,6 +84,12 @@ function getThumbnailUrlWithCrop(publicId, width) {
   return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-${width},h-${width},c-at_max,q-auto,f-auto&v=${version}`;
 }
 
+// Get blur preview URL (tiny blurred thumbnail for instant loading)
+function getBlurPreviewUrl(publicId) {
+  const version = typeof CACHE_VERSION !== 'undefined' ? CACHE_VERSION : Date.now();
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-100,bl-1,q-20,f-auto&v=${version}`;
+}
+
 // CSV Parser - parses CSV text into rows
 function parseCSV(text) {
   const rows = [];
@@ -222,8 +228,122 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   const imgEl = document.createElement("img");
   imgEl.loading = "lazy";
-  imgEl.src = getThumbnailUrl(publicId, thumbWidth);
   imgEl.alt = niceName;
+
+  // Create wrapper for image loading layers
+  const imageWrapper = document.createElement("div");
+  imageWrapper.className = "artwork-image-wrapper";
+
+  // Layer 1: Blur preview (loads instantly)
+  const blurPreview = document.createElement("div");
+  blurPreview.className = "artwork-blur-preview";
+  const blurUrl = getBlurPreviewUrl(publicId);
+  console.log('Setting blur URL:', blurUrl);
+  blurPreview.style.backgroundImage = `url("${blurUrl}")`;
+
+  // Layer 2: Progress bar (fallback if blur fails)
+  const progressBar = document.createElement("div");
+  progressBar.className = "artwork-progress-bar";
+  const progressFill = document.createElement("div");
+  progressFill.className = "artwork-progress-fill";
+  progressBar.appendChild(progressFill);
+
+  // Layer 3: Full image - set class before src
+  imgEl.className = "artwork-full-image";
+
+  // Loading state management
+  let progressInterval = null;
+
+  // Start simulated progress animation
+  const startProgress = () => {
+    progressBar.classList.add('active');
+    progressFill.style.width = '0%';
+
+    // Animate 0-90% over 2 seconds
+    const duration = 2000;
+    const targetProgress = 90;
+    const startTime = Date.now();
+
+    progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min((elapsed / duration) * targetProgress, targetProgress);
+      progressFill.style.width = `${progress}%`;
+
+      if (progress >= targetProgress) {
+        clearInterval(progressInterval);
+      }
+    }, 50);
+  };
+
+  // Complete progress and hide bar
+  const completeProgress = () => {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+    progressFill.style.width = '100%';
+    setTimeout(() => {
+      progressBar.classList.remove('active');
+    }, 300);
+  };
+
+  // Test if blur preview loads successfully
+  const blurPreviewTestImg = new Image();
+  blurPreviewTestImg.onload = () => {
+    console.log('Blur preview loaded for:', publicId);
+    blurPreview.classList.add('loaded');
+  };
+  blurPreviewTestImg.onerror = () => {
+    console.log('Blur preview failed for:', publicId);
+    // Blur failed, show progress bar instead
+    blurPreview.classList.add('failed');
+    startProgress();
+  };
+  blurPreviewTestImg.src = getBlurPreviewUrl(publicId);
+
+  // Handle full image load - set up BEFORE setting src
+  imgEl.addEventListener('load', () => {
+    console.log('Full image loaded:', publicId);
+    completeProgress();
+    // Start both transitions simultaneously for smooth crossfade
+    imgEl.classList.add('loaded');
+    blurPreview.classList.add('hidden');
+  });
+
+  // Handle errors
+  imgEl.addEventListener('error', () => {
+    console.log('Full image error:', publicId);
+    completeProgress();
+    blurPreview.classList.add('error');
+  });
+
+  // Now set the src to trigger loading
+  imgEl.src = getThumbnailUrl(publicId, thumbWidth);
+
+  // Check if image is already loaded (from cache) - after setting src
+  if (imgEl.complete && imgEl.naturalHeight !== 0) {
+    console.log('Image already cached:', publicId);
+    imgEl.classList.add('loaded');
+    blurPreview.classList.add('hidden');
+  }
+
+  // Assemble layers
+  imageWrapper.appendChild(blurPreview);
+  imageWrapper.appendChild(progressBar);
+  imageWrapper.appendChild(imgEl);
+
+  // Cleanup intervals on card removal
+  const cleanupObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.removedNodes.forEach((node) => {
+        if (node === card && progressInterval) {
+          clearInterval(progressInterval);
+        }
+      });
+    });
+  });
+  if (card.parentNode) {
+    cleanupObserver.observe(card.parentNode, { childList: true });
+  }
 
   // Create checkmark badge for in-downloads state
   const checkmarkBadge = document.createElement("button");
@@ -359,7 +479,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     }
   });
 
-  card.appendChild(imgEl);
+  card.appendChild(imageWrapper);
   card.appendChild(downloadButton);
   card.appendChild(caption);
   card.appendChild(checkmarkBadge);

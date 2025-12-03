@@ -537,6 +537,10 @@ aside .own-art:hover {
   flex: 1;
   max-width: 635px;
 }
+.tile.full-width.secondary .title{
+  font-size: 28px;
+  padding: 80px 0 20px;
+}
 
 /* make <img> behave like a background cover */
 .tile img {
@@ -555,7 +559,7 @@ aside .own-art:hover {
   bottom: 0;
   background: linear-gradient(0deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
   color: var(--color-txt);
-  font-size: 36px;
+  font-size: 40px;
   font-weight: 200;
   letter-spacing: 2px;
   line-height: 1.4;
@@ -647,7 +651,7 @@ aside .own-art:hover {
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s ease, background 0.2s ease;
-  z-index: 0;
+  z-index: 10;
   pointer-events: none;
   font-family: 'Lexend', sans-serif;
   font-size: 16px;
@@ -774,6 +778,114 @@ aside .own-art:hover {
 /* Remove fixed aspect ratio for vertical artworks */
 .vertical .card.artwork {
   aspect-ratio: unset;
+}
+
+/* ============ ARTWORK LOADING STATES ============ */
+
+/* Image wrapper - contains all loading layers */
+.artwork-image-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow:
+    rgba(6, 24, 44, 0.4) 0px 0px 0px 2px,
+    rgba(6, 24, 44, 0.65) 0px 4px 6px -1px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+/* Blur preview layer - fades in when loaded */
+.artwork-blur-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  filter: blur(8px);
+  transform: scale(1.1); /* Hide blur edges */
+}
+
+.artwork-blur-preview.loaded {
+  opacity: 1;
+}
+
+.artwork-blur-preview.hidden {
+  opacity: 0;
+}
+
+.artwork-blur-preview.failed {
+  opacity: 0;
+}
+
+.artwork-blur-preview.error {
+  background-color: rgba(0, 0, 0, 0.6);
+  filter: none;
+}
+
+/* Full image - fades in when loaded */
+.artwork-full-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.artwork-full-image.loaded {
+  opacity: 1;
+}
+
+/* Progress bar - fallback when blur unavailable */
+.artwork-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 5;
+}
+
+.artwork-progress-bar.active {
+  opacity: 1;
+}
+
+.artwork-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg,
+    var(--color-spot) 0%,
+    rgba(86, 204, 255, 0.7) 50%,
+    var(--color-spot) 100%
+  );
+  background-size: 200% 100%;
+  animation: progressShimmer 1.5s ease-in-out infinite;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px rgba(86, 204, 255, 0.5);
+}
+
+@keyframes progressShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.artwork-progress-bar.error .artwork-progress-fill {
+  background: rgba(255, 100, 100, 0.8);
+  animation: none;
 }
 
 /* FAQ Page

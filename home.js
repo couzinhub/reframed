@@ -281,7 +281,7 @@ function renderRecentlyAdded(container, images) {
   const viewMoreLink = document.createElement("a");
   viewMoreLink.className = "load-more-btn";
   viewMoreLink.href = "/browse-recent.html";
-  viewMoreLink.textContent = "View more";
+  viewMoreLink.textContent = "Browse";
 
   section.appendChild(viewMoreLink);
   container.appendChild(section);
