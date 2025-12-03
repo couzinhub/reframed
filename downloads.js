@@ -154,10 +154,17 @@ function updateAllArtworkStates() {
   artworks.forEach(card => {
     const publicId = card.dataset.publicId;
     if (publicId) {
-      if (isInDownloads(publicId)) {
+      const inDownloads = isInDownloads(publicId);
+      if (inDownloads) {
         card.classList.add('in-downloads');
       } else {
         card.classList.remove('in-downloads');
+      }
+
+      // Update checkmark badge visibility
+      const checkmarkBadge = card.querySelector('.in-downloads-checkmark');
+      if (checkmarkBadge) {
+        checkmarkBadge.style.display = inDownloads ? 'block' : 'none';
       }
     }
   });
@@ -439,7 +446,9 @@ async function startSequentialDownload() {
     }
 
     try {
-      await downloadArtwork(nextItem.imageUrl, nextItem.niceName);
+      // Extract original filename from publicId
+      const originalFilename = nextItem.publicId.split('/').pop();
+      await downloadArtwork(nextItem.imageUrl, originalFilename);
       successCount++;
 
       // Mark as completed
