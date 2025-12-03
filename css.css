@@ -780,6 +780,23 @@ aside .own-art:hover {
   aspect-ratio: unset;
 }
 
+/* Vertical artwork image wrapper needs auto height */
+.vertical .card.artwork .artwork-image-wrapper {
+  height: auto;
+}
+
+/* Vertical artwork images need auto height too */
+.vertical .card.artwork .artwork-full-image {
+  position: relative;
+  height: auto;
+}
+
+/* Vertical blur preview should match image size */
+.vertical .card.artwork .artwork-blur-preview {
+  position: absolute;
+  height: 100%;
+}
+
 /* ============ ARTWORK LOADING STATES ============ */
 
 /* Image wrapper - contains all loading layers */

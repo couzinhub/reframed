@@ -238,22 +238,16 @@ function buildArtistCard(artist) {
   card.setAttribute("aria-label", artist.label);
   card.setAttribute("data-tag", artist.tag);
 
-  const thumbWrapper = document.createElement("div");
-  thumbWrapper.className = "thumb";
-
   if (artist.chosenImage) {
     const niceName = humanizePublicId(artist.chosenImage.public_id);
     const thumbUrl = getThumbnailUrlWithCrop(artist.chosenImage.public_id, 700);
-    const imgEl = document.createElement("img");
-    imgEl.loading = "lazy";
-    imgEl.src = thumbUrl;
-    imgEl.alt = niceName;
-    thumbWrapper.appendChild(imgEl);
+    const imageWrapper = createImageWithLoading(artist.chosenImage.public_id, thumbUrl, niceName);
+    card.appendChild(imageWrapper);
   } else {
-    thumbWrapper.classList.add("placeholder");
+    const thumbWrapper = document.createElement("div");
+    thumbWrapper.className = "thumb placeholder";
+    card.appendChild(thumbWrapper);
   }
-
-  card.appendChild(thumbWrapper);
 
   // label with count
   const labelEl = document.createElement("div");

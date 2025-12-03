@@ -203,22 +203,16 @@ function buildCollectionCard(row, imgData) {
   card.setAttribute("aria-label", row.label);
   card.setAttribute("data-tag", row.tag);
 
-  const thumbWrapper = document.createElement("div");
-  thumbWrapper.className = "thumb";
-
   if (imgData) {
     const niceName = humanizePublicId(imgData.public_id);
     const thumbUrl = getThumbnailUrlWithCrop(imgData.public_id, 700);
-    const imgEl = document.createElement("img");
-    imgEl.loading = "lazy";
-    imgEl.src = thumbUrl;
-    imgEl.alt = niceName;
-    thumbWrapper.appendChild(imgEl);
+    const imageWrapper = createImageWithLoading(imgData.public_id, thumbUrl, niceName);
+    card.appendChild(imageWrapper);
   } else {
-    thumbWrapper.classList.add("placeholder");
+    const thumbWrapper = document.createElement("div");
+    thumbWrapper.className = "thumb placeholder";
+    card.appendChild(thumbWrapper);
   }
-
-  card.appendChild(thumbWrapper);
 
   // label with optional count
   const labelEl = document.createElement("div");

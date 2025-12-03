@@ -157,16 +157,17 @@ function buildTileElementFromCache(tileData) {
   tile.href = tileData.chosen.linkHref;
   tile.setAttribute("aria-label", tileData.row.label);
 
-  const img = document.createElement("img");
-  img.loading = "lazy";
-  img.src = tileData.chosen.thumbUrl;
-  img.alt = tileData.chosen.niceTitle;
+  const imageWrapper = createImageWithLoading(
+    tileData.chosen.public_id,
+    tileData.chosen.thumbUrl,
+    tileData.chosen.niceTitle
+  );
 
   const titleDiv = document.createElement("div");
   titleDiv.className = "title";
   titleDiv.textContent = tileData.row.label;
 
-  tile.appendChild(img);
+  tile.appendChild(imageWrapper);
   tile.appendChild(titleDiv);
 
   return tile;

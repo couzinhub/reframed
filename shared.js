@@ -87,7 +87,64 @@ function getThumbnailUrlWithCrop(publicId, width) {
 // Get blur preview URL (tiny blurred thumbnail for instant loading)
 function getBlurPreviewUrl(publicId) {
   const version = typeof CACHE_VERSION !== 'undefined' ? CACHE_VERSION : Date.now();
-  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-100,bl-1,q-20,f-auto&v=${version}`;
+  return `${IMAGEKIT_URL_ENDPOINT}/${publicId}?tr=w-100,bl-3,q-20,f-auto&v=${version}`;
+}
+
+// Create image wrapper with blur-up loading for simple image cards (artists/collections)
+function createImageWithLoading(publicId, thumbUrl, alt) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "artwork-image-wrapper";
+
+  // Blur preview
+  const blurPreview = document.createElement("div");
+  blurPreview.className = "artwork-blur-preview";
+  const blurUrl = getBlurPreviewUrl(publicId);
+  blurPreview.style.backgroundImage = `url("${blurUrl}")`;
+
+  // Full image
+  const imgEl = document.createElement("img");
+  imgEl.loading = "lazy";
+  imgEl.alt = alt;
+  imgEl.className = "artwork-full-image";
+
+  // Test blur preview load
+  const blurPreviewTestImg = new Image();
+  blurPreviewTestImg.onload = () => {
+    blurPreview.classList.add('loaded');
+  };
+  blurPreviewTestImg.onerror = () => {
+    blurPreview.classList.add('failed');
+  };
+  blurPreviewTestImg.src = blurUrl;
+
+  // Set src first
+  imgEl.src = thumbUrl;
+
+  // Check if already cached - if so, skip blur entirely
+  if (imgEl.complete && imgEl.naturalHeight !== 0) {
+    // Image is cached, show it immediately without blur
+    imgEl.classList.add('loaded');
+    blurPreview.classList.add('failed'); // Don't show blur at all
+  } else {
+    // Image needs to load, show blur preview
+    imgEl.addEventListener('load', () => {
+      // Small delay to ensure blur is visible first
+      setTimeout(() => {
+        imgEl.classList.add('loaded');
+        blurPreview.classList.add('hidden');
+      }, 100);
+    });
+
+    imgEl.addEventListener('error', () => {
+      blurPreview.classList.add('error');
+    });
+  }
+
+  // Assemble
+  wrapper.appendChild(blurPreview);
+  wrapper.appendChild(imgEl);
+
+  return wrapper;
 }
 
 // CSV Parser - parses CSV text into rows
@@ -238,7 +295,6 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   const blurPreview = document.createElement("div");
   blurPreview.className = "artwork-blur-preview";
   const blurUrl = getBlurPreviewUrl(publicId);
-  console.log('Setting blur URL:', blurUrl);
   blurPreview.style.backgroundImage = `url("${blurUrl}")`;
 
   // Layer 2: Progress bar (fallback if blur fails)
@@ -289,41 +345,36 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   // Test if blur preview loads successfully
   const blurPreviewTestImg = new Image();
   blurPreviewTestImg.onload = () => {
-    console.log('Blur preview loaded for:', publicId);
     blurPreview.classList.add('loaded');
   };
   blurPreviewTestImg.onerror = () => {
-    console.log('Blur preview failed for:', publicId);
     // Blur failed, show progress bar instead
     blurPreview.classList.add('failed');
     startProgress();
   };
   blurPreviewTestImg.src = getBlurPreviewUrl(publicId);
 
-  // Handle full image load - set up BEFORE setting src
-  imgEl.addEventListener('load', () => {
-    console.log('Full image loaded:', publicId);
-    completeProgress();
-    // Start both transitions simultaneously for smooth crossfade
-    imgEl.classList.add('loaded');
-    blurPreview.classList.add('hidden');
-  });
-
-  // Handle errors
-  imgEl.addEventListener('error', () => {
-    console.log('Full image error:', publicId);
-    completeProgress();
-    blurPreview.classList.add('error');
-  });
-
   // Now set the src to trigger loading
   imgEl.src = getThumbnailUrl(publicId, thumbWidth);
 
   // Check if image is already loaded (from cache) - after setting src
   if (imgEl.complete && imgEl.naturalHeight !== 0) {
-    console.log('Image already cached:', publicId);
+    // Image is cached, show it immediately without blur
     imgEl.classList.add('loaded');
-    blurPreview.classList.add('hidden');
+    blurPreview.classList.add('failed'); // Don't show blur at all
+  } else {
+    // Image needs to load, show blur preview
+    imgEl.addEventListener('load', () => {
+      completeProgress();
+      // Start both transitions simultaneously for smooth crossfade
+      imgEl.classList.add('loaded');
+      blurPreview.classList.add('hidden');
+    });
+
+    imgEl.addEventListener('error', () => {
+      completeProgress();
+      blurPreview.classList.add('error');
+    });
   }
 
   // Assemble layers
