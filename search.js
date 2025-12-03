@@ -127,11 +127,6 @@ function fuzzyScore(text, term) {
     return 100;
   }
 
-  // Check fuzzy match (all characters in order)
-  if (fuzzyMatch(text, term)) {
-    return 50;
-  }
-
   // Check word boundaries - see if term matches start of any word
   const words = text.split(/\s+/);
   let bestScore = 0;
@@ -141,26 +136,17 @@ function fuzzyScore(text, term) {
       return 75;
     }
 
-    // Fuzzy match on individual words
-    if (fuzzyMatch(word, term)) {
-      bestScore = Math.max(bestScore, 40);
-      continue;
-    }
+    // Check edit distance for typo tolerance on individual words
+    // Only compare if word length is similar to avoid false matches
+    const lengthDiff = Math.abs(word.length - term.length);
+    if (lengthDiff <= 2) {
+      const distance = getLevenshteinDistance(term, word);
+      const maxLen = Math.max(term.length, word.length);
+      const similarity = 1 - (distance / maxLen);
 
-    // Check edit distance for typo tolerance
-    const distance = getLevenshteinDistance(term, word);
-    const maxLen = Math.max(term.length, word.length);
-    const similarity = 1 - (distance / maxLen);
-
-    // Lower threshold to 60% for better typo tolerance
-    // Words like "moan" vs "mona" have 50% similarity but same length should get bonus
-    if (similarity >= 0.5) {
-      // Give bonus if same length (likely just transposed/swapped letters)
-      const lengthBonus = term.length === word.length ? 0.15 : 0;
-      const adjustedSimilarity = Math.min(1, similarity + lengthBonus);
-
-      if (adjustedSimilarity >= 0.6) {
-        const score = Math.floor(adjustedSimilarity * 70);
+      // Require higher threshold (70%) to avoid false matches
+      if (similarity >= 0.7) {
+        const score = Math.floor(similarity * 70);
         bestScore = Math.max(bestScore, score);
       }
     }
@@ -183,6 +169,8 @@ function searchArtworks(query, artworks) {
     let totalScore = 0;
     let matchCount = 0;
     let hasNameMatch = false;
+    let hasArtistMatch = false;
+    let hasDescriptionOnlyMatch = false;
 
     for (const term of searchTerms) {
       const nameScore = fuzzyScore(artwork.searchName, term);
@@ -197,9 +185,12 @@ function searchArtworks(query, artworks) {
         }
       }
 
-      // Track if we have any matches in the name
+      // Track if we have any matches in the name or artist
       if (nameScore > 0) {
         hasNameMatch = true;
+      }
+      if (artistScore > 0) {
+        hasArtistMatch = true;
       }
 
       const maxScore = Math.max(nameScore, artistScore, descScore);
@@ -213,25 +204,36 @@ function searchArtworks(query, artworks) {
           totalScore += artistScore * 5;
         } else {
           totalScore += descScore;
+          hasDescriptionOnlyMatch = true;
         }
       }
     }
 
     // All terms must have at least some match
     if (matchCount < searchTerms.length) {
-      return { artwork, score: 0 };
+      return { artwork, score: 0, priority: 0 };
     }
 
     // Additional boost if all terms match in the name
     const finalScore = hasNameMatch ? totalScore * 1.5 : totalScore;
 
-    return { artwork, score: finalScore / searchTerms.length };
+    // Set priority: 2 = name/artist match, 1 = description only match
+    const priority = (hasNameMatch || hasArtistMatch) ? 2 : 1;
+
+    return { artwork, score: finalScore / searchTerms.length, priority };
   });
 
-  // Filter results with score > 0 and sort by score (highest first)
+  // Filter results with score >= 50 and sort by priority first, then by score
   return scored
-    .filter(item => item.score > 0)
-    .sort((a, b) => b.score - a.score)
+    .filter(item => item.score >= 50)
+    .sort((a, b) => {
+      // Sort by priority first (higher priority first)
+      if (b.priority !== a.priority) {
+        return b.priority - a.priority;
+      }
+      // Then by score (higher score first)
+      return b.score - a.score;
+    })
     .map(item => item.artwork);
 }
 
@@ -264,7 +266,7 @@ function getRandomArtworks(artworks, count = 30) {
 }
 
 function showRandomArtworks() {
-  const randomArtworks = getRandomArtworks(ALL_ARTWORKS, 24);
+  const randomArtworks = getRandomArtworks(ALL_ARTWORKS, 6);
   renderSearchResults(randomArtworks);
 }
 
