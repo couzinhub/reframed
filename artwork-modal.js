@@ -107,7 +107,9 @@ async function openArtworkModal(publicId, niceName, orientation) {
 
   // Build the modal content
   const imageUrl = getImageUrl(publicId);
-  const thumbnailUrl = getThumbnailUrl(publicId, 1400);
+  // Use 1200px width for landscape images, 500px for portrait
+  const imageWidth = orientation === 'landscape' ? 1200 : 500;
+  const thumbnailUrl = getThumbnailUrl(publicId, imageWidth);
   const isInDownloads = typeof window.isInDownloads === 'function' && window.isInDownloads(publicId);
 
   modal.innerHTML = `
@@ -131,16 +133,21 @@ async function openArtworkModal(publicId, niceName, orientation) {
         <h1 class="artwork-modal-title">${artworkTitle}</h1>
         <div class="artwork-modal-subtitle">
           ${artistInfo ? `<a href="${artistTagUrl}" class="artwork-modal-artist" id="artistLink">${artistInfo}</a>` : ''}
-          ${artistInfo && artwork.size ? '<span class="artwork-modal-separator"> • </span>' : ''}
+          ${artistInfo && (artwork.width || artwork.size) ? '<span class="artwork-modal-separator"> • </span>' : ''}
+          ${artwork.width && artwork.height ? `<span class="artwork-modal-dimensions">${artwork.width} × ${artwork.height}</span>` : ''}
+          ${artwork.width && artwork.size ? '<span class="artwork-modal-separator"> • </span>' : ''}
           ${artwork.size ? `<span class="artwork-modal-file-size">${formatFileSize(artwork.size)}</span>` : ''}
         </div>
 
         <div class="artwork-modal-actions">
-          <button id="modalDownloadBtn" class="btn-modal-action btn-modal-primary">
-            ${isInDownloads ? 'Remove from Downloads' : 'Add to Downloads'}
-          </button>
           <button id="modalShareBtn" class="btn-modal-action btn-modal-secondary">
             Copy link
+          </button>
+          <button id="modalDownloadNowBtn" class="btn-modal-action btn-modal-secondary">
+            Download now
+          </button>
+          <button id="modalDownloadBtn" class="btn-modal-action btn-modal-primary">
+            ${isInDownloads ? 'Remove from Downloads' : 'Add to Downloads'}
           </button>
         </div>
 
@@ -232,6 +239,64 @@ async function openArtworkModal(publicId, niceName, orientation) {
       } else {
         window.addToDownloads(publicId, niceName, imageUrl, orientation || 'landscape');
         downloadBtn.textContent = 'Added to Downloads';
+      }
+    }
+  });
+
+  // Download now button handler - downloads immediately without adding to queue
+  const downloadNowBtn = modal.querySelector('#modalDownloadNowBtn');
+  downloadNowBtn.addEventListener('click', async () => {
+    try {
+      // Extract original filename from publicId
+      const originalFilename = publicId.split('/').pop();
+
+      // Show downloading feedback
+      const originalContent = downloadNowBtn.textContent;
+      downloadNowBtn.textContent = 'Downloading...';
+      downloadNowBtn.disabled = true;
+
+      // Use the same download logic as the downloads queue
+      const urlObj = new URL(imageUrl);
+      urlObj.searchParams.set('tr', 'orig-true');
+      const originalUrl = urlObj.toString();
+
+      const response = await fetch(originalUrl);
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const downloadLink = document.createElement('a');
+      downloadLink.href = blobUrl;
+      downloadLink.download = originalFilename || 'artwork';
+      downloadLink.style.display = 'none';
+      document.body.appendChild(downloadLink);
+
+      downloadLink.click();
+
+      // Clean up
+      setTimeout(() => {
+        if (downloadLink.parentNode) {
+          document.body.removeChild(downloadLink);
+        }
+        URL.revokeObjectURL(blobUrl);
+      }, 1000);
+
+      // Show success feedback
+      downloadNowBtn.textContent = 'Downloaded!';
+      setTimeout(() => {
+        downloadNowBtn.textContent = originalContent;
+        downloadNowBtn.disabled = false;
+      }, 2000);
+    } catch (error) {
+      console.error('Download failed:', error);
+      downloadNowBtn.textContent = 'Download failed';
+      setTimeout(() => {
+        downloadNowBtn.textContent = 'Download now';
+        downloadNowBtn.disabled = false;
+      }, 2000);
+      if (typeof showToast === 'function') {
+        showToast('Download failed');
       }
     }
   });
