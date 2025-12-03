@@ -13,7 +13,6 @@ function renderBrowseTabs(currentPage) {
     { id: 'collections', label: 'Collections', href: '/browse-collections.html' },
     { id: 'artists', label: 'Artists', href: '/browse-artists.html' },
     { id: 'vertical', label: 'Vertical artworks', href: '/browse-vertical.html' },
-    { id: 'search', label: 'Search', href: '/browse-search.html' }
   ];
 
   const ul = document.createElement('ul');

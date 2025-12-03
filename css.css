@@ -2335,11 +2335,16 @@ body.modal-open {
 /* Search Page Styles
 -----------------------------*/
 .search-container {
-  max-width: 800px;
-  margin: 0px auto 50px;
   position: sticky;
-  top: 100px;
-  z-index: 1;
+  top: 0;
+  z-index: 100;
+  display: block;
+  list-style: none;
+  text-align: center;
+  margin: 0 -50px 30px;
+  padding: 20px 70px 20px;
+  background: rgba(12, 27, 68, .8);
+  backdrop-filter: blur(12px);
 }
 
 #searchInput {
@@ -2368,7 +2373,7 @@ body.modal-open {
 
 #clearSearch {
   position: absolute;
-  right: 12px;
+  right: 80px;
   top: 50%;
   transform: translateY(-50%);
   width: 36px;
@@ -2388,15 +2393,12 @@ body.modal-open {
 }
 
 @media (max-width: 768px) {
-  .search-container {
-    max-width: 100%;
-    margin: 0 auto 30px;
-    top: 140px
-  }
-
   #searchInput {
     font-size: 16px;
     padding: 14px 45px 14px 18px;
+  }
+  #clearSearch {
+    right: 76px;
   }
 }
 

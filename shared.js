@@ -553,7 +553,8 @@ function initializeNavigation(currentPage) {
       </a>
       <ul>
         <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
-        <li class="${currentPage === 'browse' ? 'current' : ''}"><a href="/browse-recent.html">Browse & Search</a></li>
+        <li class="${currentPage === 'browse' ? 'current' : ''}"><a href="/browse-recent.html">Browse</a></li>
+        <li class="${currentPage === 'search' ? 'current' : ''}"><a href="/search.html">Search</a></li>
         <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
         <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
       </ul>
