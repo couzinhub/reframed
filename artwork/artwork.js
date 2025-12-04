@@ -133,40 +133,39 @@ function renderArtworkDetail(artwork, publicId) {
 
   // Update OG image to the actual artwork
   const imageUrl = getImageUrl(publicId);
-  const thumbnailUrl = getThumbnailUrl(publicId, 1400);
+  const orientation = getOrientation(artwork.width, artwork.height);
+  const thumbnailWidth = orientation === 'Portrait' ? 500 : 1200;
+  const thumbnailUrl = getThumbnailUrl(publicId, thumbnailWidth);
   document.getElementById('ogImage').setAttribute('content', thumbnailUrl);
 
-  const description = `View and download "${niceName}" for your Samsung Frame TV.`;
-  document.getElementById('pageDescription').setAttribute('content', description);
-  document.getElementById('ogDescription').setAttribute('content', description);
-  document.getElementById('twitterDescription').setAttribute('content', description);
+  const metaDescription = `View and download "${niceName}" for your Samsung Frame TV.`;
+  document.getElementById('pageDescription').setAttribute('content', metaDescription);
+  document.getElementById('ogDescription').setAttribute('content', metaDescription);
+  document.getElementById('twitterDescription').setAttribute('content', metaDescription);
 
-  // Extract artist name if present
+  // Extract artist name and artwork title (similar to modal)
   const artistName = extractArtistFromTitle(niceName);
+  let artworkTitle = niceName;
+  let artistInfo = '';
+  let artistTagUrl = '';
 
-  // Build tags list (filter out collection tags and show clickable tag pills)
-  let tagsHtml = '<div class="tags-list">';
-  if (artwork.tags && artwork.tags.length > 0) {
-    const filteredTags = artwork.tags.filter(tag =>
-      !tag.toLowerCase().startsWith('collection - ') &&
-      !tag.toLowerCase().startsWith('thumbnail')
-    );
-
-    for (const tag of filteredTags) {
-      const prettyTag = tag.trim()
+  if (artistName) {
+    const titleParts = niceName.split(' - ');
+    if (titleParts.length > 1) {
+      artworkTitle = titleParts.slice(1).join(' - ').trim();
+      artistInfo = artistName;
+      const prettyTag = artistName.trim()
         .replace(/-/g, "%2D")
         .replace(/\s+/g, "-");
-      tagsHtml += `<a href="/tag/#${prettyTag}" class="tag-pill">${tag}</a>`;
+      artistTagUrl = `/tag/#${prettyTag}`;
     }
   }
-  if (tagsHtml === '<div class="tags-list">') {
-    tagsHtml += '<span class="info-value">No tags</span>';
-  }
-  tagsHtml += '</div>';
 
   // Check if artwork is already in downloads
   const isInDownloads = typeof window.isInDownloads === 'function' && window.isInDownloads(publicId);
-  const orientation = getOrientation(artwork.width, artwork.height);
+
+  // Get description from ImageKit custom field
+  const description = getDescriptionFromCustomField(artwork);
 
   container.innerHTML = `
     <div class="artwork-image-container">
@@ -174,41 +173,36 @@ function renderArtworkDetail(artwork, publicId) {
     </div>
 
     <div class="artwork-detail-info">
-
-      <div class="artwork-meta">
-        ${artwork.size ? `<div class="file-size-info">${formatFileSize(artwork.size)}</div>` : ''}
-          <button id="toggleDownloadBtn" class="btn-primary">
-            ${isInDownloads ? 'Remove from Downloads' : 'Add to Downloads'}
-          </button>
+      <h1 class="artwork-modal-title">${artworkTitle}</h1>
+      <div class="artwork-modal-subtitle">
+        ${artistInfo ? `<a href="${artistTagUrl}" class="artwork-modal-artist">${artistInfo}</a>` : ''}
+        ${artistInfo && (artwork.width || artwork.size) ? '<span class="artwork-modal-separator"> • </span>' : ''}
+        ${artwork.width && artwork.height ? `<span class="artwork-modal-dimensions">${artwork.width} × ${artwork.height}</span>` : ''}
+        ${artwork.width && artwork.size ? '<span class="artwork-modal-separator"> • </span>' : ''}
+        ${artwork.size ? `<span class="artwork-modal-file-size">${formatFileSize(artwork.size)}</span>` : ''}
       </div>
 
-      <div class="artwork-detail-header"><h1 class="artwork-detail-title">${niceName}</h1></div>
-
-      <div id="descriptionSection" class="description-content" style="display: none;">
-        <h2 id="descriptionTitle"></h2>
-        <div id="descriptionContent"></div>
+      <div class="artwork-modal-actions">
+        <button id="shareBtn" class="btn-modal-action btn-modal-secondary">
+          Copy link
+        </button>
+        <button id="downloadNowBtn" class="btn-modal-action btn-modal-secondary">
+          Download now
+        </button>
+        <button id="toggleDownloadBtn" class="btn-modal-action btn-modal-primary">
+          ${isInDownloads ? 'Remove from Downloads' : 'Add to Downloads'}
+        </button>
       </div>
-  </div>
+
+      ${description ? `
+        <div class="artwork-modal-description">
+          <div class="artwork-modal-description-text">
+            ${description.split('\n').filter(p => p.trim().length > 0).map(p => `<p>${p}</p>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
   `;
-
-  // Display description from ImageKit custom field
-  const artworkDescription = getDescriptionFromCustomField(artwork);
-  if (artworkDescription) {
-    const descSection = document.getElementById('descriptionSection');
-    const descTitle = document.getElementById('descriptionTitle');
-    const descContent = document.getElementById('descriptionContent');
-
-    if (descSection && descTitle && descContent) {
-      descSection.style.display = 'block';
-      descTitle.textContent = '';
-
-      // Split into paragraphs for better readability
-      const paragraphs = artworkDescription.split('\n').filter(p => p.trim().length > 0);
-      const formattedContent = paragraphs.map(p => `<p>${p}</p>`).join('');
-
-      descContent.innerHTML = formattedContent;
-    }
-  }
 
   // Add event listener for toggle download button
   const toggleBtn = document.getElementById('toggleDownloadBtn');
@@ -218,13 +212,100 @@ function renderArtworkDetail(artwork, publicId) {
         if (window.isInDownloads(publicId)) {
           window.removeFromDownloads(publicId);
           toggleBtn.textContent = 'Add to Downloads';
-          toggleBtn.classList.remove('btn-primary');
-          toggleBtn.classList.add('btn-secondary');
         } else {
           window.addToDownloads(publicId, niceName, imageUrl, orientation.toLowerCase());
           toggleBtn.textContent = 'Remove from Downloads';
-          toggleBtn.classList.remove('btn-secondary');
-          toggleBtn.classList.add('btn-primary');
+        }
+      }
+    });
+  }
+
+  // Share button handler
+  const shareBtn = document.getElementById('shareBtn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', async () => {
+      const cleanSlug = niceName.replace(/\s/g, '_');
+      const artworkUrl = `${window.location.origin}/artwork/#${cleanSlug}`;
+
+      try {
+        await navigator.clipboard.writeText(artworkUrl);
+
+        // Show feedback
+        const originalContent = shareBtn.innerHTML;
+        shareBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
+            <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
+          </svg>
+          Copied!
+        `;
+
+        setTimeout(() => {
+          shareBtn.innerHTML = originalContent;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy URL:', err);
+        if (typeof showToast === 'function') {
+          showToast('Failed to copy URL');
+        }
+      }
+    });
+  }
+
+  // Download now button handler - downloads immediately without adding to queue
+  const downloadNowBtn = document.getElementById('downloadNowBtn');
+  if (downloadNowBtn) {
+    downloadNowBtn.addEventListener('click', async () => {
+      try {
+        // Extract original filename from publicId
+        const originalFilename = publicId.split('/').pop();
+
+        // Show downloading feedback
+        const originalContent = downloadNowBtn.textContent;
+        downloadNowBtn.textContent = 'Downloading...';
+        downloadNowBtn.disabled = true;
+
+        // Use the same download logic as the downloads queue
+        const urlObj = new URL(imageUrl);
+        urlObj.searchParams.set('tr', 'orig-true');
+        const originalUrl = urlObj.toString();
+
+        const response = await fetch(originalUrl);
+        if (!response.ok) throw new Error('Network response was not ok');
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = originalFilename || 'artwork';
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+
+        downloadLink.click();
+
+        // Clean up
+        setTimeout(() => {
+          if (downloadLink.parentNode) {
+            document.body.removeChild(downloadLink);
+          }
+          URL.revokeObjectURL(blobUrl);
+        }, 1000);
+
+        // Show success feedback
+        downloadNowBtn.textContent = 'Downloaded!';
+        setTimeout(() => {
+          downloadNowBtn.textContent = originalContent;
+          downloadNowBtn.disabled = false;
+        }, 2000);
+      } catch (error) {
+        console.error('Download failed:', error);
+        downloadNowBtn.textContent = 'Download failed';
+        setTimeout(() => {
+          downloadNowBtn.textContent = 'Download now';
+          downloadNowBtn.disabled = false;
+        }, 2000);
+        if (typeof showToast === 'function') {
+          showToast('Download failed');
         }
       }
     });

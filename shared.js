@@ -499,7 +499,21 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
     const artistLine = document.createElement('span');
     artistLine.className = 'artist-line';
-    artistLine.textContent = 'by ' + artistName;
+
+    const artistTextWrapper = document.createElement('span');
+    artistTextWrapper.className = 'artist-text-wrapper';
+
+    const artistText = document.createElement('span');
+    artistText.className = 'artist-text';
+    artistText.textContent = 'by ' + artistName;
+
+    const readMoreText = document.createElement('span');
+    readMoreText.className = 'read-more-text';
+    readMoreText.textContent = 'Read more about this artwork';
+
+    artistTextWrapper.appendChild(artistText);
+    artistTextWrapper.appendChild(readMoreText);
+    artistLine.appendChild(artistTextWrapper);
     captionText.appendChild(artistLine);
   } else {
     // No artist in title, just show title
