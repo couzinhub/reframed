@@ -215,10 +215,8 @@ function renderFromTiles(container, tilesData) {
 
   const tilesArray = buildRowGroupsFromOrderedTiles(tiles);
 
-  // keep the first child of container (your header stuff), wipe the rest
-  while (container.children.length > 1) {
-    container.removeChild(container.lastChild);
-  }
+  // Clear all children (including spinner)
+  container.innerHTML = '';
 
   renderGroupsInto(container, tilesArray);
 }
@@ -292,6 +290,9 @@ function renderRecentlyAdded(container, images) {
 
 (async function initHomepage() {
   const container = document.getElementById("homeView");
+
+  // Show loading spinner
+  container.innerHTML = '<div class="loading-spinner-container"><span class="spinner large"></span></div>';
 
   // 1. Try to use cache if version matches
   const cached = loadHomepageCache(CACHE_VERSION);
