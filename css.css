@@ -801,6 +801,10 @@ aside .own-art:hover {
   aspect-ratio: 16 / 9;
   background-color: rgba(0, 0, 0, .4);
 }
+.card.artwork.portrait {
+  grid-row-end: span 3;
+  aspect-ratio: 9 / 16;
+}
 
 /* Remove fixed aspect ratio for vertical artworks */
 .vertical .card.artwork {

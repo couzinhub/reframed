@@ -225,7 +225,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   const thumbWidth = 700;
 
   const card = document.createElement("div");
-  card.className = "card artwork";
+  card.className = isPortrait ? "card artwork portrait" : "card artwork";
   card.dataset.publicId = publicId;
 
   const imageUrl = getImageUrl(publicId);
