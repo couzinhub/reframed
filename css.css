@@ -2345,7 +2345,7 @@ body.modal-open {
 .artwork-modal-image-container img.loaded {
   opacity: 1;
   transform: scale(1);
-  box-shadow: 0 0 0 3px #000, 0 0px 0px 10px rgba(255,255,255,0.8);
+  box-shadow: 0 0 0 2px #000, 0 0px 0px 12px #af8c58;
   border-radius: 0px;
 }
 
