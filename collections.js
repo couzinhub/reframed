@@ -16,7 +16,7 @@ let COLLECTION_ROWS_FETCHED_AT = 0;
 const ROWS_TTL_MS = 5 * 60 * 1000; // 5 min
 
 // localStorage cache for collections page
-const COLLECTIONS_LOCALSTORAGE_KEY = "reframed_collections_cache_v4";
+const COLLECTIONS_LOCALSTORAGE_KEY = "reframed_collections_cache_v5";
 
 // ---------- LOCALSTORAGE CACHE HELPERS ----------
 function loadCollectionsFromLocalStorage() {
@@ -303,15 +303,12 @@ function setupLazyThumbObserver() {
 
         const thumbWrapper = cardEl.querySelector(".thumb");
         if (thumbWrapper && chosenImage) {
-          thumbWrapper.innerHTML = "";
           const niceName = humanizePublicId(chosenImage.public_id);
           const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
-          const imgEl = document.createElement("img");
-          imgEl.loading = "lazy";
-          imgEl.src = thumbUrl;
-          imgEl.alt = niceName;
-          thumbWrapper.appendChild(imgEl);
-          thumbWrapper.classList.remove("placeholder");
+          const imageWrapper = createImageWithLoading(chosenImage.public_id, thumbUrl, niceName);
+
+          // Replace the entire placeholder wrapper with the new image wrapper
+          thumbWrapper.replaceWith(imageWrapper);
         }
       }
 

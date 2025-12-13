@@ -105,7 +105,7 @@ const TAG_IMAGES_CACHE = {};
 const TAG_TTL_MS = (window.DEBUG ? 2 : 20) * 60 * 1000;
 
 // localStorage cache for artists page
-const ARTISTS_LOCALSTORAGE_KEY = "reframed_artists_cache_v4";
+const ARTISTS_LOCALSTORAGE_KEY = "reframed_artists_cache_v5";
 
 // ---------- LOCALSTORAGE CACHE HELPERS ----------
 function loadArtistsFromLocalStorage() {
@@ -375,15 +375,12 @@ function setupLazyThumbObserver() {
 
         const thumbWrapper = cardEl.querySelector(".thumb");
         if (thumbWrapper && chosenImage) {
-          thumbWrapper.innerHTML = "";
           const niceName = humanizePublicId(chosenImage.public_id);
           const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
-          const imgEl = document.createElement("img");
-          imgEl.loading = "lazy";
-          imgEl.src = thumbUrl;
-          imgEl.alt = niceName;
-          thumbWrapper.appendChild(imgEl);
-          thumbWrapper.classList.remove("placeholder");
+          const imageWrapper = createImageWithLoading(chosenImage.public_id, thumbUrl, niceName);
+
+          // Replace the entire placeholder wrapper with the new image wrapper
+          thumbWrapper.replaceWith(imageWrapper);
         }
       }
 
