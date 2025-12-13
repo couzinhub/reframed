@@ -118,7 +118,7 @@ p {
 #browseTabs {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 11;
 }
 .tabs {
   display: block;
@@ -254,7 +254,7 @@ aside {
   height: 100%;
   width: var(--sidebar-width);
   position: fixed;
-  z-index: 2;
+  z-index: 12;
   top: 0;
   left: 0;
   background-color: var(--color-sidebar);
@@ -1297,6 +1297,7 @@ aside .own-art:hover {
   justify-content: center;
   padding: 0 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  isolation: isolate; /* Create new stacking context */
 }
 
 .mobile-top-bar .hamburger-menu {
@@ -1463,14 +1464,19 @@ aside .own-art:hover {
   aside ul {
     padding-top: 50px;
   }
+
+  .browsePage body {
+    padding-top: 60px;
+  }
+
   #browseTabs {
-    top:60px
+    top: 60px;
   }
 
   /* Browse tabs mobile transformation */
   .tabs {
-    margin: 0 0 10px -30px;
-    padding: 15px 30px;
+    margin: 0 0 10px;
+    padding: 15px 0;
     text-align: left;
     position: relative;
   }
@@ -1572,7 +1578,7 @@ aside .own-art:hover {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
-    z-index: 2;
+    z-index: 12;
   }
 
   body.menu-open::before {
@@ -1649,10 +1655,6 @@ aside .own-art:hover {
   }
   .caption-info-icon {
     left: 12px;
-  } 
-
-  .artist-line {
-    display: none;
   }
 
   .artist-name,
@@ -1731,7 +1733,7 @@ aside .own-art:hover {
 
 @media (max-width: 600px) {
   body {
-    padding: 80px 20px 30px;
+    padding: 60px 20px 30px;
   }
 
   p {
@@ -1746,7 +1748,6 @@ aside .own-art:hover {
 
   .card {
     gap: 1rem;
-    padding: 4px;
   }
   .card.artist {
     margin: 0 0 10px;
@@ -2603,7 +2604,7 @@ body.modal-open {
 .search-container {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 11;
   display: block;
   list-style: none;
   text-align: center;
@@ -2611,6 +2612,14 @@ body.modal-open {
   padding: 20px 70px 20px;
   background: rgba(12, 27, 68, .8);
   backdrop-filter: blur(12px);
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    top: 60px; /* Position below mobile top bar */
+    margin: 0 -20px 30px;
+    padding: 20px 30px;
+  }
 }
 
 #searchInput {
@@ -2664,7 +2673,7 @@ body.modal-open {
     padding: 14px 45px 14px 18px;
   }
   #clearSearch {
-    right: 76px;
+    right: 36px;
   }
 }
 

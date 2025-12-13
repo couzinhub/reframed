@@ -284,7 +284,7 @@ function showRandomArtworks() {
     ALL_ARTWORKS = await fetchAllArtworks();
 
     // Update placeholder with count
-    searchInput.placeholder = `Search through ${ALL_ARTWORKS.length} artworks available`;
+    searchInput.placeholder = `Search through ${ALL_ARTWORKS.length} artworks`;
 
     // Show 30 random artworks on initial load
     showRandomArtworks();
