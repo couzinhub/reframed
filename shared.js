@@ -10,7 +10,8 @@ gtag('config', 'G-14360H9J7X');
 async function fetchImagesForTag(tagName) {
   try {
     const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
-    const apiUrl = `https://api.imagekit.io/v1/files?tags=${encodeURIComponent(tagName)}&limit=1000`;
+    // Use type=file to get only current versions, excluding old file-version entries
+    const apiUrl = `https://api.imagekit.io/v1/files?tags=${encodeURIComponent(tagName)}&type=file&limit=1000`;
 
     const response = await fetch(apiUrl, {
       headers: { 'Authorization': authHeader }
@@ -47,7 +48,8 @@ function FxK(str) {
 async function fetchAllImageKitFiles() {
   try {
     const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
-    const apiUrl = 'https://api.imagekit.io/v1/files?limit=1000';
+    // Use type=file to get only current versions, excluding old file-version entries
+    const apiUrl = 'https://api.imagekit.io/v1/files?type=file&limit=1000';
 
     const response = await fetch(apiUrl, {
       headers: { 'Authorization': authHeader }

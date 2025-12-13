@@ -27,7 +27,8 @@ async function fetchArtworkDetailsByName(searchName) {
 
     // Fetch all files and search for the specific one
     // This is the most reliable approach with ImageKit API
-    const apiUrl = 'https://api.imagekit.io/v1/files?limit=1000';
+    // Use type=file to get only current versions, excluding old file-version entries
+    const apiUrl = 'https://api.imagekit.io/v1/files?type=file&limit=1000';
 
     const response = await fetch(apiUrl, {
       headers: { 'Authorization': authHeader }
