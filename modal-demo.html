@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modal Demo - Card Style</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Lexend', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .demo-button {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 20px 40px;
+      font-size: 18px;
+      font-family: 'Lexend', sans-serif;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .demo-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 30px rgba(0,0,0,0.3);
+    }
+
+    /* Card-style modal */
+    .artwork-modal-card {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 10000;
+      overflow: hidden;
+      transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .artwork-modal-card.show {
+      height: 33.333vh; /* 1/3 of viewport height */
+    }
+
+    .artwork-modal-card-content {
+      height: 100%;
+      overflow-y: auto;
+      padding: 40px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.3) transparent;
+    }
+
+    .artwork-modal-card-content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .artwork-modal-card-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .artwork-modal-card-content::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.3);
+      border-radius: 4px;
+    }
+
+    .artwork-modal-card-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10002;
+      transition: all 0.2s ease;
+      padding: 0;
+    }
+
+    .artwork-modal-card-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #af8c58;
+      transform: scale(1.05);
+    }
+
+    .artwork-modal-card-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .artwork-modal-title {
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: 2px;
+      margin: 0 0 12px;
+      color: white;
+      text-align: center;
+    }
+
+    .artwork-modal-subtitle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 16px;
+    }
+
+    .artwork-modal-artist {
+      color: #af8c58;
+      text-decoration: underline;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .artwork-modal-artist:hover {
+      color: #d4af76;
+    }
+
+    .artwork-modal-separator {
+      opacity: 0.5;
+    }
+
+    .artwork-modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .btn-modal-action {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-family: 'Lexend', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-modal-primary {
+      background: #af8c58;
+      color: white;
+    }
+
+    .btn-modal-primary:hover {
+      background: #d4af76;
+      transform: translateY(-1px);
+    }
+
+    .btn-modal-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-modal-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .artwork-modal-description {
+      margin-top: 20px;
+    }
+
+    .artwork-modal-description-text {
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.8;
+      font-size: 15px;
+    }
+
+    .artwork-modal-description-text p {
+      margin-bottom: 16px;
+    }
+
+    .artwork-modal-description-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* No backdrop - content remains interactive */
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .artwork-modal-card.show {
+        height: 50vh; /* Taller on mobile for better readability */
+      }
+
+      .artwork-modal-card-content {
+        padding: 30px 20px;
+      }
+
+      .artwork-modal-title {
+        font-size: 24px;
+      }
+
+      .artwork-modal-subtitle {
+        font-size: 14px;
+      }
+
+      .artwork-modal-actions {
+        flex-direction: column;
+      }
+
+      .btn-modal-action {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
+    <button class="demo-button" onclick="openModal()">Click to see card-style modal</button>
+    <button class="demo-button" onclick="alert('You can still interact with the page!')">Test interaction</button>
+  </div>
+
+  <div class="artwork-modal-card" id="modal">
+    <button class="artwork-modal-card-close" onclick="closeModal()">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+        <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
+      </svg>
+    </button>
+
+    <div class="artwork-modal-card-content">
+      <div class="artwork-modal-card-inner">
+        <h1 class="artwork-modal-title">The Starry Night</h1>
+
+        <div class="artwork-modal-subtitle">
+          <a href="#" class="artwork-modal-artist">Vincent van Gogh</a>
+          <span class="artwork-modal-separator">•</span>
+          <span>3840 × 2160</span>
+          <span class="artwork-modal-separator">•</span>
+          <span>4.2 MB</span>
+        </div>
+
+        <div class="artwork-modal-actions">
+          <button class="btn-modal-action btn-modal-secondary">Copy link</button>
+          <button class="btn-modal-action btn-modal-secondary">Download now</button>
+          <button class="btn-modal-action btn-modal-primary">Add to Downloads</button>
+        </div>
+
+        <div class="artwork-modal-description">
+          <div class="artwork-modal-description-text">
+            <p>The Starry Night is an oil-on-canvas painting by Dutch Post-Impressionist painter Vincent van Gogh. Painted in June 1889, it depicts the view from the east-facing window of his asylum room at Saint-Rémy-de-Provence, just before sunrise, with the addition of an imaginary village.</p>
+            <p>It has been in the permanent collection of the Museum of Modern Art in New York City since 1941, acquired through the Lillie P. Bliss Bequest. Widely regarded as Van Gogh's magnum opus, The Starry Night is one of the most recognizable paintings in Western art.</p>
+            <p>The painting features a swirling night sky filled with chromatic blue clouds, a glowing yellow crescent moon, and stars rendered as radiating orbs. Below the rolling hills of the horizon lies a French village, with a prominent spire of a church.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openModal() {
+      const modal = document.getElementById('modal');
+      // Small delay for smooth animation
+      setTimeout(() => {
+        modal.classList.add('show');
+      }, 10);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modal');
+      modal.classList.remove('show');
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+  </script>
+
+</body>
+</html>

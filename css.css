@@ -1168,7 +1168,6 @@ aside .own-art:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
   width: fit-content;
 }
 
@@ -1228,7 +1227,7 @@ aside .own-art:hover {
 
 @media (max-width: 768px) {
   .artwork-detail-container {
-    margin-top: 100px;
+    margin-top: 30px;
     padding: 0 20px 20px;
   }
   .artwork-image-container {
@@ -2260,48 +2259,37 @@ body.modal-open {
   }
 }
 
-/* Artwork Detail Modal
+/* Artwork Detail Modal - Card Style
 -----------------------------*/
 .artwork-modal {
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.95);
+  height: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
   z-index: 10000;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  scrollbar-gutter: stable;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.artwork-modal::-webkit-scrollbar {
-  display: none;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
 }
 
 .artwork-modal.show {
-  opacity: 1;
-}
-
-.artwork-modal-scroll-spacer {
-  height: 300px;
-  width: 100%;
+  height: 33.333vh;
 }
 
 .artwork-modal-close {
-  position: fixed;
-  top: 30px;
-  right: 15px;
-  width: 48px;
-  height: 48px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  background: black;
+  border: 2px solid white;
   border-radius: 50%;
-  color: var(--color-txt);
+  color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2311,72 +2299,30 @@ body.modal-open {
   padding: 0;
 }
 
-.artwork-modal-close:hover {
-  background: rgba(0, 0, 0, 0.8);
-  border-color: var(--color-spot);
-  transform: scale(1.05);
-}
-
-.artwork-modal-image-container {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px;
-  box-sizing: border-box;
-  z-index: 1;
-  pointer-events: none;
-  transition: padding 0.1s ease-out;
-}
-
-.artwork-modal-image-container img {
-  max-width: 100%;
-  max-height: 60vh;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
-  opacity: 0;
-  transform: scale(0.85);
-  transition: opacity 0.4s ease, transform 0.3s ease;
-  will-change: transform, opacity;
-}
-
-.artwork-modal-image-container img.loaded {
-  opacity: 1;
-  transform: scale(1);
-  box-shadow: 0 0 0 2px #000, 0 0px 0px 12px #af8c58;
-  border-radius: 0px;
-}
-
-.artwork-modal-image-container img.closing {
-  opacity: 0;
-  transform: scale(0.85);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
 .artwork-modal-content {
-  position: relative;
-  z-index: 2;
-  min-height: 100vh;
-  opacity: 0;
-  transform: translateY(50px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-  background: transparent;
-  backdrop-filter: none;
+  height: 100%;
+  overflow-y: auto;
+  padding: 40px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.3) transparent;
 }
 
-.artwork-modal-content.visible {
-  opacity: 1;
-  transform: translateY(0);
+.artwork-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.artwork-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.artwork-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
 }
 
 .artwork-modal-info {
   max-width: 900px;
   margin: 0 auto;
-  padding: 40px;
-  cursor: default;
 }
 
 .artwork-modal-title {
@@ -2458,7 +2404,6 @@ body.modal-open {
 .btn-modal-secondary {
   background: rgba(255, 255, 255, 0.1);
   color: var(--color-txt);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .btn-modal-secondary:hover {
@@ -2537,27 +2482,23 @@ body.modal-open {
 
 /* Mobile adjustments for artwork modal */
 @media (max-width: 768px) {
+  .artwork-modal.show {
+    height: 50vh;
+  }
+
   .artwork-modal-close {
-    top: 10px;
-    right: 10px;
-    width: 40px;
-    height: 40px;
+    top: -16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
   }
 
   .artwork-modal-close svg {
-    width: 24px;
-    height: 24px;
-  }
-
-  .artwork-modal-image-container {
-    padding: 80px 20px 20px;
+    width: 26px;
+    height: 26px;
   }
 
   .artwork-modal-content {
-    margin-top: 0;
-  }
-
-  .artwork-modal-info {
     padding: 30px 20px;
   }
 
@@ -2566,27 +2507,12 @@ body.modal-open {
     letter-spacing: 1px;
   }
 
-  .artwork-modal-subtitle {
-    flex-direction: column;
-    gap: 8px;
-  }
-
   .artwork-modal-artist,
   .artwork-modal-file-size {
     font-size: 16px;
   }
 
-  .artwork-modal-separator {
-    display: none;
-  }
-
-  .artwork-modal-actions {
-    flex-direction: column;
-    gap: 12px;
-  }
-
   .btn-modal-action {
-    width: 100%;
     justify-content: center;
   }
 

@@ -5,6 +5,14 @@ function getSlugFromHash() {
   // Get the raw hash without #
   let raw = window.location.hash.replace(/^#/, "").trim();
 
+  // Decode URL encoding (e.g., %C3%A9 -> é)
+  try {
+    raw = decodeURIComponent(raw);
+  } catch (e) {
+    // If decoding fails, use the raw value
+    console.warn('Failed to decode URL hash:', e);
+  }
+
   // Convert underscores back to spaces
   return raw.replace(/_/g, ' ');
 }
@@ -187,9 +195,6 @@ function renderArtworkDetail(artwork, publicId) {
         <button id="shareBtn" class="btn-modal-action btn-modal-secondary">
           Copy link
         </button>
-        <button id="downloadNowBtn" class="btn-modal-action btn-modal-secondary">
-          Download now
-        </button>
         <button id="toggleDownloadBtn" class="btn-modal-action btn-modal-primary">
           ${isInDownloads ? 'Remove from Downloads' : 'Add to Downloads'}
         </button>
@@ -252,65 +257,6 @@ function renderArtworkDetail(artwork, publicId) {
     });
   }
 
-  // Download now button handler - downloads immediately without adding to queue
-  const downloadNowBtn = document.getElementById('downloadNowBtn');
-  if (downloadNowBtn) {
-    downloadNowBtn.addEventListener('click', async () => {
-      try {
-        // Extract original filename from publicId
-        const originalFilename = publicId.split('/').pop();
-
-        // Show downloading feedback
-        const originalContent = downloadNowBtn.textContent;
-        downloadNowBtn.textContent = 'Downloading...';
-        downloadNowBtn.disabled = true;
-
-        // Use the same download logic as the downloads queue
-        const urlObj = new URL(imageUrl);
-        urlObj.searchParams.set('tr', 'orig-true');
-        const originalUrl = urlObj.toString();
-
-        const response = await fetch(originalUrl);
-        if (!response.ok) throw new Error('Network response was not ok');
-
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-
-        const downloadLink = document.createElement('a');
-        downloadLink.href = blobUrl;
-        downloadLink.download = originalFilename || 'artwork';
-        downloadLink.style.display = 'none';
-        document.body.appendChild(downloadLink);
-
-        downloadLink.click();
-
-        // Clean up
-        setTimeout(() => {
-          if (downloadLink.parentNode) {
-            document.body.removeChild(downloadLink);
-          }
-          URL.revokeObjectURL(blobUrl);
-        }, 1000);
-
-        // Show success feedback
-        downloadNowBtn.textContent = 'Downloaded!';
-        setTimeout(() => {
-          downloadNowBtn.textContent = originalContent;
-          downloadNowBtn.disabled = false;
-        }, 2000);
-      } catch (error) {
-        console.error('Download failed:', error);
-        downloadNowBtn.textContent = 'Download failed';
-        setTimeout(() => {
-          downloadNowBtn.textContent = 'Download now';
-          downloadNowBtn.disabled = false;
-        }, 2000);
-        if (typeof showToast === 'function') {
-          showToast('Download failed');
-        }
-      }
-    });
-  }
 }
 
 function showError(message) {
