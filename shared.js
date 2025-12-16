@@ -217,6 +217,17 @@ function extractArtistFromTitle(title) {
   return parts.length > 1 ? parts[0].trim() : null;
 }
 
+// Format file size in bytes to human-readable format
+function formatFileSize(bytes) {
+  if (!bytes) return 'Unknown';
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1) {
+    return `${mb.toFixed(2)} MB`;
+  }
+  const kb = bytes / 1024;
+  return `${kb.toFixed(2)} KB`;
+}
+
 // Create artwork card element (shared across all pages)
 function createArtworkCard(publicId, niceName, tags, width, height) {
   const isPortrait =
@@ -238,7 +249,6 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   // Track touch for scroll detection
   let touchStartY = 0;
   let touchMoved = false;
-  let justActivated = false;
 
   // Detect touch on first touch event and show hover state
   card.addEventListener('touchstart', (e) => {
@@ -268,7 +278,6 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     // Only activate if it wasn't a scroll
     if (!touchMoved && !card.classList.contains('mobile-active')) {
       e.preventDefault(); // Prevent click from firing
-      justActivated = true;
       card.classList.add('mobile-active');
 
       // Remove mobile-active from other cards
@@ -277,11 +286,6 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
           otherCard.classList.remove('mobile-active');
         }
       });
-
-      // Reset flag after a short delay
-      setTimeout(() => {
-        justActivated = false;
-      }, 100);
     }
   });
 
@@ -409,17 +413,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   detailButton.innerHTML = `<span>About</span>`;
 
   // Create artwork page URL
-  const humanizeFn = typeof humanizePublicId === 'function' ? humanizePublicId : ((pid) => {
-    let base = pid.split("/").pop();
-    base = base.replace(/\.[^.]+$/, "");
-    return base
-      .replace(/_/g, " ")
-      .replace(/\s*[-_]\s*reframed[\s_-]*[a-z0-9]*/gi, "")
-      .replace(/\s*[-_]\s*portrait\s*/gi, "")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-  });
-  const cleanSlug = humanizeFn(publicId).replace(/\s/g, '_');
+  const cleanSlug = humanizePublicId(publicId).replace(/\s/g, '_');
   detailButton.href = `/artwork/#${cleanSlug}`;
 
   // On touch devices, only work if card is already active

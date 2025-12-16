@@ -1183,7 +1183,7 @@ body.artwork-detail {
   .artwork-image-container {
     margin: 0 0 32px;
     padding: 0;
-    width: auto;
+    width: 100%;
   }
   .artwork-detail-title {
     font-size: 32px;
@@ -1623,7 +1623,7 @@ body.artwork-detail {
   /* Homepage title */
   h1, .home h1,
   .recently-added-title {
-    font-size: 32px;
+    font-size: 24px;
     letter-spacing: 0.5px;
     margin: 20px 0;
   }

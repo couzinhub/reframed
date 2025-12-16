@@ -90,18 +90,6 @@ async function fetchArtworkDetailsByName(searchName) {
   }
 }
 
-function formatFileSize(bytes) {
-  if (!bytes) return 'Unknown';
-
-  const mb = bytes / (1024 * 1024);
-  if (mb >= 1) {
-    return `${mb.toFixed(2)} MB`;
-  }
-
-  const kb = bytes / 1024;
-  return `${kb.toFixed(2)} KB`;
-}
-
 function formatDimensions(width, height) {
   if (!width || !height) return 'Unknown';
   return `${width} × ${height} px`;
