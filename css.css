@@ -1099,6 +1099,13 @@ body.artwork-detail {
   padding: 0;
 }
 
+.artwork-image-container,
+.artwork-image-container img {
+  aspect-ratio: 16 / 9;
+  max-height: 800px;
+}
+
+
 .artwork-image-container {
   margin: 0 0 50px;
   padding: 0;
@@ -1106,8 +1113,6 @@ body.artwork-detail {
   position: relative;
   background-color: #010101;
   cursor: pointer;
-  aspect-ratio: 16 / 9;
-  max-height: 675px;
   overflow: hidden;
 }
 
@@ -1165,8 +1170,6 @@ body.artwork-detail {
   transform: translate(-50%, -50%);
   z-index: 1;
   height: 100%;
-  max-height: 675px;
-  aspect-ratio: 16 / 9;
 }
 
 .preview.artwork-image-container img {
@@ -1188,7 +1191,7 @@ body.artwork-detail {
 /* portrait adjustments */
 .portrait .artwork-image-container,
 .portrait .artwork-image-container img {
-  max-height: 800px;
+  max-height: 1000px;
 }
 .portrait .artwork-image-container img {
   aspect-ratio: 9 / 16;
@@ -1329,7 +1332,10 @@ body.artwork-detail {
   }
   .preview.artwork-image-container img {
     border: 8px solid #ccc;
-  } 
+  }
+  .artwork-image-container:hover .preview-helper {
+    bottom: -60px;
+  }
   .artwork-detail-title {
     font-size: 32px;
   }
