@@ -176,9 +176,13 @@ function renderArtworkDetail(artwork, publicId) {
   // Get description from ImageKit custom field
   const description = getDescriptionFromCustomField(artwork);
 
+  // Use mobile-friendly thumbnail on small screens (same as card thumbnails)
+  const isMobile = window.innerWidth <= 768;
+  const displayThumbnailUrl = isMobile ? getThumbnailUrl(publicId, 700) : thumbnailUrl;
+
   container.innerHTML = `
     <div class="artwork-image-container">
-      <img src="${thumbnailUrl}" alt="${niceName}" loading="eager">
+      <img src="${displayThumbnailUrl}" alt="${niceName}" loading="eager">
     </div>
 
     <div class="artwork-detail-info">
@@ -196,7 +200,7 @@ function renderArtworkDetail(artwork, publicId) {
           Copy link
         </button>
         <button id="toggleDownloadBtn" class="btn-modal-action btn-modal-primary">
-          ${isInDownloads ? 'Remove from Downloads' : 'Add to Downloads'}
+          ${isInDownloads ? 'Added to Downloads' : 'Add to Downloads'}
         </button>
       </div>
 
@@ -220,7 +224,7 @@ function renderArtworkDetail(artwork, publicId) {
           toggleBtn.textContent = 'Add to Downloads';
         } else {
           window.addToDownloads(publicId, niceName, imageUrl, orientation.toLowerCase());
-          toggleBtn.textContent = 'Remove from Downloads';
+          toggleBtn.textContent = 'Added to Downloads';
         }
       }
     });

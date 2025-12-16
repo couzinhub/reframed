@@ -402,26 +402,31 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   const buttonContainer = document.createElement("div");
   buttonContainer.className = "button-container";
 
-  // Create detail button
-  const detailButton = document.createElement("button");
+  // Create detail button as a link to artwork page
+  const detailButton = document.createElement("a");
   detailButton.className = "action-button detail-button";
   detailButton.setAttribute("aria-label", "View artwork details");
   detailButton.innerHTML = `<span>About</span>`;
 
-  // Make detail button clickable to open modal
+  // Create artwork page URL
+  const humanizeFn = typeof humanizePublicId === 'function' ? humanizePublicId : ((pid) => {
+    let base = pid.split("/").pop();
+    base = base.replace(/\.[^.]+$/, "");
+    return base
+      .replace(/_/g, " ")
+      .replace(/\s*[-_]\s*reframed[\s_-]*[a-z0-9]*/gi, "")
+      .replace(/\s*[-_]\s*portrait\s*/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  });
+  const cleanSlug = humanizeFn(publicId).replace(/\s/g, '_');
+  detailButton.href = `/artwork/#${cleanSlug}`;
+
+  // On touch devices, only work if card is already active
   detailButton.addEventListener('click', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    // On touch devices, only work if card is already active
     if (isTouchDevice && !card.classList.contains('mobile-active')) {
+      e.preventDefault();
       return;
-    }
-
-    // Open the artwork modal if the function is available
-    if (typeof openArtworkModal === 'function') {
-      const orientation = (height > width) ? 'portrait' : 'landscape';
-      openArtworkModal(publicId, niceName, orientation);
     }
   });
 
@@ -440,7 +445,7 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
         <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
       </svg>
       <span>Added</span>`;
-      downloadButton.setAttribute("aria-label", "Remove from downloads");
+      downloadButton.setAttribute("aria-label", "Added to downloads");
     } else {
       downloadButton.classList.remove('in-downloads');
       downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
@@ -676,9 +681,6 @@ function initializeNavigation(currentPage) {
         <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
       </ul>
       <div class="button tip"></div>
-      <div class="button own-art">
-        <a class="contact" href="/contact.html">Get your own art reframed</a>
-      </div>
     </aside>
   `;
 

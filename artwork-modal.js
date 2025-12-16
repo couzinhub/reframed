@@ -42,9 +42,29 @@ async function fetchArtworkByPublicId(publicId) {
 }
 
 // Create and show the artwork modal
-async function openArtworkModal(publicId, niceName, orientation) {
+async function openArtworkModal(publicId, niceName, orientation, cardElement) {
   let modal = currentArtworkModal;
   let isNewModal = false;
+
+  // Mobile-specific handling
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile && cardElement) {
+    // Remove hover state from all cards
+    document.querySelectorAll('.card.mobile-active').forEach(card => {
+      card.classList.remove('mobile-active');
+    });
+
+    // Scroll the artwork into view above the modal
+    // Modal takes 50vh on mobile, so position card to be visible above it
+    const cardRect = cardElement.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const targetPosition = scrollTop + cardRect.top - 160; // 20px from top
+
+    window.scrollTo({
+      top: targetPosition,
+      behavior: 'smooth'
+    });
+  }
 
   // If modal doesn't exist, create it
   if (!modal) {
@@ -157,7 +177,7 @@ async function openArtworkModal(publicId, niceName, orientation) {
             Preview
           </button>
           <button id="modalDownloadBtn" class="btn-modal-action btn-modal-primary">
-            ${isInDownloads ? 'Remove from Downloads' : 'Add to Downloads'}
+            ${isInDownloads ? 'Added to Downloads' : 'Add to Downloads'}
           </button>
         </div>
 

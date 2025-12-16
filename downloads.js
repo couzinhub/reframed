@@ -165,7 +165,7 @@ function updateAllArtworkStates() {
             <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
           </svg>
           <span>Added</span>`;
-          downloadButton.setAttribute("aria-label", "Remove from downloads");
+          downloadButton.setAttribute("aria-label", "Added to downloads");
         } else {
           downloadButton.classList.remove('in-downloads');
           downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
@@ -253,7 +253,7 @@ function renderDownloadsModal(queue) {
         <img src="${thumbUrl}" alt="${item.niceName}" loading="lazy">
       </div>
       <div class="downloads-item-name">${item.niceName}</div>
-      <button class="downloads-item-remove" data-public-id="${item.publicId}" aria-label="Remove from downloads">
+      <button class="downloads-item-remove" data-public-id="${item.publicId}" aria-label="Added to downloads">
         <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
           <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
         </svg>
