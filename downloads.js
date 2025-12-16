@@ -149,22 +149,31 @@ function triggerBadgePulse() {
 }
 
 function updateAllArtworkStates() {
-  // Update checkmarks on all artwork cards
+  // Update download buttons on all artwork cards
   const artworks = document.querySelectorAll('.card.artwork');
   artworks.forEach(card => {
     const publicId = card.dataset.publicId;
     if (publicId) {
       const inDownloads = isInDownloads(publicId);
-      if (inDownloads) {
-        card.classList.add('in-downloads');
-      } else {
-        card.classList.remove('in-downloads');
-      }
 
-      // Update checkmark badge visibility
-      const checkmarkBadge = card.querySelector('.in-downloads-checkmark');
-      if (checkmarkBadge) {
-        checkmarkBadge.style.display = inDownloads ? 'block' : 'none';
+      // Update download button state
+      const downloadButton = card.querySelector('.download-button');
+      if (downloadButton) {
+        if (inDownloads) {
+          downloadButton.classList.add('in-downloads');
+          downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
+            <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
+          </svg>
+          <span>Added</span>`;
+          downloadButton.setAttribute("aria-label", "Remove from downloads");
+        } else {
+          downloadButton.classList.remove('in-downloads');
+          downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
+            <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
+          </svg>
+          <span>Add to downloads</span>`;
+          downloadButton.setAttribute("aria-label", "Add to downloads");
+        }
       }
     }
   });

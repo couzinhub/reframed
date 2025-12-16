@@ -398,58 +398,61 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     cleanupObserver.observe(card.parentNode, { childList: true });
   }
 
-  // Create checkmark badge for in-downloads state
-  const checkmarkBadge = document.createElement("button");
-  checkmarkBadge.className = "in-downloads-checkmark";
-  checkmarkBadge.setAttribute("aria-label", "Remove from downloads");
-  checkmarkBadge.style.display = "none";
+  // Create button container
+  const buttonContainer = document.createElement("div");
+  buttonContainer.className = "button-container";
 
-  // Function to update checkmark visibility
-  const updateCheckmarkVisibility = () => {
-    const inDownloads = typeof window.isInDownloads === 'function' && window.isInDownloads(publicId);
-    checkmarkBadge.style.display = inDownloads ? 'block' : 'none';
-  };
+  // Create detail button
+  const detailButton = document.createElement("button");
+  detailButton.className = "action-button detail-button";
+  detailButton.setAttribute("aria-label", "View artwork details");
+  detailButton.innerHTML = `<span>About</span>`;
 
-  checkmarkBadge.addEventListener('click', (e) => {
+  // Make detail button clickable to open modal
+  detailButton.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
 
-    if (typeof window.removeFromDownloads === 'function') {
-      window.removeFromDownloads(publicId);
-      updateDownloadButton();
-      updateCheckmarkVisibility();
+    // On touch devices, only work if card is already active
+    if (isTouchDevice && !card.classList.contains('mobile-active')) {
+      return;
+    }
+
+    // Open the artwork modal if the function is available
+    if (typeof openArtworkModal === 'function') {
+      const orientation = (height > width) ? 'portrait' : 'landscape';
+      openArtworkModal(publicId, niceName, orientation);
     }
   });
 
   // Create download button
   const downloadButton = document.createElement("button");
-  downloadButton.className = "download-button";
+  downloadButton.className = "action-button download-button";
   downloadButton.setAttribute("aria-label", "Add to downloads");
 
-  // Function to update button state
+  // Function to update download button state
   const updateDownloadButton = () => {
     const inDownloads = typeof window.isInDownloads === 'function' && window.isInDownloads(publicId);
 
     if (inDownloads) {
       downloadButton.classList.add('in-downloads');
-      downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-        <path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/>
+      downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
+        <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
       </svg>
-      <div>Added to Downloads</div>`;
+      <span>Added</span>`;
       downloadButton.setAttribute("aria-label", "Remove from downloads");
     } else {
       downloadButton.classList.remove('in-downloads');
-      downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+      downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
+        <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
       </svg>
-      <div>Add to Downloads</div>`;
+      <span>Add to downloads</span>`;
       downloadButton.setAttribute("aria-label", "Add to downloads");
     }
   };
 
   // Set initial state
   updateDownloadButton();
-  updateCheckmarkVisibility();
 
   downloadButton.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -468,88 +471,15 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
       }
       // Update button state after toggling
       updateDownloadButton();
-      updateCheckmarkVisibility();
     }
   });
 
-  const caption = document.createElement("button");
-  caption.className = "artwork-title";
-  caption.setAttribute("aria-label", "View artwork details");
-
-  // Add info icon to caption
-  const infoIcon = document.createElement("span");
-  infoIcon.className = "caption-info-icon";
-  infoIcon.setAttribute("aria-hidden", "true");
-
-  // Check if title contains artist name (format: "Artist - Title")
-  const artistName = extractArtistFromTitle(niceName);
-  const artworkTitle = artistName ? niceName.substring(artistName.length).replace(/^\s*-\s*/, '') : niceName;
-
-  // Create caption content container
-  const captionText = document.createElement("span");
-  captionText.className = "caption-text";
-
-  if (artistName && artworkTitle) {
-    // Format as "[artwork]\nby [artist]"
-    // Truncate artwork title to 90 characters
-    const truncatedTitle = artworkTitle.length > 90
-      ? artworkTitle.substring(0, 90) + '...'
-      : artworkTitle;
-
-    captionText.appendChild(document.createTextNode(truncatedTitle));
-    captionText.appendChild(document.createElement('br'));
-
-    const artistLine = document.createElement('span');
-    artistLine.className = 'artist-line';
-
-    const artistTextWrapper = document.createElement('span');
-    artistTextWrapper.className = 'artist-text-wrapper';
-
-    const artistText = document.createElement('span');
-    artistText.className = 'artist-text';
-    artistText.textContent = 'by ' + artistName;
-
-    const readMoreText = document.createElement('span');
-    readMoreText.className = 'read-more-text';
-    readMoreText.textContent = 'Read more about this artwork';
-
-    artistTextWrapper.appendChild(artistText);
-    artistTextWrapper.appendChild(readMoreText);
-    artistLine.appendChild(artistTextWrapper);
-    captionText.appendChild(artistLine);
-  } else {
-    // No artist in title, just show title
-    // Truncate to 90 characters
-    const truncatedTitle = niceName.length > 90
-      ? niceName.substring(0, 90) + '...'
-      : niceName;
-    captionText.textContent = truncatedTitle;
-  }
-
-  caption.appendChild(infoIcon);
-  caption.appendChild(captionText);
-
-  // Make caption clickable to open modal
-  caption.addEventListener('click', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    // On touch devices, only work if card is already active
-    if (isTouchDevice && !card.classList.contains('mobile-active')) {
-      return;
-    }
-
-    // Open the artwork modal if the function is available
-    if (typeof openArtworkModal === 'function') {
-      const orientation = (height > width) ? 'portrait' : 'landscape';
-      openArtworkModal(publicId, niceName, orientation);
-    }
-  });
+  // Add buttons to container
+  buttonContainer.appendChild(detailButton);
+  buttonContainer.appendChild(downloadButton);
 
   card.appendChild(imageWrapper);
-  card.appendChild(downloadButton);
-  card.appendChild(caption);
-  card.appendChild(checkmarkBadge);
+  card.appendChild(buttonContainer);
 
   return card;
 }
