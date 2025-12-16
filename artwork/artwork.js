@@ -140,7 +140,7 @@ function renderArtworkDetail(artwork, publicId) {
   document.getElementById('ogDescription').setAttribute('content', metaDescription);
   document.getElementById('twitterDescription').setAttribute('content', metaDescription);
 
-  // Extract artist name and artwork title (similar to modal)
+  // Extract artist name and artwork title
   const artistName = extractArtistFromTitle(niceName);
   let artworkTitle = niceName;
   let artistInfo = '';
@@ -170,37 +170,51 @@ function renderArtworkDetail(artwork, publicId) {
 
   container.innerHTML = `
     <div class="artwork-image-container">
+      <div class="preview-helper">Click to preview on a wall</div>
       <img src="${displayThumbnailUrl}" alt="${niceName}" loading="eager">
     </div>
 
     <div class="artwork-detail-info">
-      <h1 class="artwork-modal-title">${artworkTitle}</h1>
-      <div class="artwork-modal-subtitle">
-        ${artistInfo ? `<a href="${artistTagUrl}" class="artwork-modal-artist">${artistInfo}</a>` : ''}
-        ${artistInfo && (artwork.width || artwork.size) ? '<span class="artwork-modal-separator"> • </span>' : ''}
-        ${artwork.width && artwork.height ? `<span class="artwork-modal-dimensions">${artwork.width} × ${artwork.height}</span>` : ''}
-        ${artwork.width && artwork.size ? '<span class="artwork-modal-separator"> • </span>' : ''}
-        ${artwork.size ? `<span class="artwork-modal-file-size">${formatFileSize(artwork.size)}</span>` : ''}
+      <h1 class="artwork-detail-title">${artworkTitle}</h1>
+      <div class="artwork-detail-subtitle">
+        ${artistInfo ? `<a href="${artistTagUrl}" class="artwork-detail-artist">${artistInfo}</a>` : ''}
+        ${artistInfo && (artwork.width || artwork.size) ? '<span class="artwork-detail-separator"> • </span>' : ''}
+        ${artwork.width && artwork.height ? `<span class="artwork-detail-dimensions">${artwork.width} × ${artwork.height}</span>` : ''}
+        ${artwork.width && artwork.size ? '<span class="artwork-detail-separator"> • </span>' : ''}
+        ${artwork.size ? `<span class="artwork-detail-file-size">${formatFileSize(artwork.size)}</span>` : ''}
       </div>
 
-      <div class="artwork-modal-actions">
-        <button id="shareBtn" class="btn-modal-action btn-modal-secondary">
+      <div class="artwork-detail-actions">
+        <button id="shareBtn" class="btn-detail-action btn-detail-secondary">
           Copy link
         </button>
-        <button id="toggleDownloadBtn" class="btn-modal-action btn-modal-primary">
+        <button id="toggleDownloadBtn" class="btn-detail-action btn-detail-primary">
           ${isInDownloads ? 'Added to Downloads' : 'Add to Downloads'}
         </button>
       </div>
 
       ${description ? `
-        <div class="artwork-modal-description">
-          <div class="artwork-modal-description-text">
-            ${description.split('\n').filter(p => p.trim().length > 0).map(p => `<p>${p}</p>`).join('')}
-          </div>
+        <div class="artwork-detail-description">
+          ${description.split('\n').filter(p => p.trim().length > 0).map(p => `<p>${p}</p>`).join('')}
         </div>
       ` : ''}
     </div>
   `;
+
+  // Add portrait class to body if artwork is portrait
+  if (orientation === 'Portrait') {
+    document.body.classList.add('portrait');
+  } else {
+    document.body.classList.remove('portrait');
+  }
+
+  // Add click event listener to image for preview toggle
+  const imageContainer = container.querySelector('.artwork-image-container');
+  if (imageContainer) {
+    imageContainer.addEventListener('click', () => {
+      imageContainer.classList.toggle('preview');
+    });
+  }
 
   // Add event listener for toggle download button
   const toggleBtn = document.getElementById('toggleDownloadBtn');

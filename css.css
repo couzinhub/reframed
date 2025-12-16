@@ -13,6 +13,7 @@ html {
   --color-sidebar: #081330;
   --color-spot: #56CCFF;
   --page-maxwidth: 1400px;
+  --shadow-color: 27deg 5% 47%;
 
   /* SVG Icons */
   --icon-plus-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>');
@@ -1090,108 +1091,284 @@ aside .own-art:hover {
 -----------------------------*/
 
 body.artwork-detail {
-  padding: 60px 0 30px;
+  padding: 0 0 30px;
 }
 
 .artwork-detail-container {
-  margin: 0 auto 60px;
-  max-width: 1200px;
-  padding: 0 40px 40px;
-}
-
-.artwork-detail-header {
-  margin-bottom: 2rem;
-}
-
-.artwork-detail-title {
-  text-align: left;
-  font-size: 40px;
-  font-weight: 200;
-  margin-bottom: 0.5rem;
-  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 .artwork-image-container {
-  margin: 0 auto 80px;
-  padding: 20px;
-  background-color: var(--color-sidebar);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
+  margin: 0 0 50px;
+  padding: 0;
+  width: 100%;
+  position: relative;
+  background-color: #010101;
+  cursor: pointer;
+  aspect-ratio: 16 / 9;
+  max-height: 675px;
+  overflow: hidden;
+}
+
+.artwork-image-container::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  right: -50px;
+  bottom: -50px;
+  z-index: 0;
+  background-image: url(/img/living-room.jpg);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  filter: blur(20px);
+  opacity: 0;
+}
+
+.artwork-image-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  background-image: url(/img/living-room.jpg);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0;
+}
+
+.artwork-image-container::before,
+.artwork-image-container::after,
+.artwork-image-container img {
+  transition: all .5s ease;
+}
+
+.preview.artwork-image-container::before {
+  opacity: 40%;
+}
+
+.preview.artwork-image-container::after {
+  opacity: 100%;
 }
 
 .artwork-image-container img {
-  max-width: 100%;
-  max-height: 80vh;
-  width: auto;
-  height: auto;
   display: block;
-  object-fit: contain;
+  margin: 0 auto;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  height: 100%;
+  max-height: 675px;
+  aspect-ratio: 16 / 9;
+}
+
+.preview.artwork-image-container img {
+  border: 14px solid #ccc;
+  border-radius: 2px;
+  transform: translate(-50%, -70%) scale(0.4);
+  transform-origin: center center;
+  box-shadow:
+    0.2px 0.3px 0.4px hsl(var(--shadow-color) / 0.3),
+    0.6px 1px 1.2px -0.3px hsl(var(--shadow-color) / 0.29),
+    1px 1.7px 2px -0.7px hsl(var(--shadow-color) / 0.27),
+    1.6px 2.6px 3.1px -1px hsl(var(--shadow-color) / 0.26),
+    2.5px 4px 4.8px -1.4px hsl(var(--shadow-color) / 0.25),
+    3.7px 6px 7.2px -1.7px hsl(var(--shadow-color) / 0.24),
+    5.5px 8.8px 10.7px -2.1px hsl(var(--shadow-color) / 0.23),
+    7.9px 12.7px 15.4px -2.4px hsl(var(--shadow-color) / 0.21);
+} 
+
+/* portrait adjustments */
+.portrait .artwork-image-container,
+.portrait .artwork-image-container img {
+  max-height: 800px;
+}
+.portrait .artwork-image-container img {
+  aspect-ratio: 9 / 16;
+}
+.portrait .preview.artwork-image-container img {
+  transform: translate(-50%, -70%) scale(0.48);
+}
+/* end */
+
+.preview-helper {
+  position: absolute;
+  z-index: 2;
+  bottom: -40px;
+  left: 50%;
+  width: 220px;
+  margin-left: -122px;
+  text-align: center;
+  background-color: #000;
+  border-radius: 20px;
+  padding: 8px 12px;
+  transition: all .2s ease;
+}
+
+.artwork-image-container:hover .preview-helper {
+  bottom: 20px;
+}
+.preview.artwork-image-container .preview-helper {
+  bottom: -60px;
 }
 
 .artwork-detail-info {
   text-align: center;
   margin: 0 auto;
-  padding: 0 20px;
-}
-
-.artwork-meta {
-  margin-bottom: 12px;
-}
-.file-size-info {
-  display: inline-block;
-  margin-right: 12px;
-  font-weight: 200;
-}
-
-.loading-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: var(--text-secondary);
-}
-
-.error-state {
-  text-align: left;
-  padding: 4rem 2rem;
-  color: var(--text-secondary);
-}
-
-.description-content {
+  padding: 0 32px;
   max-width: 960px;
 }
 
-.description-content h2 {
-  text-align: left;
-  padding: 0;
-  margin: 0 0 24px 0;
-  font-size: 32px;
-  font-weight: 300;
+.artwork-detail-title {
+  font-size: 40px;
+  font-weight: 200;
+  letter-spacing: 2px;
+  margin: 0 auto 12px;
+  color: var(--color-txt);
+  text-align: center;
 }
 
-.description-content #descriptionContent p {
+.artwork-detail-subtitle {
+  font-size: 18px;
+  margin-bottom: 40px;
+}
+
+.artwork-detail-subtitle span {
+  padding: 0 4px;
+}
+
+.artwork-detail-artist {
+  text-decoration: underline;
+  color: white;
+}
+
+.artwork-detail-dimensions,
+.artwork-detail-file-size {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.artwork-detail-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 50px;
+}
+
+.btn-detail-action {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-detail-primary {
+  background: var(--color-spot);
+  color: var(--color-bg);
+}
+
+.btn-detail-primary:hover {
+  background: #45b8e8;
+}
+
+.btn-detail-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-txt);
+}
+
+.btn-detail-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.artwork-detail-description {
+  margin: 50px auto 120px;
   font-size: 24px;
-  line-height: 1.6;
-  margin-bottom: 24px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
   text-align: left;
 }
 
+.artwork-detail-description p {
+  margin: 0 0 20px;
+  text-align: left;
+  font-size: 24px;
+}
+
+.artwork-detail-description p:last-child {
+  margin-bottom: 0;
+}
+
+/* Mobile adjustments */
 @media (max-width: 768px) {
+
+  body.artwork-detail {
+    padding: 60px 0;
+  }
+
   .artwork-detail-container {
     padding: 0 0 20px;
   }
   .artwork-image-container {
     margin: 0 0 32px;
     padding: 0;
-    width: 100%;
   }
+  .preview.artwork-image-container img {
+    border: 8px solid #ccc;
+  } 
   .artwork-detail-title {
     font-size: 32px;
   }
   .description-content #descriptionContent p {
     font-size: 20px;
   }
+
+  .artwork-detail-title {
+    font-size: 28px;
+    letter-spacing: 1px;
+  }
+
+  .artwork-detail-artist,
+  .artwork-detail-dimensions,
+  .artwork-detail-file-size {
+    font-size: 16px;
+  }
+
+  .artwork-detail-actions {
+    margin-bottom: 30px;
+  }
+
+  .artwork-detail-description {
+    margin: 20px auto 120px;
+  }
+
+  .btn-detail-action {
+    justify-content: center;
+  }
+
+  .artwork-detail-description {
+    font-size: 18px;
+  }
+
+  .artwork-detail-description p {
+    font-size: 18px;
+  }
 }
+
 
 
 /* Toast Notification
@@ -2184,148 +2361,6 @@ body.modal-open {
   }
 }
 
-/* Artwork Detail Page - Shared Modal Styles
------------------------------*/
-.artwork-modal-title {
-  font-size: 42px;
-  font-weight: 300;
-  letter-spacing: 2px;
-  margin: 0 0 12px;
-  color: var(--color-txt);
-  text-align: center;
-}
-
-.artwork-modal-subtitle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 40px;
-  flex-wrap: wrap;
-}
-
-.artwork-modal-artist {
-  font-size: 18px;
-  text-decoration: underline;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 400;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: 'Lexend', sans-serif;
-  transition: color 0.2s ease;
-}
-
-.artwork-modal-artist:hover {
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.artwork-modal-separator {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.artwork-modal-dimensions,
-.artwork-modal-file-size {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 400;
-}
-
-.artwork-modal-actions {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 50px;
-}
-
-.btn-modal-action {
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-family: 'Lexend', sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.1s ease;
-  border: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-modal-primary {
-  background: var(--color-spot);
-  color: var(--color-bg);
-}
-
-.btn-modal-primary:hover {
-  background: #45b8e8;
-}
-
-.btn-modal-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-txt);
-}
-
-.btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.artwork-modal-description {
-  margin: 50px auto 120px;
-}
-
-.artwork-modal-description-text {
-  font-size: 24px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.9);
-  text-align: left;
-}
-
-.artwork-modal-description-text p {
-  margin: 0 0 20px;
-  text-align: left;
-  font-size: 24px;
-}
-
-.artwork-modal-description-text p:last-child {
-  margin-bottom: 0;
-}
-
-/* Mobile adjustments */
-@media (max-width: 768px) {
-  .artwork-modal-title {
-    font-size: 28px;
-    letter-spacing: 1px;
-  }
-
-  .artwork-modal-artist,
-  .artwork-modal-dimensions,
-  .artwork-modal-file-size {
-    font-size: 16px;
-  }
-
-  .artwork-modal-actions {
-    margin-bottom: 30px;
-  }
-
-  .artwork-modal-description {
-    margin: 20px auto 120px;
-  }
-
-  .btn-modal-action {
-    justify-content: center;
-  }
-
-  .artwork-modal-description-text {
-    font-size: 18px;
-  }
-
-  .artwork-modal-description-text p {
-    font-size: 18px;
-  }
-}
 
 /* Search Page Styles
 -----------------------------*/
