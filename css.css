@@ -1183,6 +1183,7 @@ body.artwork-detail {
   .artwork-image-container {
     margin: 0 0 32px;
     padding: 0;
+    width: auto;
   }
   .artwork-detail-title {
     font-size: 32px;
