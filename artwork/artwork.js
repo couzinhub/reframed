@@ -269,12 +269,9 @@ function showError(message) {
   const container = document.getElementById('artworkDetailView');
   container.innerHTML = `
     <div class="error-state">
-      <h2>Artwork Not Found</h2>
+      <h1>Artwork Not Found</h1>
       <p>${message}</p>
-      <br>
-      <a href="/" class="btn-primary" style="display: inline-block; max-width: 200px; margin: 0 auto;">
-        Back to Home
-      </a>
+      <a href="/" class="btn-detail-secondary">Back to Home</a>
     </div>
   `;
 }

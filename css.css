@@ -1054,11 +1054,19 @@ aside .own-art:hover {
 /* Loading Spinner
 -----------------------------*/
 
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  width: 100%;
+}
+
 .spinner {
   display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
   border-top-color: var(--color-spot);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -1292,6 +1300,14 @@ body.artwork-detail {
 .btn-detail-secondary {
   background: rgba(255, 255, 255, 0.1);
   color: var(--color-txt);
+  text-decoration: none;
+}
+a.btn-detail-secondary {
+  display: block;
+  margin: 40px auto;
+  width: fit-content;
+  padding: 12px 20px;
+  border-radius: 8px;
 }
 
 .btn-detail-secondary:hover {
@@ -1314,6 +1330,10 @@ body.artwork-detail {
 
 .artwork-detail-description p:last-child {
   margin-bottom: 0;
+}
+
+.artwork-detail-container .error-state {
+  padding: 80px 20px;
 }
 
 /* Mobile adjustments */
