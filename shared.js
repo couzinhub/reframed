@@ -484,9 +484,16 @@ function startTipReminder() {
     const mobileTopBar = document.querySelector('.mobile-top-bar');
     const isMobileLayout = mobileTopBar && window.getComputedStyle(mobileTopBar).display !== 'none';
 
-    if (!isMobile && !isMobileLayout) {
-      // Shake the tip button on desktop only
-      const tipButton = document.querySelector('.kofi-button');
+    if (isMobile || isMobileLayout) {
+      // Shake the mobile tip button
+      const mobileTipButton = document.querySelector('.kofi-button.mobile-tip');
+      if (mobileTipButton) {
+        mobileTipButton.classList.add('shake');
+        setTimeout(() => mobileTipButton.classList.remove('shake'), 1000);
+      }
+    } else {
+      // Shake the desktop tip button
+      const tipButton = document.querySelector('.kofi-button:not(.mobile-tip)');
       if (tipButton) {
         tipButton.classList.add('shake');
         setTimeout(() => tipButton.classList.remove('shake'), 1000);
@@ -502,66 +509,6 @@ if (document.readyState === 'loading') {
   startTipReminder();
 }
 
-// ============ DOWNLOADS ICON SVG ============
-const DOWNLOAD_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-  <polyline points="7 10 12 15 17 10"></polyline>
-  <line x1="12" y1="15" x2="12" y2="3"></line>
-</svg>`;
-
-// ============ DOWNLOADS UI COMPONENT ============
-// This code injects the downloads button and modal into the page
-
-function initializeDownloadsUI() {
-  // Insert downloads button
-  const downloadsButton = `
-    <button id="downloadsButton" aria-label="View downloads queue">
-      <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
-        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
-      </svg>
-      <span>Downloads</span>
-      <span id="downloadsBadge"></span>
-    </button>
-  `;
-
-  // Insert downloads modal
-  const downloadsModal = `
-    <div id="downloadsModal">
-      <div class="downloads-modal-content">
-        <div class="downloads-modal-header">
-          <h2>Downloads (<span id="downloadsCount">0</span>)</h2>
-          <button id="closeDownloadsModal" aria-label="Close">&times;</button>
-        </div>
-        <div class="downloads-modal-body">
-          <div id="downloadsEmpty">
-            <svg xmlns="http://www.w3.org/2000/svg" height="64px" viewBox="0 -960 960 960" width="64px" fill="currentColor">
-              <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
-            </svg>
-            <p>No artworks selected</p>
-          </div>
-          <div id="downloadsGrid"></div>
-        </div>
-        <div class="downloads-modal-footer">
-          <button id="clearAllDownloads">Clear All</button>
-          <span id="downloadProgress"></span>
-          <button id="downloadAllBtn">Download All</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Append to body
-  document.body.insertAdjacentHTML('beforeend', downloadsButton);
-  document.body.insertAdjacentHTML('beforeend', downloadsModal);
-}
-
-// Initialize downloads UI when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeDownloadsUI);
-} else {
-  initializeDownloadsUI();
-}
-
 // ============ NAVIGATION MENU COMPONENT ============
 // This code is shared across all pages
 
@@ -570,6 +517,19 @@ function initializeNavigation(currentPage) {
   const isSubdirectory = window.location.pathname.includes('/tag/') || window.location.pathname.includes('/artwork/');
   const imgPath = isSubdirectory ? '/img/reframed.svg' : 'img/reframed.svg';
 
+  // Get downloads count for badges - read directly from localStorage
+  // This ensures we get the correct count even if downloads.js hasn't loaded yet
+  let downloadsCount = 0;
+  try {
+    const raw = localStorage.getItem('reframed_downloads_queue');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      downloadsCount = Array.isArray(parsed) ? parsed.length : 0;
+    }
+  } catch {
+    downloadsCount = 0;
+  }
+
   // Insert mobile top bar
   const mobileTopBar = `
     <div class="mobile-top-bar">
@@ -577,12 +537,26 @@ function initializeNavigation(currentPage) {
         <span></span>
         <span></span>
         <span></span>
+        <span id="mobileMenuBadge" class="mobile-menu-badge" style="display: ${downloadsCount > 0 ? 'flex' : 'none'};">${downloadsCount}</span>
       </button>
       <a href="/">
         <img src="${imgPath}" alt="Reframed Logo" class="mobile-logo">
       </a>
+      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button mobile-tip" aria-label="Thank me with a tip">
+        <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
+      </a>
     </div>
   `;
+
+  // Build downloads menu item if there are downloads OR if we're on the downloads page
+  const shouldShowDownloads = downloadsCount > 0 || currentPage === 'downloads';
+  const downloadsMenuItem = shouldShowDownloads ? `
+        <li id="downloadsMenuItem" class="${currentPage === 'downloads' ? 'current' : ''}">
+          <a href="/downloads.html">
+            Downloads
+            ${downloadsCount > 0 ? `<span class="menu-badge">${downloadsCount}</span>` : ''}
+          </a>
+        </li>` : '';
 
   // Insert sidebar
   const aside = `
@@ -595,7 +569,7 @@ function initializeNavigation(currentPage) {
         <li class="${currentPage === 'browse' ? 'current' : ''}"><a href="/browse-recent.html">Browse</a></li>
         <li class="${currentPage === 'search' ? 'current' : ''}"><a href="/search.html">Search</a></li>
         <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
-        <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>
+        <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>${downloadsMenuItem}
       </ul>
       <div class="button tip"></div>
     </aside>
@@ -669,6 +643,83 @@ function initializeNavigation(currentPage) {
     });
   }
 }
+
+// ============ DOWNLOADS MENU UPDATE ============
+// Updates the Downloads menu item and mobile badge when queue changes
+
+function updateDownloadsMenu() {
+  const queue = typeof window.loadDownloadsQueue === 'function' ? window.loadDownloadsQueue() : [];
+  const count = queue.length;
+
+  // Check if we're on the downloads page
+  const isDownloadsPage = window.location.pathname.includes('downloads.html');
+
+  // Update sidebar menu item
+  const sidebar = document.querySelector('aside ul');
+  let menuItem = document.getElementById('downloadsMenuItem');
+
+  // Show menu item if there are downloads OR if we're on the downloads page
+  if (count > 0 || isDownloadsPage) {
+    if (!menuItem) {
+      // Create and insert the menu item if it doesn't exist
+      const contactItem = sidebar?.querySelector('a[href="/contact.html"]')?.parentElement;
+      if (contactItem && sidebar) {
+        menuItem = document.createElement('li');
+        menuItem.id = 'downloadsMenuItem';
+        if (isDownloadsPage) {
+          menuItem.classList.add('current');
+        }
+        menuItem.innerHTML = `
+          <a href="/downloads.html">
+            Downloads
+            ${count > 0 ? `<span class="menu-badge">${count}</span>` : ''}
+          </a>
+        `;
+        contactItem.insertAdjacentElement('afterend', menuItem);
+      }
+    } else {
+      // Update existing menu item badge
+      const link = menuItem.querySelector('a');
+      if (link) {
+        let badge = menuItem.querySelector('.menu-badge');
+
+        if (count > 0) {
+          if (!badge) {
+            // Create badge if it doesn't exist
+            badge = document.createElement('span');
+            badge.className = 'menu-badge';
+            link.appendChild(badge);
+          }
+          badge.textContent = count;
+        } else {
+          // Remove badge if count is 0
+          if (badge) {
+            badge.remove();
+          }
+        }
+      }
+    }
+  } else {
+    // Remove menu item only if no downloads and not on downloads page
+    if (menuItem) {
+      menuItem.remove();
+    }
+  }
+
+  // Update mobile menu badge
+  const mobileBadge = document.getElementById('mobileMenuBadge');
+  if (mobileBadge) {
+    if (count > 0) {
+      mobileBadge.textContent = count;
+      mobileBadge.style.display = 'flex';
+    } else {
+      mobileBadge.style.display = 'none';
+    }
+  }
+}
+
+// Export for use in other scripts
+window.updateDownloadsMenu = updateDownloadsMenu;
 
 
 const ART_CACHE_TK = FxK("oqhu`sd") + "_" + FxK("WT40tmf") + FxK("AuHjKjEbpkS5BedPuYBj") + "=";

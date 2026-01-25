@@ -79,43 +79,6 @@
     </form>
   </main>
 
-  <!-- Downloads Button -->
-  <button id="downloadsButton" aria-label="View downloads queue">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-      <polyline points="7 10 12 15 17 10"></polyline>
-      <line x1="12" y1="15" x2="12" y2="3"></line>
-    </svg>
-    <span>Downloads</span>
-    <span id="downloadsBadge"></span>
-  </button>
-
-  <!-- Downloads Modal -->
-  <div id="downloadsModal">
-    <div class="downloads-modal-content">
-      <div class="downloads-modal-header">
-        <h2>Downloads (<span id="downloadsCount">0</span>)</h2>
-        <button id="closeDownloadsModal" aria-label="Close">&times;</button>
-      </div>
-      <div class="downloads-modal-body">
-        <div id="downloadsEmpty">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          <p>No artworks selected</p>
-        </div>
-        <div id="downloadsGrid"></div>
-      </div>
-      <div class="downloads-modal-footer">
-        <button id="clearAllDownloads">Clear All</button>
-        <span id="downloadProgress"></span>
-        <button id="downloadAllBtn">Download All</button>
-      </div>
-    </div>
-  </div>
-
   <script src="config.js"></script>
   <script src="shared.js"></script>
   <script>initializeNavigation('contact');</script>

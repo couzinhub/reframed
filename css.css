@@ -334,6 +334,26 @@ aside ul .current a {
   background-color: var(--color-spot);
   color: var(--color-bg);
 }
+
+/* Menu badge for Downloads item */
+aside ul a .menu-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-spot);
+  color: var(--color-bg);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  min-width: 20px;
+}
+
+aside ul .current a .menu-badge {
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--color-spot);
+}
 aside .button {
   text-align: center;
   padding: 20px 0;
@@ -1498,6 +1518,37 @@ a.btn-detail-secondary {
   width: auto;
 }
 
+.mobile-top-bar .mobile-tip {
+  position: absolute;
+  right: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #00488c;
+  border-radius: 10px;
+  width: 56px;
+  height: 40px;
+  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-top-bar .mobile-tip img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  margin: 0;
+}
+
+.mobile-top-bar .mobile-tip:hover {
+  box-shadow: white 0 0 0 2px;
+  transform: scale(1.05);
+}
+
+.mobile-top-bar .mobile-tip.shake {
+  animation: shake 0.5s ease-in-out;
+  box-shadow: white 0 0 0 2px, 0 0 20px rgba(86, 204, 255, 0.5);
+}
+
 .hamburger-menu {
   background: none;
   border: none;
@@ -1507,6 +1558,27 @@ a.btn-detail-secondary {
   flex-direction: column;
   gap: 5px;
   z-index: 4;
+  position: relative;
+}
+
+/* Mobile menu badge */
+.hamburger-menu .mobile-menu-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background: var(--color-spot);
+  color: var(--color-bg);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 3px;
+  border-radius: 20px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  line-height: 1;
 }
 
 .hamburger-menu span {
@@ -1975,72 +2047,12 @@ a.btn-detail-secondary {
 
 /* ============ DOWNLOADS QUEUE SYSTEM ============ */
 
-/* Floating Downloads Button */
+/* Floating Downloads Button - REMOVED (downloads now have dedicated page with menu item) */
 #downloadsButton {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%) translateY(200px); /* Hidden by default */
-  z-index: 100;
-  background: var(--color-sidebar);
-  border: 2px solid var(--color-spot);
-  border-radius: 12px;
-  padding: 16px 28px;
-  color: var(--color-txt);
-  font-family: 'Lexend', sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  display: none !important; /* Hidden - no longer needed */
 }
 
-/* Show button when it has items - desktop (above mobile) */
-@media (min-width: 769px) {
-  #downloadsButton.has-items {
-    transform: translateX(-50%) translateY(0);
-  }
-
-  #downloadsButton:hover {
-    border-color: var(--color-txt);
-    transform: translateX(-50%) translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-  }
-}
-
-#downloadsButton svg {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-}
-
-#downloadsBadge {
-  display: none;
-  background: var(--color-spot);
-  color: var(--color-bg);
-  font-weight: 700;
-  font-size: 15px;
-  padding: 4px 10px;
-  border-radius: 16px;
-  text-align: center;
-  line-height: 1;
-  transition: transform 0.2s ease;
-}
-
-/* Slide-in animation for button */
-@keyframes slideIn {
-  from {
-    right: -300px;
-    opacity: 0;
-  }
-  to {
-    right: 30px;
-    opacity: 1;
-  }
-}
+/* Floating button CSS removed - no longer needed */
 
 /* Artwork selected state */
 .artwork.in-downloads {
@@ -2357,39 +2369,147 @@ body.modal-open {
   background-color: #000;
 }
 
+/* ============ DOWNLOADS PAGE ============ */
+
+.downloads-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.downloads-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 30px;
+  text-align: center;
+  min-height: 300px;
+}
+
+.downloads-empty svg {
+  opacity: 0.3;
+  margin-bottom: 20px;
+}
+
+.downloads-empty p {
+  font-size: 18px;
+  color: var(--color-txt);
+  opacity: 0.6;
+  margin-bottom: 20px;
+}
+
+.downloads-empty .browse-link {
+  display: inline-block;
+  padding: 12px 24px;
+  background: var(--color-spot);
+  color: var(--color-bg);
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.downloads-empty .browse-link:hover {
+  background: #45b8e8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(86, 204, 255, 0.3);
+}
+
+.downloads-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 0 30px;
+}
+
+.downloads-footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0 40px;
+  border-top: 1px solid rgba(86, 204, 255, 0.2);
+}
+
+.downloads-footer button {
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.clear-all-button {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-txt);
+}
+
+.clear-all-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.download-all-button {
+  background: var(--color-spot);
+  color: var(--color-bg);
+}
+
+.download-all-button:hover {
+  background: #45b8e8;
+}
+
+.download-all-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.download-progress {
+  flex: 1;
+  text-align: center;
+  color: var(--color-txt);
+  font-size: 14px;
+  display: none;
+}
+
+/* Hide remove buttons during download on page */
+.downloads-page.downloading .downloads-item-remove {
+  display: none;
+}
+
+/* Mobile adjustments for downloads page */
+@media (max-width: 768px) {
+  .downloads-page {
+    padding: 0 20px;
+  }
+
+  .downloads-empty {
+    padding: 40px 20px;
+  }
+
+  .downloads-grid {
+    gap: 10px;
+  }
+
+  .downloads-footer {
+    flex-direction: column;
+    padding: 15px 0 30px;
+  }
+
+  .downloads-footer button {
+    width: 100%;
+  }
+
+  .download-progress {
+    order: -1;
+    width: 100%;
+  }
+}
+
 /* Mobile adjustments for downloads */
 @media (max-width: 768px) {
-  #downloadsButton {
-    bottom: 20px !important;
-    top: auto !important;
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%) translateY(120px) !important;
-    padding: 16px 26px;
-    font-size: 18px;
-    gap: 13px;
-    justify-content: center;
-    max-width: 260px;
-    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
-  }
-
-  #downloadsButton.has-items {
-    transform: translateX(-50%) translateY(0) !important;
-  }
-
-  #downloadsButton:hover {
-    transform: translateX(-50%) translateY(-2px) !important;
-  }
-
-  #downloadsButton svg {
-    width: 26px;
-    height: 26px;
-  }
-
-  #downloadsBadge {
-    font-size: 17px;
-    padding: 4px 11px;
-  }
+  /* Downloads button CSS removed - no longer needed */
 
   .downloads-modal-content {
     max-height: 95vh;

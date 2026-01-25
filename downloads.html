@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reframed | Downloads</title>
+  <meta name="description" content="Your downloads queue for Reframed artwork. Download your selected artworks for your Samsung Frame TV.">
+  <meta name="keywords" content="Frame TV art downloads, digital art downloads, art queue">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://reframed.gallery/downloads.html">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://reframed.gallery/downloads.html">
+  <meta property="og:title" content="Downloads - Reframed">
+  <meta property="og:description" content="Your downloads queue for Reframed artwork.">
+  <meta property="og:image" content="https://reframed.gallery/img/og-image.jpg">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://reframed.gallery/downloads.html">
+  <meta name="twitter:title" content="Downloads - Reframed">
+  <meta name="twitter:description" content="Your downloads queue for Reframed artwork.">
+  <meta name="twitter:image" content="https://reframed.gallery/img/og-image.jpg">
+
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-14360H9J7X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-14360H9J7X');
+  </script>
+</head>
+<body>
+
+  <h1>Downloads (<span id="downloadsCount">0</span>)</h1>
+
+  <main class="downloads-page">
+    <div id="downloadsEmpty" class="downloads-empty">
+      <svg xmlns="http://www.w3.org/2000/svg" height="64px" viewBox="0 -960 960 960" width="64px" fill="currentColor">
+        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+      </svg>
+      <p>No artworks selected</p>
+      <a href="/" class="browse-link">Browse Artworks</a>
+    </div>
+
+    <div id="downloadsGrid" class="downloads-grid"></div>
+
+    <div class="downloads-footer">
+      <button id="clearAllDownloads" class="clear-all-button">Clear All</button>
+      <span id="downloadProgress" class="download-progress"></span>
+      <button id="downloadAllBtn" class="download-all-button">Download All</button>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="shared.js"></script>
+  <script>initializeNavigation('downloads');</script>
+  <script src="downloads.js"></script>
+  <script src="downloads-page.js"></script>
+
+</body>
+</html>
