@@ -158,20 +158,16 @@ function updateAllArtworkStates() {
 
       // Update download button state
       const downloadButton = card.querySelector('.download-button');
-      if (downloadButton) {
+      const buttonText = downloadButton?.querySelector('.download-button-text');
+
+      if (downloadButton && buttonText) {
         if (inDownloads) {
           downloadButton.classList.add('in-downloads');
-          downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
-            <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
-          </svg>
-          <span>Added</span>`;
-          downloadButton.setAttribute("aria-label", "Added to downloads");
+          buttonText.textContent = "Added to downloads";
+          downloadButton.setAttribute("aria-label", "Added to downloads - Click to remove");
         } else {
           downloadButton.classList.remove('in-downloads');
-          downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
-            <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
-          </svg>
-          <span>Add to downloads</span>`;
+          buttonText.textContent = "";
           downloadButton.setAttribute("aria-label", "Add to downloads");
         }
       }

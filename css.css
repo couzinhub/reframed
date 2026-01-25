@@ -17,9 +17,11 @@ html {
 
   /* SVG Icons */
   --icon-plus-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>');
+  --icon-download-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>');
   --icon-checkmark-black: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23000"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
   --icon-checkmark-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
   --icon-info: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M280-280h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80Zm-80 480q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>');
+  --icon-chevron-left: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z"/></svg>');
 }
 
 /* Update banner */
@@ -105,6 +107,47 @@ p {
   font-weight: 300;
   margin: 0 0 .2rem;
 }
+/* Tag page title area with back button */
+.tag-title-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.2rem;
+}
+
+.tag-back-button {
+  position: absolute;
+  left: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--color-txt);
+  font-family: 'Lexend', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+  width: 44px;
+  height: 44px;
+}
+
+.tag-back-button::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  background-image: var(--icon-chevron-left);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px 24px;
+}
+
+.tag-back-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .tag-header-row {
   display: flex;
   align-items: center;
@@ -633,33 +676,20 @@ aside .own-art:hover {
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
-.card:hover img::after,
-.card.mobile-active img::after {
-  box-shadow: inset 0px 0 1px 1px rgba(0, 0, 0, .7);
+/* Artwork link wraps the image */
+.artwork-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
 }
 
-/* Button container at bottom */
-.button-container {
+/* Download button - always visible at bottom right */
+.download-button {
   position: absolute;
-  bottom: 6px;
-  left: 8px;
+  bottom: 8px;
   right: 8px;
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-  z-index: 10;
-}
-
-.card:hover .button-container,
-.card.mobile-active .button-container {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Base button styles */
-.action-button {
   background: rgba(0, 0, 0, 0.8);
   border: none;
   border-radius: 12px;
@@ -672,49 +702,55 @@ aside .own-art:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
   outline: none;
   white-space: nowrap;
+  z-index: 10;
+  width: 48px;
+  height: 48px;
 }
 
-.action-button svg {
+/* Download icon using CSS variable */
+.download-button::before {
+  content: '';
   width: 24px;
   height: 24px;
-  fill: currentColor;
+  background-image: var(--icon-download-white);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px 24px;
   flex-shrink: 0;
 }
 
-/* Desktop hover - only background changes */
+/* Hide text by default */
+.download-button-text {
+  display: none;
+}
+
+/* Show text only when button is in-downloads */
+.download-button.in-downloads .download-button-text {
+  display: inline;
+}
+
+/* Desktop hover */
 @media (hover: hover) and (pointer: fine) {
-  .action-button:hover {
+  .download-button:hover {
     background: rgba(0, 0, 0, 1);
   }
 }
 
-.card .detail-button {
-  width: 40%;
-  display: flex;
-}
-.download-button {
-  width: 60%;
-}
-
 /* Download button - when added */
 .download-button.in-downloads {
-  background: var(--color-spot) !important;
+  background: var(--color-spot);
   color: #000;
   font-weight: 600;
+  width: auto;
+  padding: 12px 16px;
 }
 
-/* Keep only download button visible when added, hide detail button */
-.card:has(.download-button.in-downloads) .button-container {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.card:has(.download-button.in-downloads):not(:hover):not(.mobile-active) .detail-button {
-  opacity: 0;
-  pointer-events: none;
+/* Change to checkmark icon when added */
+.download-button.in-downloads::before {
+  background-image: var(--icon-checkmark-black);
 }
 
 /* Download spinner overlay */
@@ -743,8 +779,6 @@ aside .own-art:hover {
   margin: -40px 0 0 -60px;
   opacity: 1;
 }
-
-/* Legacy styles removed - now using button-container */
 
 .card.artist,
 .card.artwork {
@@ -1799,6 +1833,26 @@ a.btn-detail-secondary {
   }
   .card.artist {
     margin-right: 0;
+  }
+
+  /* Download button mobile adjustments */
+  .download-button {
+    bottom: 6px;
+    right: 6px;
+    padding: 10px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .download-button::before {
+    width: 22px;
+    height: 22px;
+    background-size: 22px 22px;
+  }
+
+  .download-button.in-downloads {
+    padding: 10px 14px;
+    font-size: 14px;
   }
 
   /* Artwork caption mobile adjustments */

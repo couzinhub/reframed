@@ -343,6 +343,14 @@ async function loadAndRenderTagPage() {
   }
 }
 
+// Back button functionality
+const tagBackButton = document.getElementById("tagBackButton");
+if (tagBackButton) {
+  tagBackButton.addEventListener("click", () => {
+    window.history.back();
+  });
+}
+
 // run once
 loadAndRenderTagPage();
 

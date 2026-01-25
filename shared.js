@@ -243,52 +243,6 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
   const imageUrl = getImageUrl(publicId);
 
-  // Track if this is a touch device
-  let isTouchDevice = false;
-
-  // Track touch for scroll detection
-  let touchStartY = 0;
-  let touchMoved = false;
-
-  // Detect touch on first touch event and show hover state
-  card.addEventListener('touchstart', (e) => {
-    isTouchDevice = true;
-    touchStartY = e.touches[0].clientY;
-    touchMoved = false;
-
-    // Don't show hover state if touching the buttons directly
-    if (e.target.closest('.artwork-title') || e.target.closest('.download-button')) {
-      return;
-    }
-  }, { passive: true });
-
-  card.addEventListener('touchmove', (e) => {
-    const touchY = e.touches[0].clientY;
-    if (Math.abs(touchY - touchStartY) > 10) {
-      touchMoved = true;
-    }
-  }, { passive: true });
-
-  card.addEventListener('touchend', (e) => {
-    // Don't show hover state if touching the buttons directly
-    if (e.target.closest('.artwork-title') || e.target.closest('.download-button')) {
-      return;
-    }
-
-    // Only activate if it wasn't a scroll
-    if (!touchMoved && !card.classList.contains('mobile-active')) {
-      e.preventDefault(); // Prevent click from firing
-      card.classList.add('mobile-active');
-
-      // Remove mobile-active from other cards
-      document.querySelectorAll('.card.mobile-active').forEach(otherCard => {
-        if (otherCard !== card) {
-          otherCard.classList.remove('mobile-active');
-        }
-      });
-    }
-  });
-
   const imgEl = document.createElement("img");
   imgEl.loading = "lazy";
   imgEl.alt = niceName;
@@ -402,32 +356,25 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     cleanupObserver.observe(card.parentNode, { childList: true });
   }
 
-  // Create button container
-  const buttonContainer = document.createElement("div");
-  buttonContainer.className = "button-container";
-
-  // Create detail button as a link to artwork page
-  const detailButton = document.createElement("a");
-  detailButton.className = "action-button detail-button";
-  detailButton.setAttribute("aria-label", "View artwork details");
-  detailButton.innerHTML = `<span>About</span>`;
+  // Wrap image in a link to artwork detail page
+  const imageLink = document.createElement("a");
+  imageLink.className = "artwork-link";
+  imageLink.setAttribute("aria-label", `View details for ${niceName}`);
 
   // Create artwork page URL
   const cleanSlug = humanizePublicId(publicId).replace(/\s/g, '_');
-  detailButton.href = `/artwork/#${cleanSlug}`;
+  imageLink.href = `/artwork/#${cleanSlug}`;
 
-  // On touch devices, only work if card is already active
-  detailButton.addEventListener('click', (e) => {
-    if (isTouchDevice && !card.classList.contains('mobile-active')) {
-      e.preventDefault();
-      return;
-    }
-  });
+  imageLink.appendChild(imageWrapper);
 
-  // Create download button
+  // Create download button - always visible at bottom right
   const downloadButton = document.createElement("button");
-  downloadButton.className = "action-button download-button";
+  downloadButton.className = "download-button";
   downloadButton.setAttribute("aria-label", "Add to downloads");
+
+  const buttonText = document.createElement("span");
+  buttonText.className = "download-button-text";
+  downloadButton.appendChild(buttonText);
 
   // Function to update download button state
   const updateDownloadButton = () => {
@@ -435,17 +382,11 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
 
     if (inDownloads) {
       downloadButton.classList.add('in-downloads');
-      downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
-        <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
-      </svg>
-      <span>Added</span>`;
-      downloadButton.setAttribute("aria-label", "Added to downloads");
+      buttonText.textContent = "Added to downloads";
+      downloadButton.setAttribute("aria-label", "Added to downloads - Click to remove");
     } else {
       downloadButton.classList.remove('in-downloads');
-      downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
-        <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
-      </svg>
-      <span>Add to downloads</span>`;
+      buttonText.textContent = "";
       downloadButton.setAttribute("aria-label", "Add to downloads");
     }
   };
@@ -456,11 +397,6 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
   downloadButton.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
-
-    // On touch devices, only work if card is already active
-    if (isTouchDevice && !card.classList.contains('mobile-active')) {
-      return;
-    }
 
     if (typeof window.isInDownloads === 'function' && typeof window.addToDownloads === 'function') {
       if (window.isInDownloads(publicId)) {
@@ -473,24 +409,11 @@ function createArtworkCard(publicId, niceName, tags, width, height) {
     }
   });
 
-  // Add buttons to container
-  buttonContainer.appendChild(detailButton);
-  buttonContainer.appendChild(downloadButton);
-
-  card.appendChild(imageWrapper);
-  card.appendChild(buttonContainer);
+  card.appendChild(imageLink);
+  card.appendChild(downloadButton);
 
   return card;
 }
-
-// Remove mobile-active state when tapping outside of cards
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.card')) {
-    document.querySelectorAll('.card.mobile-active').forEach(card => {
-      card.classList.remove('mobile-active');
-    });
-  }
-}, true);
 
 // Generic Cache Helpers
 function loadFromCache(cacheKey, ttlMs) {
