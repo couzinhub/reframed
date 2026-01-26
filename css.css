@@ -3,17 +3,44 @@
 
 html {
   scrollbar-gutter: stable;
+    overflow-y: scroll; /* Force scrollbar to always show */
+
+}
+
+/* Scrollbar styling to darken the gutter space */
+/* For WebKit browsers (Chrome, Safari, Edge) */
+html::-webkit-scrollbar {
+  width: 15px;
+}
+
+html::-webkit-scrollbar-track {
+  scrollbar-color: rgba(255, 255, 255, 0.6) var(--color-scroll);
+}
+
+html::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* For Firefox */
+html {
+  scrollbar-color: rgba(255, 255, 255, 0.6) var(--color-scroll);
 }
 
 :root {
   color-scheme: dark;
   --sidebar-width: 250px;
   --color-bg: rgb(12, 27, 68);
+  --color-scroll: #020a1f;
   --color-txt: #f0f0f0;
   --color-sidebar: #081330;
   --color-spot: #56CCFF;
   --page-maxwidth: 1400px;
-  --shadow-color: 27deg 5% 47%;
+  --shadow-color: 27deg 5% 47%;scroll
 
   /* SVG Icons */
   --icon-plus-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>');
@@ -59,14 +86,11 @@ html {
 
 body {
   margin: 0;
-  padding-top: 80px;
+  padding: 70px 50px 50px;
   font-family: 'Lexend', sans-serif;
   font-optical-sizing: auto;
   background-color: var(--color-bg);
   color: var(--color-txt);
-  padding-left: 50px;
-  padding-right: 50px;
-  padding-bottom: 50px;
   display: block;
 }
 
@@ -80,10 +104,10 @@ body {
   font-weight: 200;
   letter-spacing: 2px;
   line-height: 140%;
-  margin: 0 auto 20px;
+  margin: 40px auto 20px;
 }
 .home h1{
-  margin: 0 auto 40px;
+  margin: 40px auto 40px;
 }
 .browsePage main H1 {
   display: none;
@@ -1196,7 +1220,7 @@ p {
 -----------------------------*/
 
 body.artwork-detail {
-  padding: 0 0 30px;
+  padding: 70px 0 30px;
 }
 
 .artwork-detail-container {
