@@ -48,19 +48,38 @@ function FxK(str) {
 async function fetchAllImageKitFiles() {
   try {
     const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
-    // Use type=file to get only current versions, excluding old file-version entries
-    const apiUrl = 'https://api.imagekit.io/v1/files?type=file&limit=1000';
+    let allFiles = [];
+    let skip = 0;
+    const limit = 1000;
+    let hasMore = true;
 
-    const response = await fetch(apiUrl, {
-      headers: { 'Authorization': authHeader }
-    });
+    // Fetch all files with pagination
+    while (hasMore) {
+      // Use type=file to get only current versions, excluding old file-version entries
+      const apiUrl = `https://api.imagekit.io/v1/files?type=file&limit=${limit}&skip=${skip}`;
 
-    if (!response.ok) {
-      console.error('Failed to fetch from ImageKit API:', response.status);
-      return [];
+      const response = await fetch(apiUrl, {
+        headers: { 'Authorization': authHeader }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch from ImageKit API:', response.status);
+        break;
+      }
+
+      const files = await response.json();
+      allFiles = allFiles.concat(files);
+
+      // If we got fewer files than the limit, we've reached the end
+      if (files.length < limit) {
+        hasMore = false;
+      } else {
+        skip += limit;
+      }
     }
 
-    return await response.json();
+    console.log(`Fetched ${allFiles.length} total files from ImageKit`);
+    return allFiles;
   } catch (error) {
     console.error('Error fetching from ImageKit:', error);
     return [];
@@ -479,25 +498,10 @@ function showToast(message, duration = 5000, isHtml = false) {
 // Tip reminder - shakes button every 20 seconds
 function startTipReminder() {
   setInterval(() => {
-    // Check if we're on mobile viewport (narrow window) or if mobile menu is visible
-    const isMobile = window.innerWidth <= 768;
-    const mobileTopBar = document.querySelector('.mobile-top-bar');
-    const isMobileLayout = mobileTopBar && window.getComputedStyle(mobileTopBar).display !== 'none';
-
-    if (isMobile || isMobileLayout) {
-      // Shake the mobile tip button
-      const mobileTipButton = document.querySelector('.kofi-button.mobile-tip');
-      if (mobileTipButton) {
-        mobileTipButton.classList.add('shake');
-        setTimeout(() => mobileTipButton.classList.remove('shake'), 1000);
-      }
-    } else {
-      // Shake the desktop tip button
-      const tipButton = document.querySelector('.kofi-button:not(.mobile-tip)');
-      if (tipButton) {
-        tipButton.classList.add('shake');
-        setTimeout(() => tipButton.classList.remove('shake'), 1000);
-      }
+    const tipButton = document.querySelector('.kofi-button.top-tip');
+    if (tipButton) {
+      tipButton.classList.add('shake');
+      setTimeout(() => tipButton.classList.remove('shake'), 1000);
     }
   }, 20000); // Every 20 seconds
 }
@@ -530,24 +534,6 @@ function initializeNavigation(currentPage) {
     downloadsCount = 0;
   }
 
-  // Insert mobile top bar
-  const mobileTopBar = `
-    <div class="mobile-top-bar">
-      <button class="hamburger-menu" aria-label="Toggle menu">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span id="mobileMenuBadge" class="mobile-menu-badge" style="display: ${downloadsCount > 0 ? 'flex' : 'none'};">${downloadsCount}</span>
-      </button>
-      <a href="/">
-        <img src="${imgPath}" alt="Reframed Logo" class="mobile-logo">
-      </a>
-      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button mobile-tip" aria-label="Thank me with a tip">
-        <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
-      </a>
-    </div>
-  `;
-
   // Build downloads menu item if there are downloads OR if we're on the downloads page
   const shouldShowDownloads = downloadsCount > 0 || currentPage === 'downloads';
   const downloadsMenuItem = shouldShowDownloads ? `
@@ -558,36 +544,25 @@ function initializeNavigation(currentPage) {
           </a>
         </li>` : '';
 
-  // Insert sidebar
-  const aside = `
-    <aside>
-      <a href="/">
+  // Insert top bar
+  const topBar = `
+    <header class="top-bar">
+      <a href="/" class="logo-link">
         <img id="logo" src="${imgPath}" alt="Reframed Logo">
       </a>
-      <ul>
-        <li class="${currentPage === 'home' ? 'current' : ''}"><a href="/">Home</a></li>
-        <li class="${currentPage === 'browse' ? 'current' : ''}"><a href="/browse-recent.html">Browse</a></li>
-        <li class="${currentPage === 'search' ? 'current' : ''}"><a href="/search.html">Search</a></li>
-        <li class="${currentPage === 'faq' ? 'current' : ''}"><a href="/faq.html">FAQ</a></li>
-        <li class="${currentPage === 'contact' ? 'current' : ''}"><a href="/contact.html">Contact</a></li>${downloadsMenuItem}
-      </ul>
-      <div class="button tip"></div>
-    </aside>
-  `;
-
-  // Insert into page
-  document.body.insertAdjacentHTML('afterbegin', mobileTopBar + aside);
-
-  // Add Ko-fi button styled like the original widget
-  const tipContainer = document.querySelector('.button.tip');
-  if (tipContainer) {
-    tipContainer.innerHTML = `
-      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button">
+      <nav class="top-nav">
+        <ul>${downloadsMenuItem}
+        </ul>
+      </nav>
+      <a href="https://ko-fi.com/O5O51FWPUL" target="_blank" class="kofi-button top-tip" aria-label="Thank me with a tip">
         <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi">
         <span>Thank me with a tip</span>
       </a>
-    `;
-  }
+    </header>
+  `;
+
+  // Insert into page
+  document.body.insertAdjacentHTML('afterbegin', topBar);
 
   // Update tag menu items if on tag page with hash
   if (currentPage === 'tag') {
@@ -611,37 +586,6 @@ function initializeNavigation(currentPage) {
     window.addEventListener('hashchange', updateTagMenuItems);
   }
 
-  // Initialize mobile menu functionality
-  const hamburgerMenu = document.querySelector('.hamburger-menu');
-  const asideElement = document.querySelector('aside');
-
-  if (hamburgerMenu && asideElement) {
-    hamburgerMenu.addEventListener('click', () => {
-      hamburgerMenu.classList.toggle('active');
-      asideElement.classList.toggle('active');
-      document.body.classList.toggle('menu-open');
-    });
-
-    // Close menu when clicking overlay
-    document.body.addEventListener('click', (e) => {
-      if (document.body.classList.contains('menu-open') &&
-          !asideElement.contains(e.target) &&
-          !hamburgerMenu.contains(e.target)) {
-        hamburgerMenu.classList.remove('active');
-        asideElement.classList.remove('active');
-        document.body.classList.remove('menu-open');
-      }
-    });
-
-    // Close menu when clicking a link in the sidebar
-    asideElement.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        hamburgerMenu.classList.remove('active');
-        asideElement.classList.remove('active');
-        document.body.classList.remove('menu-open');
-      });
-    });
-  }
 }
 
 // ============ DOWNLOADS MENU UPDATE ============
@@ -654,16 +598,15 @@ function updateDownloadsMenu() {
   // Check if we're on the downloads page
   const isDownloadsPage = window.location.pathname.includes('downloads.html');
 
-  // Update sidebar menu item
-  const sidebar = document.querySelector('aside ul');
+  // Update top nav menu item
+  const topNav = document.querySelector('.top-nav ul');
   let menuItem = document.getElementById('downloadsMenuItem');
 
   // Show menu item if there are downloads OR if we're on the downloads page
   if (count > 0 || isDownloadsPage) {
     if (!menuItem) {
       // Create and insert the menu item if it doesn't exist
-      const contactItem = sidebar?.querySelector('a[href="/contact.html"]')?.parentElement;
-      if (contactItem && sidebar) {
+      if (topNav) {
         menuItem = document.createElement('li');
         menuItem.id = 'downloadsMenuItem';
         if (isDownloadsPage) {
@@ -675,7 +618,7 @@ function updateDownloadsMenu() {
             ${count > 0 ? `<span class="menu-badge">${count}</span>` : ''}
           </a>
         `;
-        contactItem.insertAdjacentElement('afterend', menuItem);
+        topNav.appendChild(menuItem);
       }
     } else {
       // Update existing menu item badge
@@ -706,16 +649,6 @@ function updateDownloadsMenu() {
     }
   }
 
-  // Update mobile menu badge
-  const mobileBadge = document.getElementById('mobileMenuBadge');
-  if (mobileBadge) {
-    if (count > 0) {
-      mobileBadge.textContent = count;
-      mobileBadge.style.display = 'flex';
-    } else {
-      mobileBadge.style.display = 'none';
-    }
-  }
 }
 
 // Export for use in other scripts

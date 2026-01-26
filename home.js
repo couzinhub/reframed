@@ -201,6 +201,32 @@ function renderGroupsInto(container, tiles) {
     tilesContainer.appendChild(rowContainer);
   }
 
+  // Add utility tiles as third row
+  const utilityTiles = [
+    { label: 'Search', href: '/search.html' },
+    { label: 'FAQ', href: '/faq.html' },
+    { label: 'Contact', href: '/contact.html' }
+  ];
+
+  const utilityRow = document.createElement("div");
+  utilityRow.className = "utility-tiles-row";
+
+  utilityTiles.forEach(tile => {
+    const tileEl = document.createElement("a");
+    tileEl.className = "tile utility";
+    tileEl.href = tile.href;
+    tileEl.setAttribute("aria-label", tile.label);
+
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "title";
+    titleDiv.textContent = tile.label;
+
+    tileEl.appendChild(titleDiv);
+    utilityRow.appendChild(tileEl);
+  });
+
+  tilesContainer.appendChild(utilityRow);
+
   container.appendChild(tilesContainer);
 }
 
@@ -221,69 +247,86 @@ function renderFromTiles(container, tilesData) {
   renderGroupsInto(container, tilesArray);
 }
 
-// ============ RECENTLY ADDED SECTION ============
+// ============ BROWSE TABS SECTION ============
 
-async function fetchRecentlyAdded() {
-  try {
-    // Fetch all files from ImageKit
-    const allFiles = await fetchAllImageKitFiles();
+function renderBrowseTabsSection(container) {
+  const section = document.createElement("div");
+  section.id = "browseTabsSection";
+  section.className = "browse-tabs-section";
 
-    // Sort by upload date (newest first)
-    const sorted = allFiles
-      .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  // Tabs navigation container
+  const tabsContainer = document.createElement("div");
+  tabsContainer.id = "browseTabs";
+  tabsContainer.className = "tabs-container";
+  section.appendChild(tabsContainer);
 
-    // Transform to match expected format
-    const items = sorted.map(file => ({
-      public_id: file.filePath.substring(1), // Remove leading slash
-      width: file.width,
-      height: file.height,
-      created_at: file.createdAt,
-      tags: file.tags || []
-    }));
+  // Tab content wrapper
+  const contentWrapper = document.createElement("div");
+  contentWrapper.className = "tab-content-wrapper";
 
-    return items;
-  } catch (err) {
-    console.error('Error fetching recently uploaded:', err);
-    return [];
-  }
+  // Recent tab (default)
+  const recentContent = document.createElement("div");
+  recentContent.id = "recentTabContent";
+  recentContent.className = "tab-content active";
+  const recentGrid = document.createElement("div");
+  recentGrid.id = "recentGrid";
+  recentGrid.className = "tag-grid";
+  recentContent.appendChild(recentGrid);
+  contentWrapper.appendChild(recentContent);
+
+  // Collections tab
+  const collectionsContent = document.createElement("div");
+  collectionsContent.id = "collectionsTabContent";
+  collectionsContent.className = "tab-content";
+  const collectionsGrid = document.createElement("div");
+  collectionsGrid.id = "collectionsGrid";
+  collectionsGrid.className = "tag-grid";
+  collectionsContent.appendChild(collectionsGrid);
+  contentWrapper.appendChild(collectionsContent);
+
+  // Artists tab
+  const artistsContent = document.createElement("div");
+  artistsContent.id = "artistsTabContent";
+  artistsContent.className = "tab-content";
+  const artistsGrid = document.createElement("div");
+  artistsGrid.id = "artistsGrid";
+  artistsGrid.className = "tag-grid";
+  artistsContent.appendChild(artistsGrid);
+
+  // Add alphabet navigation for artists
+  const alphabetNav = createAlphabetNavigation();
+  artistsContent.appendChild(alphabetNav);
+  contentWrapper.appendChild(artistsContent);
+
+  // Vertical tab
+  const verticalContent = document.createElement("div");
+  verticalContent.id = "verticalTabContent";
+  verticalContent.className = "tab-content";
+  const verticalGrid = document.createElement("div");
+  verticalGrid.id = "verticalGrid";
+  verticalGrid.className = "tag-grid";
+  verticalContent.appendChild(verticalGrid);
+  contentWrapper.appendChild(verticalContent);
+
+  section.appendChild(contentWrapper);
+  container.appendChild(section);
 }
 
-function renderRecentlyAdded(container, images) {
-  if (!images || images.length === 0) return;
+function createAlphabetNavigation() {
+  const scrollbar = document.createElement("nav");
+  scrollbar.className = "alphabet-scrollbar";
 
-  const section = document.createElement("div");
-  section.className = "recently-added-section";
+  for (let i = 65; i <= 90; i++) {
+    const letter = String.fromCharCode(i);
+    const marker = document.createElement("a");
+    marker.className = "alphabet-marker";
+    marker.href = `#section-${letter}`;
+    marker.textContent = letter;
+    marker.setAttribute("data-letter", letter);
+    scrollbar.appendChild(marker);
+  }
 
-  const title = document.createElement("h3");
-  title.className = "recently-added-title";
-  title.textContent = "Recently added";
-  section.appendChild(title);
-
-  const grid = document.createElement("div");
-  grid.className = "recently-added-grid";
-
-  let currentIndex = 0;
-  // Show only 12 items
-  const maxItems = 12;
-  const batch = images.slice(0, maxItems);
-
-  batch.forEach(img => {
-    const publicId = img.public_id;
-    const niceName = humanizePublicId(publicId);
-    const card = createArtworkCard(publicId, niceName, img.tags, img.width, img.height);
-    grid.appendChild(card);
-  });
-
-  section.appendChild(grid);
-
-  // Create View more link
-  const viewMoreLink = document.createElement("a");
-  viewMoreLink.className = "load-more-btn";
-  viewMoreLink.href = "/browse-recent.html";
-  viewMoreLink.textContent = "Browse";
-
-  section.appendChild(viewMoreLink);
-  container.appendChild(section);
+  return scrollbar;
 }
 
 // ============ MAIN BOOTSTRAP ============
@@ -299,9 +342,13 @@ function renderRecentlyAdded(container, images) {
   if (cached && Array.isArray(cached.tiles)) {
     renderFromTiles(container, cached.tiles);
 
-    // Load recently added artworks (not cached)
-    const recentImages = await fetchRecentlyAdded();
-    renderRecentlyAdded(container, recentImages);
+    // Render browse tabs section
+    renderBrowseTabsSection(container);
+
+    // Initialize browse tabs controller
+    if (window.BrowseTabsController) {
+      BrowseTabsController.init();
+    }
     return;
   }
 
@@ -358,7 +405,11 @@ function renderRecentlyAdded(container, images) {
   // 4. Render
   renderFromTiles(container, liveTiles);
 
-  // 5. Load recently added artworks
-  const recentImages = await fetchRecentlyAdded();
-  renderRecentlyAdded(container, recentImages);
+  // 5. Render browse tabs section
+  renderBrowseTabsSection(container);
+
+  // 6. Initialize browse tabs controller
+  if (window.BrowseTabsController) {
+    BrowseTabsController.init();
+  }
 })();

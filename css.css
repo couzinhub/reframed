@@ -59,12 +59,14 @@ html {
 
 body {
   margin: 0;
-  margin-left: var(--sidebar-width);
+  padding-top: 80px;
   font-family: 'Lexend', sans-serif;
   font-optical-sizing: auto;
   background-color: var(--color-bg);
   color: var(--color-txt);
-  padding: 50px;
+  padding-left: 50px;
+  padding-right: 50px;
+  padding-bottom: 50px;
   display: block;
 }
 
@@ -81,7 +83,7 @@ body {
   margin: 0 auto 20px;
 }
 .home h1{
-    margin: 0 auto 40px;
+  margin: 0 auto 40px;
 }
 .browsePage main H1 {
   display: none;
@@ -162,17 +164,15 @@ p {
 #browseTabs {
   position: sticky;
   top: 0;
-  z-index: 11;
+  z-index: 12;
 }
 .tabs {
   display: block;
   list-style: none;
   width: 100%;
   text-align: center;
-  margin: 0 0 40px -32px;
-  padding: 20px 32px 20px;
-  background: rgba(12, 27, 68, .8);
-  backdrop-filter: blur(12px);
+  margin: 0 0 40px;
+  padding: 8px 0px 0px;
 }
 .tabs li {
   display: inline-block;
@@ -201,11 +201,20 @@ p {
   position: fixed;
   right: 20px;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateX(60px);
   display: flex;
   flex-direction: column;
   gap: 8px;
   z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.alphabet-scrollbar.visible {
+  transform: translateY(-50%) translateX(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .alphabet-marker {
@@ -294,49 +303,61 @@ p {
 /* Layout
 -----------------------------*/
 
-aside {
-  height: 100%;
-  width: var(--sidebar-width);
+/* Top Bar */
+.top-bar {
   position: fixed;
-  z-index: 12;
   top: 0;
   left: 0;
+  right: 0;
+  height: 70px;
   background-color: var(--color-sidebar);
-  overflow-x: hidden;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 50px;
 }
 
-
-/* Aside 
------------------------------*/
-
-aside #logo {
-  width: 190px;
-  margin: 65px 30px 40px;
+.top-bar .logo-link {
+  display: flex;
+  align-items: center;
 }
 
-aside ul {
+.top-bar #logo {
+  height: 32px;
+  width: auto;
+}
+
+.top-nav ul {
   list-style: none;
   padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 20px;
 }
-aside ul a {
+
+.top-nav ul a {
   display: block;
   text-decoration: none;
   color: var(--color-txt);
   font-size: 16px;
   font-weight: 600;
-  padding: 16px 30px;
-  margin: 12px 0;
+  padding: 10px 20px;
+  border-radius: 7px;
+  transition: background-color 0.2s ease;
 }
-aside ul a:hover {
-  background-color: #000;
+
+.top-nav ul a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
-aside ul .current a {
+
+.top-nav ul .current a {
   background-color: var(--color-spot);
   color: var(--color-bg);
 }
 
 /* Menu badge for Downloads item */
-aside ul a .menu-badge {
+.top-nav ul a .menu-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -350,41 +371,15 @@ aside ul a .menu-badge {
   min-width: 20px;
 }
 
-aside ul .current a .menu-badge {
+.top-nav ul .current a .menu-badge {
   background: rgba(0, 0, 0, 0.8);
   color: var(--color-spot);
-}
-aside .button {
-  text-align: center;
-  padding: 20px 0;
-  margin: 10px 30px;
-  width: 190px;
-}
-aside .tip .btn-container a {
-  width: 166px;
-}
-aside .own-art {
-  background-color: #72563D;
-  background-image: url(img/own-art.png);
-  background-size: 100%;
-  background-repeat: no-repeat;
-  background-position: 0 0;
-  padding: 0;
-  border-radius: 10px;
-  transition: transform 150ms ease, box-shadow 150ms ease;
-}
-aside .own-art a {
-  color: var(--color-txt);
-  text-decoration: none;
-  display: block;
-  padding: 120px 40px 10px;
-  font-size: 14px;
 }
 
 /* Ko-fi Button */
 .kofi-button {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 2px 12px;
   background-color: #00488c;
   color: #fff;
   text-decoration: none;
@@ -396,9 +391,7 @@ aside .own-art a {
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
-/* Shared hover effect for Ko-fi button and own-art */
-.kofi-button:hover,
-aside .own-art:hover {
+.kofi-button:hover {
   box-shadow: white 0 0 0 2px;
   transform: scale(1.03);
 }
@@ -415,8 +408,8 @@ aside .own-art:hover {
 }
 
 .kofi-button img {
-  height: 15px;
-  width: 22px;
+  height:20px;
+  width: 25px;
   vertical-align: middle;
   margin-right: 5px;
   margin-bottom: 3px;
@@ -434,9 +427,68 @@ aside .own-art:hover {
   display: flex;
   flex-direction: column;
   align-items: anchor-center;
-  gap: 30px;
+  gap: 20px;
   padding: 30px 0;
   font-family: "Lexend", system-ui, sans-serif;
+}
+
+/* Utility tiles row (Search, FAQ, Contact) */
+.utility-tiles-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  justify-content: center;
+}
+
+.tile.utility {
+  flex: 1;
+  max-width: 420px;
+  background: var(--color-sidebar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.tile.utility .title {
+  position: static;
+  background: none;
+  padding: 0;
+  font-size: 32px;
+  text-shadow: none;
+}
+
+/* Browse Tabs Section on Homepage */
+.browse-tabs-section {
+  width: 100%;
+  min-height: 100vh;
+  max-width: 1300px;
+  margin: 60px auto 40px;
+}
+
+.browse-tabs-section .tabs-container {
+  position: sticky;
+  top: 0;
+  z-index: 13;
+  margin-bottom: 40px;
+}
+
+.browse-tabs-section .tab-content {
+  display: none;
+}
+
+.browse-tabs-section .tab-content.active {
+  display: block;
+}
+
+#tagGrid, #searchGrid,
+.browse-tabs-section .tag-grid,
+#artistsTabContent .tag-grid,
+#collectionsTabContent .tag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 40px;
+  padding: 0;
 }
 
 /* Recently Added Section */
@@ -528,15 +580,11 @@ aside .own-art:hover {
   text-decoration: none;
   color: inherit;
   background: #0f1118;
-  border: 1px solid #1f2333;
   border-radius: 28px;
   overflow: hidden;
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
-.card.artist {
-  display: inline-block;
-  margin: 0 20px 20px 0;
-}
+
 /* Shared hover effect for tiles and cards */
 .tile:hover,
 .card.artist:hover {
@@ -547,9 +595,7 @@ aside .own-art:hover {
 }
 
 /* Artwork cards should not have pointer cursor */
-.card.artwork {
-  cursor: default;
-}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 
 /* fixed tile sizes */
 .tile.hero {
@@ -569,7 +615,7 @@ aside .own-art:hover {
 .homepage-tiles {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 20px;
   width: 100%;
   max-width: var(--page-maxwidth);
   margin: 0 auto;
@@ -659,13 +705,10 @@ aside .own-art:hover {
 /* Content 
 -----------------------------*/
 
-#artistsGrid, #collectionsGrid, .tag-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 10px;
-}
 
-.tag-grid {
+.browse-tabs-section .tag-grid,
+#artistsTabContent .tag-grid,
+#collectionsTabContent .tag-grid {
   gap: 30px;
 }
 
@@ -1136,7 +1179,7 @@ aside .own-art:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  min-height: 50vh;
   width: 100%;
   grid-column: 1 / -1;
 }
@@ -1393,6 +1436,10 @@ a.btn-detail-secondary {
 /* Mobile adjustments */
 @media (max-width: 768px) {
 
+  .top-bar {
+    padding: 0 30px;
+  }
+
   body.artwork-detail {
     padding: 60px 0;
   }
@@ -1492,116 +1539,7 @@ a.btn-detail-secondary {
 /* Mobile Top Bar & Hamburger Menu
 -----------------------------*/
 
-.mobile-top-bar {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background-color: var(--color-sidebar);
-  z-index: 99;
-  align-items: center;
-  justify-content: center;
-  padding: 0 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  isolation: isolate; /* Create new stacking context */
-}
-
-.mobile-top-bar .hamburger-menu {
-  position: absolute;
-  left: 20px;
-}
-
-.mobile-logo {
-  height: 28px;
-  width: auto;
-}
-
-.mobile-top-bar .mobile-tip {
-  position: absolute;
-  right: 20px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #00488c;
-  border-radius: 10px;
-  width: 56px;
-  height: 40px;
-  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
-}
-
-.mobile-top-bar .mobile-tip img {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  margin: 0;
-}
-
-.mobile-top-bar .mobile-tip:hover {
-  box-shadow: white 0 0 0 2px;
-  transform: scale(1.05);
-}
-
-.mobile-top-bar .mobile-tip.shake {
-  animation: shake 0.5s ease-in-out;
-  box-shadow: white 0 0 0 2px, 0 0 20px rgba(86, 204, 255, 0.5);
-}
-
-.hamburger-menu {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  z-index: 4;
-  position: relative;
-}
-
-/* Mobile menu badge */
-.hamburger-menu .mobile-menu-badge {
-  position: absolute;
-  top: -4px;
-  right: -8px;
-  background: var(--color-spot);
-  color: var(--color-bg);
-  font-weight: 700;
-  font-size: 11px;
-  padding: 3px;
-  border-radius: 20px;
-  min-width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5;
-  line-height: 1;
-}
-
-.hamburger-menu span {
-  display: block;
-  width: 22px;
-  height: 2px;
-  background-color: var(--color-txt);
-  border-radius: 2px;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-/* Hamburger animation when menu is open */
-.hamburger-menu.active span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-
-.hamburger-menu.active span:nth-child(2) {
-  opacity: 0;
-}
-
-.hamburger-menu.active span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
-}
+/* Old mobile-specific styles removed - now using unified top bar */
 
 /* Tablet and narrow desktop adjustments
 -----------------------------*/
@@ -1676,6 +1614,11 @@ a.btn-detail-secondary {
   .tile.full-width.secondary {
     max-width: 100%;
   }
+
+  /* Utility tiles on narrow desktop/tablet */
+  .utility-tiles-row {
+    gap: 20px;
+  }
 }
 
 /* Tablet adjustments (iPad Pro landscape, etc.)
@@ -1685,13 +1628,21 @@ a.btn-detail-secondary {
   /* Tag grid and recently added grid for tablets - unified 2 columns */
   .tag-grid,
   .recently-added-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
     gap: 30px;
   }
 
   .vertical .tag-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 30px;
+  }
+
+  /* Utility tiles on tablet */
+  .utility-tiles-row {
+    gap: 20px;
+  }
+
+  .tile.utility {
+    max-width: 350px;
   }
 }
 
@@ -1704,25 +1655,29 @@ a.btn-detail-secondary {
     padding: 80px 30px 30px;
   }
 
-  .mobile-top-bar {
-    display: flex;
+  /* Mobile navigation adjustments */
+  .top-nav ul {
+    gap: 10px;
   }
 
-  aside {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
+  .top-nav ul a {
+    padding: 8px 15px;
+    font-size: 14px;
   }
 
-  aside.active {
-    transform: translateX(0);
+  /* Mobile Ko-fi button - icon only */
+  .kofi-button.top-tip {
+    padding: 4px 12px;
+    min-width: auto;
   }
 
-  aside #logo {
+  .kofi-button.top-tip span {
     display: none;
   }
 
-  aside ul {
-    padding-top: 50px;
+  .kofi-button.top-tip img {
+    margin-right: 0;
+    margin-bottom: 0;
   }
 
   .browsePage body {
@@ -1824,26 +1779,6 @@ a.btn-detail-secondary {
   /* Rotate arrow when open */
   .tabs.open li.current a::after {
     transform: translateY(-50%) rotate(180deg);
-  }
-
-  /* Overlay when menu is open */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    z-index: 12;
-  }
-
-  body.menu-open::before {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   /* Homepage mobile layout */
@@ -1955,6 +1890,20 @@ a.btn-detail-secondary {
     font-size: 24px;
     letter-spacing: 0.5px;
     margin: 20px 0;
+  }
+
+  /* Utility tiles on mobile */
+  .utility-tiles-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .tile.utility {
+    max-width: 100%;
+  }
+
+  .tile.utility .title {
+    font-size: 24px;
   }
 
   /* Tag header row on mobile */
@@ -2564,17 +2513,25 @@ body.modal-open {
 
 /* Search Page Styles
 -----------------------------*/
+
+.search-container,
+#searchGrid,
+#tagView {
+  max-width: 1300px;
+}
+#searchGrid,
+#tagView {
+  margin: auto;
+}
 .search-container {
   position: sticky;
   top: 0;
-  z-index: 11;
+  z-index: 12;
   display: block;
   list-style: none;
   text-align: center;
-  margin: 0 -50px 30px;
-  padding: 20px 70px 20px;
-  background: rgba(12, 27, 68, .8);
-  backdrop-filter: blur(12px);
+  margin: 10px 30% 30px;
+  padding: 8px 0 0;
 }
 
 @media (max-width: 768px) {
@@ -2611,8 +2568,8 @@ body.modal-open {
 
 #clearSearch {
   position: absolute;
-  right: 80px;
-  top: 50%;
+  right: 10px;
+  top: 35px;
   transform: translateY(-50%);
   width: 36px;
   height: 36px;

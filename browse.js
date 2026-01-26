@@ -339,6 +339,91 @@ function renderArtistsGrid(artistsList) {
 function setupLazyThumbObserver() {
   const cards = document.querySelectorAll(".card");
 
+  // Queue system to prevent hitting API rate limits
+  let processingQueue = [];
+  let isProcessing = false;
+
+  async function processQueue() {
+    if (isProcessing || processingQueue.length === 0) return;
+
+    isProcessing = true;
+
+    while (processingQueue.length > 0) {
+      // Prioritize items currently visible on screen
+      let nextIndex = 0;
+      for (let i = 0; i < processingQueue.length; i++) {
+        const rect = processingQueue[i].cardEl.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isVisible) {
+          nextIndex = i;
+          break;
+        }
+      }
+
+      const { cardEl, tagName, cacheItem, observer } = processingQueue.splice(nextIndex, 1)[0];
+
+      try {
+        // If we already have both thumb + count, skip
+        const alreadyHasThumb = !!cacheItem.chosenImage;
+        const alreadyHasCount = typeof cacheItem.imageCount === "number";
+
+        if (alreadyHasThumb && alreadyHasCount) {
+          observer.unobserve(cardEl);
+          continue;
+        }
+
+        // Fetch images (this gives us image list + count)
+        const imageSets = await fetchImagesForArtist(tagName);
+
+        // Check if fetch was successful
+        if (!imageSets || !imageSets.all) {
+          console.error(`Failed to fetch images for artist ${tagName}`);
+          observer.unobserve(cardEl);
+          continue;
+        }
+
+        // pick thumb if missing
+        if (!alreadyHasThumb) {
+          const chosenImage = pickFeaturedImage(imageSets);
+          cacheItem.chosenImage = chosenImage;
+
+          const thumbWrapper = cardEl.querySelector(".thumb");
+          if (thumbWrapper && chosenImage) {
+            const niceName = humanizePublicId(chosenImage.public_id);
+            const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
+            const imageWrapper = createImageWithLoading(chosenImage.public_id, thumbUrl, niceName);
+
+            // Replace the entire placeholder wrapper with the new image wrapper
+            thumbWrapper.replaceWith(imageWrapper);
+          }
+        }
+
+        // record count if missing
+        if (!alreadyHasCount) {
+          cacheItem.imageCount = imageSets.count;
+        }
+
+        // update label: "Name (N)"
+        if (cardEl.__countSpan && typeof cacheItem.imageCount === "number") {
+          cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
+        }
+
+        // Save updated cache to localStorage
+        saveArtistsToLocalStorage(ARTISTS_CACHE);
+
+        observer.unobserve(cardEl);
+
+        // Add 150ms delay between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 150));
+      } catch (err) {
+        console.error(`Error processing artist ${tagName}:`, err);
+        observer.unobserve(cardEl);
+      }
+    }
+
+    isProcessing = false;
+  }
+
   const obs = new IntersectionObserver(async (entries, observer) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
@@ -365,40 +450,12 @@ function setupLazyThumbObserver() {
         continue;
       }
 
-      // Fetch images (this gives us image list + count)
-      const imageSets = await fetchImagesForArtist(tagName);
-
-      // pick thumb if missing
-      if (!alreadyHasThumb) {
-        const chosenImage = pickFeaturedImage(imageSets);
-        cacheItem.chosenImage = chosenImage;
-
-        const thumbWrapper = cardEl.querySelector(".thumb");
-        if (thumbWrapper && chosenImage) {
-          const niceName = humanizePublicId(chosenImage.public_id);
-          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
-          const imageWrapper = createImageWithLoading(chosenImage.public_id, thumbUrl, niceName);
-
-          // Replace the entire placeholder wrapper with the new image wrapper
-          thumbWrapper.replaceWith(imageWrapper);
-        }
-      }
-
-      // record count if missing
-      if (!alreadyHasCount) {
-        cacheItem.imageCount = imageSets.count;
-      }
-
-      // update label: "Name (N)"
-      if (cardEl.__countSpan && typeof cacheItem.imageCount === "number") {
-        cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
-      }
-
-      // Save updated cache to localStorage
-      saveArtistsToLocalStorage(ARTISTS_CACHE);
-
-      observer.unobserve(cardEl);
+      // Add to queue instead of fetching immediately
+      processingQueue.push({ cardEl, tagName, cacheItem, observer });
     }
+
+    // Start processing the queue
+    processQueue();
   }, {
     root: null,
     rootMargin: "200px 0px 200px 0px",
@@ -743,7 +800,9 @@ function loadMoreVerticalArtworks() {
   if (isLoadingVertical || !hasMoreVerticalItems) return;
 
   isLoadingVertical = true;
-  const grid = document.getElementById("recentGrid");
+  // On homepage, vertical tab uses "verticalGrid", on standalone page uses "recentGrid"
+  const gridId = document.getElementById("verticalGrid") ? "verticalGrid" : "recentGrid";
+  const grid = document.getElementById(gridId);
 
   const endIndex = Math.min(verticalCurrentIndex + ITEMS_PER_LOAD, allVerticalArtworks.length);
   const batch = allVerticalArtworks.slice(verticalCurrentIndex, endIndex);
@@ -765,7 +824,9 @@ function loadMoreVerticalArtworks() {
 }
 
 function setupVerticalInfiniteScroll() {
-  const grid = document.getElementById("recentGrid");
+  // On homepage, vertical tab uses "verticalGrid", on standalone page uses "recentGrid"
+  const gridId = document.getElementById("verticalGrid") ? "verticalGrid" : "recentGrid";
+  const grid = document.getElementById(gridId);
 
   const sentinel = document.createElement("div");
   sentinel.id = "scroll-sentinel-vertical";
@@ -791,7 +852,9 @@ function setupVerticalInfiniteScroll() {
 }
 
 async function initVerticalPage() {
-  const grid = document.getElementById("recentGrid");
+  // On homepage, vertical tab uses "verticalGrid", on standalone page uses "recentGrid"
+  const gridId = document.getElementById("verticalGrid") ? "verticalGrid" : "recentGrid";
+  const grid = document.getElementById(gridId);
 
   showLoadingState(grid);
 
@@ -818,10 +881,10 @@ async function initVerticalPage() {
 }
 
 // ---------- MAIN INIT ----------
-(async function initArtistsPage() {
+async function initArtistsPage() {
   const grid = document.getElementById("artistsGrid");
 
-  // Only run on artists page
+  // Only run if grid exists
   if (!grid) return;
 
   // If we've already got data in this tab, reuse it and restore scroll
@@ -829,7 +892,10 @@ async function initVerticalPage() {
     renderArtistsGrid(ARTISTS_CACHE);
     setupLazyThumbObserver();
     setupAlphabetNavigation();
-    window.scrollTo(0, ARTISTS_SCROLL_Y);
+    // Only restore scroll on standalone browse page, not homepage
+    if (document.body.classList.contains('browsePage')) {
+      window.scrollTo(0, ARTISTS_SCROLL_Y);
+    }
     return;
   }
 
@@ -866,4 +932,49 @@ async function initVerticalPage() {
     console.error(err);
     grid.innerHTML = '<div class="error-message">Error loading artists. Please try again later.</div>';
   }
-})();
+}
+
+// Auto-initialize on standalone browse pages only
+if (document.body.classList.contains('browsePage')) {
+  initArtistsPage();
+}
+
+// ---------- HOMEPAGE WRAPPER FUNCTIONS ----------
+// These functions are called by home-browse-tabs.js for tab initialization
+
+window.initRecentPageForHome = async function() {
+  await initRecentPage();
+};
+
+window.initCollectionsPageForHome = async function() {
+  // Collections requires collections.js to be loaded first
+  // This is handled by BrowseTabsController
+  // Just wait for it to initialize
+  await new Promise(resolve => {
+    if (window.collectionsInitialized) {
+      resolve();
+    } else {
+      // Poll for collections.js to load
+      const interval = setInterval(() => {
+        if (window.collectionsInitialized) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        clearInterval(interval);
+        resolve();
+      }, 10000);
+    }
+  });
+};
+
+window.initArtistsPageForHome = async function() {
+  await initArtistsPage();
+};
+
+window.initVerticalPageForHome = async function() {
+  await initVerticalPage();
+};

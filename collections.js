@@ -267,6 +267,91 @@ function renderCollectionsGrid(collectionsList) {
 function setupLazyThumbObserver() {
   const cards = document.querySelectorAll(".card");
 
+  // Queue system to prevent hitting API rate limits
+  let processingQueue = [];
+  let isProcessing = false;
+
+  async function processQueue() {
+    if (isProcessing || processingQueue.length === 0) return;
+
+    isProcessing = true;
+
+    while (processingQueue.length > 0) {
+      // Prioritize items currently visible on screen
+      let nextIndex = 0;
+      for (let i = 0; i < processingQueue.length; i++) {
+        const rect = processingQueue[i].cardEl.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isVisible) {
+          nextIndex = i;
+          break;
+        }
+      }
+
+      const { cardEl, tagName, cacheItem, observer } = processingQueue.splice(nextIndex, 1)[0];
+
+      try {
+        // If we already have both thumb + count, skip
+        const alreadyHasThumb = !!cacheItem.chosenImage;
+        const alreadyHasCount = typeof cacheItem.imageCount === "number";
+
+        if (alreadyHasThumb && alreadyHasCount) {
+          observer.unobserve(cardEl);
+          continue;
+        }
+
+        // Fetch images (this gives us image list + count)
+        const imageSets = await fetchImagesForCollection(tagName);
+
+        // Check if fetch was successful
+        if (!imageSets || !imageSets.all) {
+          console.error(`Failed to fetch images for collection ${tagName}`);
+          observer.unobserve(cardEl);
+          continue;
+        }
+
+        // pick thumb if missing
+        if (!alreadyHasThumb) {
+          const chosenImage = pickFeaturedImage(cacheItem.row, imageSets, USED_THUMBNAILS);
+          cacheItem.chosenImage = chosenImage;
+
+          const thumbWrapper = cardEl.querySelector(".thumb");
+          if (thumbWrapper && chosenImage) {
+            const niceName = humanizePublicId(chosenImage.public_id);
+            const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
+            const imageWrapper = createImageWithLoading(chosenImage.public_id, thumbUrl, niceName);
+
+            // Replace the entire placeholder wrapper with the new image wrapper
+            thumbWrapper.replaceWith(imageWrapper);
+          }
+        }
+
+        // record count if missing
+        if (!alreadyHasCount) {
+          cacheItem.imageCount = imageSets.count;
+        }
+
+        // update label: "Name (N)"
+        if (cardEl.__countSpan && typeof cacheItem.imageCount === "number") {
+          cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
+        }
+
+        // Save updated cache to localStorage
+        saveCollectionsToLocalStorage(COLLECTIONS_CACHE);
+
+        observer.unobserve(cardEl);
+
+        // Add 150ms delay between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 150));
+      } catch (err) {
+        console.error(`Error processing collection ${tagName}:`, err);
+        observer.unobserve(cardEl);
+      }
+    }
+
+    isProcessing = false;
+  }
+
   const obs = new IntersectionObserver(async (entries, observer) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
@@ -293,40 +378,12 @@ function setupLazyThumbObserver() {
         continue;
       }
 
-      // Fetch images (this gives us image list + count)
-      const imageSets = await fetchImagesForCollection(tagName);
-
-      // pick thumb if missing
-      if (!alreadyHasThumb) {
-        const chosenImage = pickFeaturedImage(cacheItem.row, imageSets, USED_THUMBNAILS);
-        cacheItem.chosenImage = chosenImage;
-
-        const thumbWrapper = cardEl.querySelector(".thumb");
-        if (thumbWrapper && chosenImage) {
-          const niceName = humanizePublicId(chosenImage.public_id);
-          const thumbUrl = getThumbnailUrlWithCrop(chosenImage.public_id, 700);
-          const imageWrapper = createImageWithLoading(chosenImage.public_id, thumbUrl, niceName);
-
-          // Replace the entire placeholder wrapper with the new image wrapper
-          thumbWrapper.replaceWith(imageWrapper);
-        }
-      }
-
-      // record count if missing
-      if (!alreadyHasCount) {
-        cacheItem.imageCount = imageSets.count;
-      }
-
-      // update label: "Name (N)"
-      if (cardEl.__countSpan && typeof cacheItem.imageCount === "number") {
-        cardEl.__countSpan.textContent = `(${cacheItem.imageCount})`;
-      }
-
-      // Save updated cache to localStorage
-      saveCollectionsToLocalStorage(COLLECTIONS_CACHE);
-
-      observer.unobserve(cardEl);
+      // Add to queue instead of fetching immediately
+      processingQueue.push({ cardEl, tagName, cacheItem, observer });
     }
+
+    // Start processing the queue
+    processQueue();
   }, {
     root: null,
     rootMargin: "200px 0px 200px 0px",
@@ -337,11 +394,14 @@ function setupLazyThumbObserver() {
 }
 
 // ---------- MAIN INIT ----------
-(async function initCollectionsPage() {
+async function initCollectionsPage() {
   const grid = document.getElementById("collectionsGrid");
 
-  // Only run on collections page
+  // Only run if grid exists
   if (!grid) return;
+
+  // Set flag for browse.js coordination
+  window.collectionsInitializing = true;
 
   // If we've already got data in this tab, reuse it and restore scroll
   if (COLLECTIONS_CACHE && Array.isArray(COLLECTIONS_CACHE)) {
@@ -349,7 +409,11 @@ function setupLazyThumbObserver() {
     window.COLLECTION_ROWS = COLLECTIONS_CACHE.map(c => c.row);
     renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
-    window.scrollTo(0, COLLECTIONS_SCROLL_Y);
+    // Only restore scroll on standalone browse page, not homepage
+    if (document.body.classList.contains('browsePage')) {
+      window.scrollTo(0, COLLECTIONS_SCROLL_Y);
+    }
+    window.collectionsInitialized = true;
     return;
   }
 
@@ -361,6 +425,7 @@ function setupLazyThumbObserver() {
     window.COLLECTION_ROWS = COLLECTIONS_CACHE.map(c => c.row);
     renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
+    window.collectionsInitialized = true;
     return;
   }
 
@@ -381,8 +446,16 @@ function setupLazyThumbObserver() {
     renderCollectionsGrid(COLLECTIONS_CACHE);
     setupLazyThumbObserver();
 
+    window.collectionsInitialized = true;
+
   } catch (err) {
     console.error(err);
     grid.innerHTML = '<div class="error-message">Error loading collections. Please try again later.</div>';
+    window.collectionsInitialized = true; // Set flag even on error
   }
-})();
+}
+
+// Auto-initialize on standalone browse pages only
+if (document.body.classList.contains('browsePage')) {
+  initCollectionsPage();
+}
