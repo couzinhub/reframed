@@ -40,7 +40,7 @@ html {
   --color-sidebar: #081330;
   --color-spot: #56CCFF;
   --page-maxwidth: 1400px;
-  --shadow-color: 27deg 5% 47%;scroll
+  --shadow-color: 27deg 5% 47%;
 
   /* SVG Icons */
   --icon-plus-white: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="%23ffffff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>');
