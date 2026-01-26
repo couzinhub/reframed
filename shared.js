@@ -48,8 +48,15 @@ function FxK(str) {
 async function fetchAllImageKitFiles() {
   try {
     const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
+    let allFiles = [];
+    let skip = 0;
+    const limit = 1000;
+    let hasMore = true;
+
+    // Fetch all files with pagination
+    while (hasMore) {
     // Use type=file to get only current versions, excluding old file-version entries
-    const apiUrl = 'https://api.imagekit.io/v1/files?type=file&limit=1000';
+    const apiUrl = `https://api.imagekit.io/v1/files?type=file&limit=${limit}&skip=${skip}`;
 
     const response = await fetch(apiUrl, {
       headers: { 'Authorization': authHeader }
@@ -57,10 +64,22 @@ async function fetchAllImageKitFiles() {
 
     if (!response.ok) {
       console.error('Failed to fetch from ImageKit API:', response.status);
-      return [];
+        break;
     }
 
-    return await response.json();
+      const files = await response.json();
+      allFiles = allFiles.concat(files);
+
+      // If we got fewer files than the limit, we've reached the end
+      if (files.length < limit) {
+        hasMore = false;
+      } else {
+        skip += limit;
+      }
+    }
+
+    console.log(`Fetched ${allFiles.length} total files from ImageKit`);
+    return allFiles;
   } catch (error) {
     console.error('Error fetching from ImageKit:', error);
     return [];

@@ -32,56 +32,70 @@ function localHumanizePublicId(publicId) {
 async function fetchArtworkDetailsByName(searchName) {
   try {
     const authHeader = 'Basic ' + btoa(ART_CACHE_TK + ':');
-
-    // Fetch all files and search for the specific one
-    // This is the most reliable approach with ImageKit API
-    // Use type=file to get only current versions, excluding old file-version entries
-    const apiUrl = 'https://api.imagekit.io/v1/files?type=file&limit=1000';
-
-    const response = await fetch(apiUrl, {
-      headers: { 'Authorization': authHeader }
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch from ImageKit API:', response.status);
-      return null;
-    }
-
-    const files = await response.json();
+    let allFiles = [];
+    let skip = 0;
+    const limit = 1000;
+    let hasMore = true;
 
     // Use either global or local humanize function
     const humanizeFn = typeof humanizePublicId === 'function' ? humanizePublicId : localHumanizePublicId;
 
     console.log('Searching for:', searchName);
 
-    // Search through all files by matching humanized name
-    const artwork = files.find(f => {
-      const filePath = f.filePath.startsWith('/') ? f.filePath.substring(1) : f.filePath;
-      const humanizedName = humanizeFn(filePath);
-      const matches = humanizedName.toLowerCase() === searchName.toLowerCase();
+    // Fetch all files with pagination and search for the specific one
+    // Use type=file to get only current versions, excluding old file-version entries
+    while (hasMore) {
+      const apiUrl = `https://api.imagekit.io/v1/files?type=file&limit=${limit}&skip=${skip}`;
 
-      if (matches) {
-        console.log('Found match:', filePath, '→', humanizedName);
+      const response = await fetch(apiUrl, {
+        headers: { 'Authorization': authHeader }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch from ImageKit API:', response.status);
+        break;
       }
 
-      return matches;
-    });
+      const files = await response.json();
+      allFiles = allFiles.concat(files);
 
-    if (!artwork) {
-      console.log('No match found. Sample names:');
-      files.slice(0, 5).forEach(f => {
+      // Try to find the artwork in this batch before fetching more
+      const artwork = files.find(f => {
         const filePath = f.filePath.startsWith('/') ? f.filePath.substring(1) : f.filePath;
-        console.log(humanizeFn(filePath));
+        const humanizedName = humanizeFn(filePath);
+        const matches = humanizedName.toLowerCase() === searchName.toLowerCase();
+
+        if (matches) {
+          console.log('Found match:', filePath, '→', humanizedName);
+        }
+
+        return matches;
       });
+
+      // If we found it, return immediately
+
+      if (artwork) {
+        console.log(`Found artwork after searching ${allFiles.length} files`);
+        return {
+          ...artwork,
+          publicId: artwork.filePath.startsWith('/') ? artwork.filePath.substring(1) : artwork.filePath
+        };
+      }
+
+      // If we got fewer files than the limit, we've reached the end
+      if (files.length < limit) {
+        hasMore = false;
+      } else {
+        skip += limit;
+      }
     }
 
-    if (artwork) {
-      // Return the artwork with its filePath as publicId
-      return {
-        ...artwork,
-        publicId: artwork.filePath.startsWith('/') ? artwork.filePath.substring(1) : artwork.filePath
-      };
-    }
+    // Not found after searching all files
+    console.log(`No match found after searching ${allFiles.length} files. Sample names:`);
+    allFiles.slice(0, 5).forEach(f => {
+      const filePath = f.filePath.startsWith('/') ? f.filePath.substring(1) : f.filePath;
+      console.log(humanizeFn(filePath));
+    });
 
     return null;
   } catch (error) {
