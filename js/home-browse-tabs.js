@@ -654,7 +654,7 @@ const BrowseTabsController = {
 
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = 'browse.js';
+      script.src = 'js/browse.js';
       script.async = true;
 
       script.onload = () => {
@@ -678,7 +678,7 @@ const BrowseTabsController = {
 
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = 'collections.js';
+      script.src = 'js/collections.js';
       script.async = true;
 
       script.onload = () => {
